@@ -1,0 +1,13 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+allowBuilds:
+  esbuild: true
+  sharp: true
+  vue-demi: true
+
+onlyBuiltDependencies:
+  - esbuild
+  - vue-demi
+  - sharp

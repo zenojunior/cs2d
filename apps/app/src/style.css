@@ -1,0 +1,262 @@
+@import 'tailwindcss';
+
+/* ============================================================================
+   Design Tokens
+   Visual identity: dark-first, tactical and electric.
+   Base "ink" (slate-blue) + brand accent "surge" (amber).
+   ============================================================================ */
+
+@theme {
+  /* ---- Typography ---- */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: 'Sora', 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  /* ---- Ink: base / surfaces (dark slate-blue) ---- */
+  --color-ink-950: #07080c;
+  --color-ink-900: #0a0c12; /* page background */
+  --color-ink-850: #0e111a;
+  --color-ink-800: #131722; /* surface / card */
+  --color-ink-750: #181d29;
+  --color-ink-700: #1f2533; /* elevated surface / strong border */
+  --color-ink-600: #2a3243; /* border */
+  --color-ink-500: #3b4357; /* subtle border on hover */
+  --color-ink-400: #586277; /* disabled icons */
+  --color-ink-300: #8a93a6; /* secondary / muted text */
+  --color-ink-200: #b7becc;
+  --color-ink-100: #dee2ea; /* default text */
+  --color-ink-50: #f4f6fa; /* emphatic text / white */
+
+  /* ---- Surge: brand accent (amber) ---- */
+  --color-surge-300: #fed27d;
+  --color-surge-400: #fec04a;
+  --color-surge-500: #fdac1a; /* primary */
+  --color-surge-600: #e09105;
+  --color-surge-700: #b67208;
+
+  /* ---- Pulse: secondary accent (electric cyan) ---- */
+  --color-pulse-300: #7ee8ff;
+  --color-pulse-400: #38d9ff;
+  --color-pulse-500: #12bdf0;
+  --color-pulse-600: #0a96c2;
+
+  /* ---- Semantic ---- */
+  --color-win: #22d27a; /* win */
+  --color-loss: #ff4d5e; /* loss */
+  --color-warn: #ffb020; /* warning */
+  --color-live: #ff3b52; /* live */
+
+  /* ---- Shadows / glow ---- */
+  --shadow-glow-surge: 0 0 26px -6px color-mix(in oklab, var(--color-surge-500) 70%, transparent);
+  --shadow-card: 0 1px 0 0 rgb(255 255 255 / 0.03) inset, 0 8px 24px -12px rgb(0 0 0 / 0.7);
+
+  /* ---- Radius ---- */
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+}
+
+/* ============================================================================
+   Base
+   ============================================================================ */
+
+@layer base {
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+    /* Bumps the base type size of the whole app (16px to 17px).
+       Since Tailwind uses rem, the whole system scales proportionally. */
+    font-size: 106.25%;
+  }
+
+  body {
+    @apply bg-ink-900 text-ink-100 font-sans antialiased;
+    font-feature-settings: 'ss01', 'cv01';
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-tight text-ink-50;
+  }
+
+  /* Everything clickable uses a pointer cursor + hover.
+     Tailwind v4 switched buttons to an arrow cursor; we re-enable it here. */
+  button,
+  [role='button'],
+  a,
+  label[for],
+  select,
+  summary {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role='button'][aria-disabled='true'],
+  [disabled] {
+    cursor: not-allowed;
+  }
+
+  ::selection {
+    background: var(--color-surge-500);
+    color: #fff;
+  }
+
+  /* Subtle scrollbar in the brand tone */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-ink-900);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-ink-700);
+    border-radius: 9999px;
+    border: 2px solid var(--color-ink-900);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ink-600);
+  }
+}
+
+/* ============================================================================
+   Brand utilities
+   ============================================================================ */
+
+@layer utilities {
+  /* Electric glow on the surge accent */
+  .glow-surge {
+    box-shadow: var(--shadow-glow-surge);
+  }
+
+  /* Text with a slight glow (highlighted numbers/stats) */
+  .text-glow-surge {
+    color: var(--color-surge-400);
+    text-shadow: 0 0 18px color-mix(in oklab, var(--color-surge-500) 55%, transparent);
+  }
+
+  /* Tactical background grid */
+  .bg-grid {
+    background-image:
+      linear-gradient(
+        to right,
+        color-mix(in oklab, var(--color-ink-600) 45%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--color-ink-600) 45%, transparent) 1px,
+        transparent 1px
+      );
+    background-size: 44px 44px;
+  }
+
+  /* Radial mask to fade decorative backgrounds at the edges */
+  .mask-fade {
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 40%, transparent 100%);
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 40%, transparent 100%);
+  }
+
+  /* Tactical notch corner (clip-path) */
+  .clip-notch {
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 0.5rem), calc(100% - 0.5rem) 100%, 0 100%);
+  }
+}
+
+/* ============================================================================
+   Tooltip: used by the `v-tooltip` directive (portal on <body>)
+   shadcn-level visuals, in the app identity (ink + surge accent).
+   ============================================================================ */
+
+@layer components {
+  .dv-tooltip {
+    --ctt-bg: var(--color-ink-850);
+    --ctt-bd: var(--color-ink-700);
+
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 60;
+    max-width: 18rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--ctt-bd);
+    border-radius: var(--radius-md);
+    background: var(--ctt-bg);
+    color: var(--color-ink-100);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.35;
+    letter-spacing: -0.005em;
+    text-align: left;
+    white-space: normal;
+    pointer-events: none;
+    box-shadow:
+      var(--shadow-card),
+      0 0 0 1px color-mix(in oklab, var(--color-surge-500) 9%, transparent);
+
+    /* Default hidden state (overridden per side below) */
+    opacity: 0;
+    transform: scale(0.96);
+    transition:
+      opacity 140ms ease,
+      transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+
+  /* Scale origin + slight offset per side (sense of leaving the target) */
+  .dv-tooltip[data-side='top'] {
+    transform-origin: bottom center;
+    transform: translateY(3px) scale(0.96);
+  }
+  .dv-tooltip[data-side='bottom'] {
+    transform-origin: top center;
+    transform: translateY(-3px) scale(0.96);
+  }
+  .dv-tooltip[data-side='left'] {
+    transform-origin: center right;
+    transform: translateX(3px) scale(0.96);
+  }
+  .dv-tooltip[data-side='right'] {
+    transform-origin: center left;
+    transform: translateX(-3px) scale(0.96);
+  }
+
+  .dv-tooltip[data-show='true'] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .dv-tooltip__arrow {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    background: var(--ctt-bg);
+    transform: rotate(45deg);
+  }
+  .dv-tooltip[data-side='top'] .dv-tooltip__arrow {
+    border-right: 1px solid var(--ctt-bd);
+    border-bottom: 1px solid var(--ctt-bd);
+  }
+  .dv-tooltip[data-side='bottom'] .dv-tooltip__arrow {
+    border-left: 1px solid var(--ctt-bd);
+    border-top: 1px solid var(--ctt-bd);
+  }
+  .dv-tooltip[data-side='left'] .dv-tooltip__arrow {
+    border-top: 1px solid var(--ctt-bd);
+    border-right: 1px solid var(--ctt-bd);
+  }
+  .dv-tooltip[data-side='right'] .dv-tooltip__arrow {
+    border-bottom: 1px solid var(--ctt-bd);
+    border-left: 1px solid var(--ctt-bd);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dv-tooltip,
+    .dv-tooltip[data-side] {
+      transition: opacity 120ms ease;
+      transform: none;
+    }
+  }
+}

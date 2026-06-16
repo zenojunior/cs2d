@@ -1,0 +1,407 @@
+import { ref } from 'vue'
+
+/**
+ * Minimal, dependency-free i18n for the CS Demo Analyzer. Keeps a reactive
+ * `locale` (persisted in localStorage) and a `t(key, params)` function that
+ * resolves dot paths, falls back to Portuguese if missing, and interpolates
+ * `{param}`. Using `t` in a template re-renders on locale change (reads `locale.value`).
+ */
+export type LocaleCode = 'pt' | 'en' | 'es'
+
+export const LOCALES: { code: LocaleCode; label: string; name: string }[] = [
+  { code: 'pt', label: 'PT', name: 'Português' },
+  { code: 'en', label: 'EN', name: 'English' },
+  { code: 'es', label: 'ES', name: 'Español' },
+]
+
+const STORAGE_KEY = 'demo-viewer-locale'
+
+function detect(): LocaleCode {
+  const saved = localStorage.getItem(STORAGE_KEY) as LocaleCode | null
+  if (saved && LOCALES.some((l) => l.code === saved)) return saved
+  const nav = navigator.language?.toLowerCase() ?? 'pt'
+  if (nav.startsWith('pt')) return 'pt'
+  if (nav.startsWith('es')) return 'es'
+  return 'en'
+}
+
+export const locale = ref<LocaleCode>(detect())
+
+export function setLocale(code: LocaleCode) {
+  locale.value = code
+  localStorage.setItem(STORAGE_KEY, code)
+}
+
+const messages: Record<LocaleCode, Record<string, unknown>> = {
+  pt: {
+    shell: {
+      home: 'Início',
+      github: 'Ver no GitHub',
+      language: 'Idioma',
+      about: 'Sobre',
+    },
+    about: {
+      title: 'Sobre o projeto',
+      tagline: 'Um visualizador de replay 2D para demos de Counter-Strike 2, que roda inteiramente no seu navegador.',
+      back: 'Voltar ao analisador',
+      motivationTitle: 'Por que isso existe',
+      motivationBody:
+        'Eu já usava outras ferramentas para analisar demos, mas sempre havia uma burocracia grande para conseguir usá-las: instalar banco de dados, subir container no Docker, configurar um monte de coisa. E nenhuma delas tinha uma boa experiência visual. Ao longo dos anos fui me aperfeiçoando em UI/UX e desenvolvimento front-end, então quis fazer uma ferramenta que trouxesse a experiência que eu sempre quis ter: abrir um arquivo .dem e rever a partida em 2D, round a round, direto no navegador, sem instalar nada. Tudo é parseado localmente, na sua máquina, e nenhum byte da demo sai do navegador.',
+      authorTitle: 'Quem fez',
+      authorBody:
+        'Feito por Zeno Junior. O projeto é open-source justamente para receber o apoio da comunidade: sugestões, ideias e relatos de bug são muito bem-vindos no GitHub.',
+      techTitle: 'Tecnologias utilizadas',
+      techBody: 'Construído com:',
+      creditsTitle: 'Créditos e projetos relacionados',
+      creditsBody: 'Este projeto se apoia em ótimos trabalhos open-source:',
+    },
+    tabs: { replay: 'Replay 2D', heatmaps: 'Heatmaps', grenades: 'Granadas' },
+    analyzer: {
+      title: 'Analisar demo',
+      subtitleA: 'Envie um arquivo ',
+      subtitleB: ' de CS2 e reveja a partida em 2D, round a round. Tudo roda localmente, no seu navegador.',
+      dragHere: 'Arraste o arquivo aqui',
+      orClick: 'ou clique para escolher',
+      formatHint: '.dem, .gz, .zip ou .zst (CS2) · processado no cliente',
+      errorTitle: 'Não foi possível ler esta demo.',
+      recentTitle: 'Analisadas recentemente',
+      recentNote: 'O histórico fica salvo só no seu navegador. Reabrir uma demo não refaz o upload.',
+      openingDemo: 'Abrindo demo...',
+      readingFile: 'Lendo o arquivo...',
+      decompressing: 'Descomprimindo...',
+      parsing: 'Parseando a demo...',
+      building: 'Montando o replay...',
+      localNote: 'O processamento acontece no seu navegador. A demo não é enviada para nenhum servidor.',
+      previewLabel: 'Prévia 2D',
+    },
+    viewer: {
+      round: 'Round',
+      of: 'de',
+      grenades: 'Granadas',
+      play: 'Reproduzir',
+      pause: 'Pausar',
+      back5: 'Voltar 5s',
+      fwd5: 'Avançar 5s',
+      speed: 'Velocidade',
+      rounds: 'Rounds',
+      knife: 'Faca',
+      space: 'Espaço',
+      prevRound: 'Round anterior',
+      nextRound: 'Próximo round',
+      autoZoom: 'Zoom automático',
+      autoZoomDesc: 'Enquadra todos os jogadores no mapa',
+      advanced: 'Avançado',
+      zoomIn: 'Aproximar',
+      zoomOut: 'Afastar',
+      zoomReset: 'Centralizar',
+      muteComms: 'Mutar comms',
+      enableComms: 'Ativar comms',
+      volumeAria: 'Volume geral das comms',
+      balance: 'Balanço CT / T',
+      balanceAria: 'Balanço entre as equipes',
+      flashAssist: 'Assistência de flash',
+      headshot: 'Headshot',
+      defuseKit: 'Kit de defuse',
+      vestHelmet: 'Colete e capacete',
+      vest: 'Colete',
+      aliveCount: 'vivos',
+      eliminated: 'eliminado',
+    },
+    grenadeKind: { smoke: 'Smoke', fire: 'Molotov', he: 'HE', flash: 'Flash', decoy: 'Decoy' },
+    grenades: {
+      title: 'Granadas',
+      data: 'Tipo',
+      all: 'Todas',
+      side: 'Lado',
+      both: 'Ambos',
+      player: 'Jogador',
+      allPlayers: 'Todos os jogadores',
+      currentRoundOnly: 'Só o round atual',
+      empty: 'Nenhuma granada para os filtros atuais.',
+      unknown: 'Desconhecido',
+      hint: 'Passe o mouse sobre uma granada para isolar a trajetória · clique para abrir no replay',
+    },
+    heatmap: {
+      title: 'Heatmap',
+      points: 'pontos',
+      data: 'Dado',
+      deaths: 'Mortes',
+      presence: 'Presença',
+      utility: 'Utilitárias',
+      level: 'Nível',
+      side: 'Lado',
+      both: 'Ambos',
+      player: 'Jogador',
+      all: 'Todos',
+      round: 'Round',
+      allRounds: 'Todos os rounds',
+      multiLevelNote: '{map} tem dois andares: cada plot mostra um nível.',
+    },
+    scoreboard: {
+      alive: 'Vivos',
+      holdA: 'Segure ',
+      holdB: ' para ver o placar',
+      round: 'round',
+      of: 'de',
+    },
+    outcome: {
+      bombExploded: 'Bomba explodiu',
+      bombDefused: 'Bomba desarmada',
+      elimination: 'Eliminação',
+      timeExpired: 'Tempo esgotado',
+    },
+  },
+
+  en: {
+    shell: {
+      home: 'Home',
+      github: 'View on GitHub',
+      language: 'Language',
+      about: 'About',
+    },
+    about: {
+      title: 'About the project',
+      tagline: 'A 2D replay viewer for Counter-Strike 2 demos that runs entirely in your browser.',
+      back: 'Back to the analyzer',
+      motivationTitle: 'Why this exists',
+      motivationBody:
+        'I had been using other tools to analyze demos, but there was always a lot of bureaucracy to get them running: installing a database, spinning up a Docker container, configuring all sorts of things. And none of them had a good visual experience. Over the years I kept improving at UI/UX and front-end development, so I wanted to build a tool with the experience I always wished I had: open a .dem file and rewatch the match in 2D, round by round, right in your browser, without installing anything. Everything is parsed locally on your machine, and not a single byte of the demo leaves your browser.',
+      authorTitle: 'Who made it',
+      authorBody:
+        'Built by Zeno Junior. The project is open-source precisely so it can grow with the community\'s support: suggestions, ideas and bug reports are very welcome on GitHub.',
+      techTitle: 'Technologies used',
+      techBody: 'Built with:',
+      creditsTitle: 'Credits & related projects',
+      creditsBody: 'This project stands on the shoulders of great open-source work:',
+    },
+    tabs: { replay: '2D Replay', heatmaps: 'Heatmaps', grenades: 'Grenades' },
+    analyzer: {
+      title: 'Analyze demo',
+      subtitleA: 'Upload a ',
+      subtitleB: ' file from CS2 and rewatch the match in 2D, round by round. Everything runs locally, in your browser.',
+      dragHere: 'Drag the file here',
+      orClick: 'or click to choose',
+      formatHint: '.dem, .gz, .zip or .zst (CS2) · processed on the client',
+      errorTitle: 'Could not read this demo.',
+      recentTitle: 'Recently analyzed',
+      recentNote: 'History is kept only in your browser. Reopening a demo does not re-upload it.',
+      openingDemo: 'Opening demo...',
+      readingFile: 'Reading the file...',
+      decompressing: 'Decompressing...',
+      parsing: 'Parsing the demo...',
+      building: 'Building the replay...',
+      localNote: 'Processing happens in your browser. The demo is not sent to any server.',
+      previewLabel: '2D Preview',
+    },
+    viewer: {
+      round: 'Round',
+      of: 'of',
+      grenades: 'Grenades',
+      play: 'Play',
+      pause: 'Pause',
+      back5: 'Back 5s',
+      fwd5: 'Forward 5s',
+      speed: 'Speed',
+      rounds: 'Rounds',
+      knife: 'Knife',
+      space: 'Space',
+      prevRound: 'Previous round',
+      nextRound: 'Next round',
+      autoZoom: 'Auto zoom',
+      autoZoomDesc: 'Frames all players on the map',
+      advanced: 'Advanced',
+      zoomIn: 'Zoom in',
+      zoomOut: 'Zoom out',
+      zoomReset: 'Recenter',
+      muteComms: 'Mute comms',
+      enableComms: 'Enable comms',
+      volumeAria: 'Overall comms volume',
+      balance: 'CT / T balance',
+      balanceAria: 'Balance between teams',
+      flashAssist: 'Flash assist',
+      headshot: 'Headshot',
+      defuseKit: 'Defuse kit',
+      vestHelmet: 'Kevlar and helmet',
+      vest: 'Kevlar',
+      aliveCount: 'alive',
+      eliminated: 'eliminated',
+    },
+    grenadeKind: { smoke: 'Smoke', fire: 'Molotov', he: 'HE', flash: 'Flash', decoy: 'Decoy' },
+    grenades: {
+      title: 'Grenades',
+      data: 'Type',
+      all: 'All',
+      side: 'Side',
+      both: 'Both',
+      player: 'Player',
+      allPlayers: 'All players',
+      currentRoundOnly: 'Current round only',
+      empty: 'No grenades for the current filters.',
+      unknown: 'Unknown',
+      hint: 'Hover a grenade to isolate its trajectory · click to open it in the replay',
+    },
+    heatmap: {
+      title: 'Heatmap',
+      points: 'points',
+      data: 'Data',
+      deaths: 'Deaths',
+      presence: 'Presence',
+      utility: 'Utility',
+      level: 'Level',
+      side: 'Side',
+      both: 'Both',
+      player: 'Player',
+      all: 'All',
+      round: 'Round',
+      allRounds: 'All rounds',
+      multiLevelNote: '{map} has two floors: each plot shows one level.',
+    },
+    scoreboard: {
+      alive: 'Alive',
+      holdA: 'Hold ',
+      holdB: ' to see the scoreboard',
+      round: 'round',
+      of: 'of',
+    },
+    outcome: {
+      bombExploded: 'Bomb exploded',
+      bombDefused: 'Bomb defused',
+      elimination: 'Elimination',
+      timeExpired: 'Time expired',
+    },
+  },
+
+  es: {
+    shell: {
+      home: 'Inicio',
+      github: 'Ver en GitHub',
+      language: 'Idioma',
+      about: 'Acerca de',
+    },
+    about: {
+      title: 'Acerca del proyecto',
+      tagline: 'Un visor de replay 2D para demos de Counter-Strike 2 que funciona por completo en tu navegador.',
+      back: 'Volver al analizador',
+      motivationTitle: 'Por qué existe',
+      motivationBody:
+        'Ya usaba otras herramientas para analizar demos, pero siempre había mucha burocracia para poder usarlas: instalar una base de datos, levantar un contenedor en Docker, configurar un montón de cosas. Y ninguna tenía una buena experiencia visual. A lo largo de los años fui perfeccionándome en UI/UX y desarrollo front-end, así que quise crear una herramienta con la experiencia que siempre quise tener: abrir un archivo .dem y revivir la partida en 2D, ronda a ronda, directo en el navegador, sin instalar nada. Todo se procesa localmente en tu máquina, y ni un solo byte de la demo sale de tu navegador.',
+      authorTitle: 'Quién lo hizo',
+      authorBody:
+        'Hecho por Zeno Junior. El proyecto es open-source precisamente para crecer con el apoyo de la comunidad: sugerencias, ideas y reportes de errores son muy bienvenidos en GitHub.',
+      techTitle: 'Tecnologías utilizadas',
+      techBody: 'Construido con:',
+      creditsTitle: 'Créditos y proyectos relacionados',
+      creditsBody: 'Este proyecto se apoya en grandes trabajos open-source:',
+    },
+    tabs: { replay: 'Replay 2D', heatmaps: 'Heatmaps', grenades: 'Granadas' },
+    analyzer: {
+      title: 'Analizar demo',
+      subtitleA: 'Sube un archivo ',
+      subtitleB: ' de CS2 y revive la partida en 2D, ronda a ronda. Todo funciona localmente, en tu navegador.',
+      dragHere: 'Arrastra el archivo aquí',
+      orClick: 'o haz clic para elegir',
+      formatHint: '.dem, .gz, .zip o .zst (CS2) · procesado en el cliente',
+      errorTitle: 'No se pudo leer esta demo.',
+      recentTitle: 'Analizadas recientemente',
+      recentNote: 'El historial se guarda solo en tu navegador. Reabrir una demo no la vuelve a subir.',
+      openingDemo: 'Abriendo demo...',
+      readingFile: 'Leyendo el archivo...',
+      decompressing: 'Descomprimiendo...',
+      parsing: 'Procesando la demo...',
+      building: 'Construyendo el replay...',
+      localNote: 'El procesamiento ocurre en tu navegador. La demo no se envía a ningún servidor.',
+      previewLabel: 'Vista previa 2D',
+    },
+    viewer: {
+      round: 'Ronda',
+      of: 'de',
+      grenades: 'Granadas',
+      play: 'Reproducir',
+      pause: 'Pausar',
+      back5: 'Atrás 5s',
+      fwd5: 'Adelante 5s',
+      speed: 'Velocidad',
+      rounds: 'Rondas',
+      knife: 'Cuchillo',
+      space: 'Espacio',
+      prevRound: 'Ronda anterior',
+      nextRound: 'Ronda siguiente',
+      autoZoom: 'Zoom automático',
+      autoZoomDesc: 'Encuadra a todos los jugadores en el mapa',
+      advanced: 'Avanzado',
+      zoomIn: 'Acercar',
+      zoomOut: 'Alejar',
+      zoomReset: 'Centrar',
+      muteComms: 'Silenciar comms',
+      enableComms: 'Activar comms',
+      volumeAria: 'Volumen general de comms',
+      balance: 'Balance CT / T',
+      balanceAria: 'Balance entre los equipos',
+      flashAssist: 'Asistencia de flash',
+      headshot: 'Headshot',
+      defuseKit: 'Kit de desactivación',
+      vestHelmet: 'Chaleco y casco',
+      vest: 'Chaleco',
+      aliveCount: 'vivos',
+      eliminated: 'eliminado',
+    },
+    grenadeKind: { smoke: 'Smoke', fire: 'Molotov', he: 'HE', flash: 'Flash', decoy: 'Decoy' },
+    grenades: {
+      title: 'Granadas',
+      data: 'Tipo',
+      all: 'Todas',
+      side: 'Lado',
+      both: 'Ambos',
+      player: 'Jugador',
+      allPlayers: 'Todos los jugadores',
+      currentRoundOnly: 'Solo la ronda actual',
+      empty: 'Sin granadas para los filtros actuales.',
+      unknown: 'Desconocido',
+      hint: 'Pasa el cursor sobre una granada para aislar su trayectoria · haz clic para abrirla en el replay',
+    },
+    heatmap: {
+      title: 'Heatmap',
+      points: 'puntos',
+      data: 'Dato',
+      deaths: 'Muertes',
+      presence: 'Presencia',
+      utility: 'Utilidad',
+      level: 'Nivel',
+      side: 'Lado',
+      both: 'Ambos',
+      player: 'Jugador',
+      all: 'Todos',
+      round: 'Ronda',
+      allRounds: 'Todas las rondas',
+      multiLevelNote: '{map} tiene dos pisos: cada plot muestra un nivel.',
+    },
+    scoreboard: {
+      alive: 'Vivos',
+      holdA: 'Mantén ',
+      holdB: ' para ver el marcador',
+      round: 'ronda',
+      of: 'de',
+    },
+    outcome: {
+      bombExploded: 'La bomba explotó',
+      bombDefused: 'Bomba desactivada',
+      elimination: 'Eliminación',
+      timeExpired: 'Tiempo agotado',
+    },
+  },
+}
+
+function resolve(obj: Record<string, unknown>, path: string): string | undefined {
+  const v = path.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], obj)
+  return typeof v === 'string' ? v : undefined
+}
+
+export function t(key: string, params?: Record<string, string | number>): string {
+  const msg = resolve(messages[locale.value], key) ?? resolve(messages.pt, key) ?? key
+  if (!params) return msg
+  return msg.replace(/\{(\w+)\}/g, (_, k) => String(params[k] ?? ''))
+}
+
+export function useI18n() {
+  return { t, locale, setLocale, LOCALES }
+}

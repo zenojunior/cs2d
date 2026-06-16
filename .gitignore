@@ -1,0 +1,30 @@
+node_modules
+dist
+.turbo
+*.log
+.DS_Store
+.env
+.env.local
+.vite
+*.tsbuildinfo
+
+# Artefatos do WSL (criados ao trazer arquivos do Windows)
+*:Zone.Identifier
+
+# Demos de CS2 (arquivos grandes de entrada, parseados no browser).
+# Cobre tanto o .dem cru quanto os containers comprimidos aceitos no upload.
+*.dem
+*.zst
+*.dem.gz
+*.dem.bz2
+
+# libzstd wasm copiado de @bokuweb/zstd-wasm para public/ pelo
+# scripts/sync-zstd-wasm.mjs nos hooks predev/prebuild (artefato gerado).
+/apps/app/public/zstd.wasm
+
+# Rust: artefatos de build do crate WASM (regenerados pelo build.sh).
+# O .wasm consumido pelo app fica versionado em apps/app/src/viewer/parser/.
+/packages/parser/target/
+
+# Browser extension (work in progress, kept out of version control for now).
+/apps/extension/
