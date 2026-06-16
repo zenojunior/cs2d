@@ -1,0 +1,28 @@
+# Keep the build context small and reproducible. Dependencies are restored
+# inside the image from the lockfile, so never ship local installs or artifacts.
+**/node_modules
+**/dist
+**/.turbo
+.turbo
+.git
+.gitignore
+
+# Local CS2 demos and any compressed input (huge, parsed client-side only).
+*.dem
+*.zst
+*.dem.gz
+*.dem.bz2
+
+# WIP browser extension, not part of the web app build.
+apps/extension
+
+# Rust build artifacts (the consumed .wasm is committed under apps/app/src).
+packages/parser/target
+
+# Misc
+**/*.log
+**/.DS_Store
+**/*:Zone.Identifier
+Dockerfile
+.dockerignore
+README.md
