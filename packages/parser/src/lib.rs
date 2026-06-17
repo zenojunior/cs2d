@@ -142,6 +142,10 @@ struct PlayerState {
     side: String,
     weapon: String,
     money: i32,
+    /// Current equipment value (weapons + utility + armor). Sampled per frame;
+    /// the economy view reads it on the first live frame of the round to derive
+    /// the team's buy (eco / force / full).
+    equip_value: i32,
     armor: i32,
     #[serde(skip_serializing_if = "is_false")]
     helmet: bool,
@@ -875,6 +879,7 @@ impl Collector {
                 side: side.into(),
                 weapon: active_weapon_label(ctx, pawn),
                 money: prop_i32(ctrl, "m_pInGameMoneyServices.m_iAccount"),
+                equip_value: prop_i32(pawn, "m_unCurrentEquipmentValue"),
                 armor: prop_i32(pawn, "m_ArmorValue"),
                 helmet: prop_bool(pawn, "m_pItemServices.m_bHasHelmet"),
                 defuser: prop_bool(pawn, "m_pItemServices.m_bHasDefuser"),
@@ -1388,6 +1393,7 @@ fn build_replay(c: &Collector) -> Replay {
                     side: p.side.clone(),
                     weapon: p.weapon.clone(),
                     money: p.money,
+                    equip_value: p.equip_value,
                     armor: p.armor,
                     helmet: p.helmet,
                     defuser: p.defuser,

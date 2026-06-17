@@ -192,6 +192,9 @@ export interface PlayerState {
   /** Short label of the active weapon (e.g. "AK-47", "AWP", "HE"). */
   weapon: string
   money: number
+  /** Current equipment value (weapons + utility + armor). The economy view reads
+   *  it on the first live frame of each round to derive the team's buy. */
+  equipValue: number
   /** Armor (0 to 100). */
   armor: number
   /** Has helmet (omitted when false). */
