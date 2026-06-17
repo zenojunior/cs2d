@@ -132,10 +132,17 @@ export function useReplay() {
     return map
   })
 
-  /** Each player's side in the current round (constant within the round). */
+  /** Each player's side in the current round (constant within the round). Built
+   * from the union of all frames (first occurrence wins), not just the first
+   * frame: a player who is absent from frame 0 (e.g. already dead at the round's
+   * freeze/post-round edge) would otherwise have no side and render gray. */
   const sideById = computed(() => {
     const map = new Map<string, Side>()
-    for (const p of round.value?.frames[0]?.players ?? []) map.set(p.steamId, p.side)
+    for (const f of round.value?.frames ?? []) {
+      for (const p of f.players) {
+        if (!map.has(p.steamId)) map.set(p.steamId, p.side)
+      }
+    }
     return map
   })
 
