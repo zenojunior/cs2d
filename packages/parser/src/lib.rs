@@ -35,7 +35,23 @@ struct Replay {
     final_score_t: i32,
     final_ct_name: String,
     final_t_name: String,
+    /// Match pauses (tactical timeouts and admin/tech pauses), in absolute ticks.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pauses: Vec<Pause>,
     generated_by: String,
+}
+
+/// A pause in the match (the game rules went into timeout / waiting-for-resume).
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct Pause {
+    start_tick: u32,
+    end_tick: u32,
+    /// "tactical" (a team timeout) or "technical" (admin / tech pause).
+    kind: String,
+    /// Side that called a tactical timeout ("CT"/"T"); absent for technical.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    side: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -327,6 +343,10 @@ struct Collector {
     synth_ends: Vec<(u32, Option<String>, Option<String>)>,
     /// Last seen `m_iRoundWinStatus` (0 = round in progress), to detect the flip.
     prev_win_status: i32,
+    /// Closed pause intervals: (start_tick, end_tick, kind, side).
+    pauses: Vec<(u32, u32, String, Option<String>)>,
+    /// Pause currently in progress: (start_tick, kind, side). None when live.
+    pause_open: Option<(u32, String, Option<String>)>,
     /// Grenade detonations: (tick, kind, entityid, x, y) in world coords.
     grenade_dets: Vec<(u32, GrenadeKind, i32, f64, f64, f64)>,
     /// Smoke/fire end: (entityid, tick), matched by entityid at build time.
@@ -665,6 +685,31 @@ fn team_names(ctx: &Context) -> (String, String) {
     (ct, t)
 }
 
+/// Current pause state from the game rules, or None when the match is live (or
+/// in warmup). A tactical timeout reports the side that called it; an admin or
+/// technical pause (match waiting for resume) reports no side.
+fn pause_state(ctx: &Context) -> Option<(&'static str, Option<String>)> {
+    let proxy = ctx.entities().get_by_class_name("CCSGameRulesProxy").ok()?;
+    let flag = |name: &str| {
+        matches!(
+            proxy.get_property_by_name(name),
+            Ok(FieldValue::Boolean(true))
+        )
+    };
+    if flag("m_pGameRules.m_bWarmupPeriod") {
+        return None;
+    }
+    if flag("m_pGameRules.m_bCTTimeOutActive") {
+        Some(("tactical", Some("CT".to_string())))
+    } else if flag("m_pGameRules.m_bTerroristTimeOutActive") {
+        Some(("tactical", Some("T".to_string())))
+    } else if flag("m_pGameRules.m_bMatchWaitingForResume") || flag("m_pGameRules.m_bGamePaused") {
+        Some(("technical", None))
+    } else {
+        None
+    }
+}
+
 /// Whether the game is in the warmup period.
 fn in_warmup(ctx: &Context) -> bool {
     let proxy = match ctx.entities().get_by_class_name("CCSGameRulesProxy") {
@@ -830,6 +875,21 @@ impl Collector {
             self.synth_ends.push((tick, winner, reason));
         }
         self.prev_win_status = win_status;
+
+        // Pause/timeout tracking (every tick). The game rules expose tactical
+        // timeouts (per side) and an admin/tech pause (match waiting for resume);
+        // we record [start, end] intervals, opening one on the live -> paused edge
+        // and closing it on the paused -> live edge.
+        match (pause_state(ctx), self.pause_open.is_some()) {
+            (Some((kind, side)), false) => {
+                self.pause_open = Some((tick, kind.to_string(), side));
+            }
+            (None, true) => {
+                let (start, kind, side) = self.pause_open.take().unwrap();
+                self.pauses.push((start, tick, kind, side));
+            }
+            _ => {}
+        }
 
         // Frame downsample.
         if tick.wrapping_sub(self.last_cap) < self.tick_step && self.last_cap != 0 {
@@ -1876,6 +1936,27 @@ fn build_replay(c: &Collector) -> Replay {
         .or_else(|| rounds.last().map(|r| (r.ct_name.clone(), r.t_name.clone())))
         .unwrap_or_default();
 
+    // Pauses, plus any pause still open at the end of the demo (closed at the
+    // last sampled tick).
+    let mut pauses: Vec<Pause> = c
+        .pauses
+        .iter()
+        .map(|(s, e, kind, side)| Pause {
+            start_tick: *s,
+            end_tick: *e,
+            kind: kind.clone(),
+            side: side.clone(),
+        })
+        .collect();
+    if let Some((s, kind, side)) = &c.pause_open {
+        pauses.push(Pause {
+            start_tick: *s,
+            end_tick: last_tick.max(*s),
+            kind: kind.clone(),
+            side: side.clone(),
+        });
+    }
+
     Replay {
         map: c.map_name.clone(),
         demo_tick_rate: DEMO_TICK_RATE as u32,
@@ -1886,6 +1967,7 @@ fn build_replay(c: &Collector) -> Replay {
         final_score_t,
         final_ct_name,
         final_t_name,
+        pauses,
         generated_by: GENERATED_BY.into(),
     }
 }

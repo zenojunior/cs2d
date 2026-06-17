@@ -32,8 +32,21 @@ export interface Replay {
   /** Clan name of each team, by the side it ended on. */
   finalCtName: string
   finalTName: string
+  /** Match pauses (tactical timeouts and admin/tech pauses), in absolute ticks.
+   *  Omitted (undefined) for replays parsed before this field existed. */
+  pauses?: Pause[]
   /** Generator version, useful for format migrations. */
   generatedBy: string
+}
+
+/** A pause in the match: a tactical timeout or an admin/technical pause. */
+export interface Pause {
+  startTick: number
+  endTick: number
+  /** "tactical" (a team timeout) or "technical" (admin / tech pause). */
+  kind: 'tactical' | 'technical'
+  /** Side that called a tactical timeout; absent for technical pauses. */
+  side?: Side
 }
 
 export interface PlayerMeta {

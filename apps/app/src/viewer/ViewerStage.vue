@@ -388,6 +388,7 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
           :balance="audio.balance.value"
           :waveform="audio.roundWaveform.value"
           :demo-tick-rate="r.replay.value.demoTickRate"
+          :pauses="r.replay.value.pauses ?? []"
           @toggle="r.toggle"
           @seek="r.seek"
           @select-round="r.selectRound"

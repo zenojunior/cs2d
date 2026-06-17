@@ -17,6 +17,8 @@ const props = defineProps<{
   freezeLabel?: string
   /** Tooltip for the round-end mark. */
   roundEndLabel?: string
+  /** Pause spans within this round (seconds from t = 0), drawn as amber bands. */
+  pauseBands?: { startT: number; endT: number; label: string }[]
 }>()
 
 const emit = defineEmits<{ seek: [fraction: number] }>()
@@ -106,6 +108,18 @@ function leave() {
       class="pointer-events-none absolute inset-y-1 right-0 rounded-r-md bg-ink-400/12"
       :style="{ width: postPct + '%' }"
     />
+
+    <!-- Pause bands: tactical timeouts / tech pauses inside the round. -->
+    <div
+      v-for="(b, i) in pauseBands ?? []"
+      :key="'pause' + i"
+      v-tooltip="b.label"
+      class="absolute inset-y-1 bg-amber-500/20"
+      :style="{ left: frac(b.startT) * 100 + '%', width: (frac(b.endT) - frac(b.startT)) * 100 + '%' }"
+    >
+      <div class="absolute inset-y-0 left-0 w-px bg-amber-400/60" />
+      <div class="absolute inset-y-0 right-0 w-px bg-amber-400/60" />
+    </div>
 
     <!-- Round-end mark: where the round was decided (tooltip on hover). -->
     <div
