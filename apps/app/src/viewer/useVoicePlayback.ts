@@ -71,6 +71,10 @@ export function useVoicePlayback(opts: VoicePlaybackOptions) {
   const balance = ref(0)
   /** Master comms volume (0 to 1), exposed in the player transport. */
   const masterVolume = ref(1)
+  /** Last non-zero volume, restored when unmuting. */
+  const lastVolume = ref(1)
+  /** Muted = audio off or volume at zero (to the user, the two are the same). */
+  const muted = computed(() => !enabled.value || masterVolume.value <= 0)
 
   let ctx: AudioContext | null = null
   let bus: Record<Side, GainNode> | null = null
@@ -376,10 +380,20 @@ export function useVoicePlayback(opts: VoicePlaybackOptions) {
   })
 
   // ----------------------------------------------------------------------- api
-  function toggleEnabled() {
-    // Enabling audio creates/resumes the context still within the click gesture (autoplay).
-    if (!enabled.value && supported) ensureCtx().resume().catch(() => {})
-    enabled.value = !enabled.value
+  function toggleMute() {
+    if (muted.value) {
+      // Unmute: engage audio (create/resume the context within the click gesture)
+      // and restore a non-zero level.
+      if (supported) ensureCtx().resume().catch(() => {})
+      enabled.value = true
+      if (masterVolume.value <= 0) masterVolume.value = lastVolume.value > 0 ? lastVolume.value : 1
+    } else {
+      // Mute: remember the level so unmuting can restore it, then drop to zero
+      // (muting and volume = 0 are the same state).
+      lastVolume.value = masterVolume.value
+      masterVolume.value = 0
+    }
+    applyVolumes()
   }
 
   /** CT<->T balance (-1 to 1). */
@@ -388,10 +402,16 @@ export function useVoicePlayback(opts: VoicePlaybackOptions) {
     applyVolumes()
   }
 
-  /** Master comms volume (multiplies both teams). */
+  /** Master comms volume (multiplies both teams). Raising it above zero unmutes
+   *  (and engages audio if it was never started). */
   function setMasterVolume(value: number) {
     const v = Math.max(0, Math.min(1, value))
     masterVolume.value = v
+    if (v > 0) {
+      if (supported && !enabled.value) ensureCtx().resume().catch(() => {})
+      enabled.value = true
+      lastVolume.value = v
+    }
     applyVolumes()
   }
 
@@ -404,12 +424,13 @@ export function useVoicePlayback(opts: VoicePlaybackOptions) {
   return {
     supported,
     enabled,
+    muted,
     balance,
     masterVolume,
     mutedSides,
     talking,
     roundWaveform,
-    toggleEnabled,
+    toggleMute,
     setBalance,
     setMasterVolume,
   }

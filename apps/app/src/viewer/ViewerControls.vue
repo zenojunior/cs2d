@@ -24,8 +24,8 @@ const props = defineProps<{
   speed: number
   /** The demo has voice (comms): show the audio controls in the player. */
   showVoice?: boolean
-  /** Comms audio enabled. */
-  enabled?: boolean
+  /** Comms muted (audio off or volume at zero). */
+  muted?: boolean
   /** Master comms volume (0 to 1). */
   masterVolume?: number
   /** CT<->T balance (-1 = CT only, 0 = both, +1 = T only). */
@@ -44,7 +44,7 @@ const emit = defineEmits<{
   skip: [seconds: number]
   selectRound: [index: number]
   setSpeed: [speed: number]
-  toggleEnabled: []
+  toggleMute: []
   setMasterVolume: [value: number]
   setBalance: [value: number]
   toggleAdvanced: [key: string]
@@ -277,7 +277,7 @@ onMounted(() => centerCurrent('auto'))
               />
               <img
                 v-else-if="pistolRounds.has(i)"
-                src="/weapons/glock.svg"
+                src="/weapons/p250.svg"
                 :alt="t('viewer.pistol')"
                 class="w-4 object-contain"
               />
@@ -376,12 +376,12 @@ onMounted(() => centerCurrent('auto'))
           @mouseleave="volHover = false"
         >
           <button
-            v-tooltip="enabled ? t('viewer.muteComms') : t('viewer.enableComms')"
+            v-tooltip="muted ? t('viewer.enableComms') : t('viewer.muteComms')"
             class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors duration-150 hover:bg-white/10"
-            :class="enabled ? 'text-surge-300' : 'text-ink-300 hover:text-white'"
-            @click="emit('toggleEnabled')"
+            :class="muted ? 'text-ink-500 hover:text-white' : 'text-ink-200 hover:text-white'"
+            @click="emit('toggleMute')"
           >
-            <UiIcon :name="enabled ? 'volume-2' : 'volume-x'" class="h-4 w-4" />
+            <UiIcon :name="muted ? 'volume-x' : 'volume-2'" class="h-4 w-4" />
           </button>
 
           <!-- Master volume: vertical slider (the outer area bridges the hover) -->
@@ -411,8 +411,10 @@ onMounted(() => centerCurrent('auto'))
           </div>
         </div>
 
-        <!-- Balance: center = both 100%, ends = only one team -->
-        <div v-if="enabled" class="flex items-center gap-1.5">
+        <!-- Balance: center = both 100%, ends = only one team. Disabled (not
+             hidden) while muted; the whole block only shows when the demo has
+             comms (see v-if="showVoice" above). -->
+        <div class="flex items-center gap-1.5" :class="{ 'opacity-40': muted }">
           <span class="font-mono text-[10px] leading-none" :style="{ color: SIDE_COLOR.CT }">CT</span>
           <input
             v-tooltip="t('viewer.balance')"
@@ -420,7 +422,9 @@ onMounted(() => centerCurrent('auto'))
             min="-100"
             max="100"
             :value="Math.round((balance ?? 0) * 100)"
-            class="balance-slider h-1.5 w-20 cursor-pointer appearance-none rounded-full"
+            :disabled="muted"
+            class="balance-slider h-1.5 w-20 appearance-none rounded-full"
+            :class="muted ? 'cursor-not-allowed' : 'cursor-pointer'"
             :style="{ background: `linear-gradient(to right, ${SIDE_COLOR.CT}, ${SIDE_COLOR.T})` }"
             :aria-label="t('viewer.balanceAria')"
             @input="emit('setBalance', Number(($event.target as HTMLInputElement).value) / 100)"
