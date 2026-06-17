@@ -148,33 +148,98 @@ function drawGrenade(
   const k = clamp((t - ev.t) / span, 0, 1)
   ctx.save()
   if (ev.kind === 'smoke') {
-    // Smoke: radial gradient (dense in the core, hazy at the edge) with a light
-    // canvas blur to soften the outline.
-    const rad = unitsToScreen(144)
-    ctx.filter = `blur(${clamp(rad * 0.05, 1, 5)}px)`
-    const grad = ctx.createRadialGradient(x, y, rad * 0.15, x, y, rad)
-    grad.addColorStop(0, 'rgba(216, 220, 230, 0.4)')
-    grad.addColorStop(0.75, 'rgba(206, 211, 222, 0.26)')
-    grad.addColorStop(1, 'rgba(206, 211, 222, 0)')
+    // Smoke: a puffy, irregular body (not a perfect circle) built from a seeded
+    // deformed outline plus a few inner puffs for volume, softened with a blur.
+    // It drifts very slowly so it reads as smoke without looking nervous.
+    const R = unitsToScreen(144)
+    const seed = ev.x * 0.011 + ev.y * 0.015
+    const rand = (n: number) => {
+      const v = Math.sin(n * 12.9898 + seed * 78.233) * 43758.5453
+      return v - Math.floor(v)
+    }
+    // irregular outline, computed once and reused for the fill and the border
+    const verts = 34
+    const ring: { x: number; y: number }[] = []
+    for (let i = 0; i < verts; i++) {
+      const ang = (i / verts) * Math.PI * 2
+      const wob = 0.86 + 0.12 * rand(i + 7) + 0.03 * Math.sin(t * 1.8 + i * 0.5 + seed)
+      ring.push({ x: x + Math.cos(ang) * R * wob, y: y + Math.sin(ang) * R * wob })
+    }
+    const tracePath = () => {
+      ctx!.beginPath()
+      ctx!.moveTo(ring[0].x, ring[0].y)
+      for (let i = 1; i < ring.length; i++) ctx!.lineTo(ring[i].x, ring[i].y)
+      ctx!.closePath()
+    }
+    // body
+    ctx.filter = `blur(${clamp(R * 0.06, 2, 7)}px)`
+    const grad = ctx.createRadialGradient(x, y, R * 0.1, x, y, R)
+    grad.addColorStop(0, 'rgba(220, 224, 232, 0.46)')
+    grad.addColorStop(0.7, 'rgba(208, 213, 224, 0.34)')
+    grad.addColorStop(1, 'rgba(206, 211, 222, 0.04)')
     ctx.fillStyle = grad
-    ctx.beginPath()
-    ctx.arc(x, y, rad, 0, Math.PI * 2)
+    tracePath()
     ctx.fill()
-    // sharp border (without the fill blur)
-    ctx.filter = 'none'
-    ctx.strokeStyle = 'rgba(226, 230, 238, 0.55)'
+    // inner puffs drifting slowly for a volumetric look
+    const puffs = 7
+    for (let i = 0; i < puffs; i++) {
+      const ang = rand(i + 50) * Math.PI * 2 + t * 0.12
+      const dist = R * (0.1 + 0.42 * rand(i + 80))
+      const px = x + Math.cos(ang) * dist
+      const py = y + Math.sin(ang) * dist
+      const pr = R * (0.28 + 0.22 * rand(i + 90))
+      const pg = ctx.createRadialGradient(px, py, 0, px, py, pr)
+      pg.addColorStop(0, 'rgba(230, 234, 242, 0.2)')
+      pg.addColorStop(1, 'rgba(220, 224, 232, 0)')
+      ctx.fillStyle = pg
+      ctx.beginPath()
+      ctx.arc(px, py, pr, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    // soft irregular border
+    ctx.filter = 'blur(1.5px)'
+    ctx.strokeStyle = 'rgba(228, 232, 240, 0.4)'
     ctx.lineWidth = 1.5
-    ctx.beginPath()
-    ctx.arc(x, y, rad, 0, Math.PI * 2)
+    tracePath()
     ctx.stroke()
   } else if (ev.kind === 'fire') {
-    ctx.fillStyle = 'rgba(255, 120, 30, 0.35)'
-    ctx.strokeStyle = 'rgba(255, 80, 20, 0.6)'
-    ctx.lineWidth = 1
+    // Fire: a soft base glow filled with flickering flame blobs, so it reads as
+    // burning rather than a flat orange disc. Blob layout is deterministic (seeded
+    // from the detonation position); only the intensity/size animate with `t`.
+    const R = unitsToScreen(150)
+    const seed = ev.x * 0.013 + ev.y * 0.017
+    const rand = (n: number) => {
+      const v = Math.sin(n * 12.9898 + seed * 78.233) * 43758.5453
+      return v - Math.floor(v)
+    }
+    // base glow
+    const base = ctx.createRadialGradient(x, y, R * 0.1, x, y, R)
+    base.addColorStop(0, 'rgba(255, 120, 30, 0.28)')
+    base.addColorStop(0.7, 'rgba(220, 70, 20, 0.16)')
+    base.addColorStop(1, 'rgba(180, 40, 10, 0)')
+    ctx.fillStyle = base
     ctx.beginPath()
-    ctx.arc(x, y, unitsToScreen(150), 0, Math.PI * 2)
+    ctx.arc(x, y, R, 0, Math.PI * 2)
     ctx.fill()
-    ctx.stroke()
+    // flickering flame blobs (additive blending so overlaps glow brighter)
+    ctx.globalCompositeOperation = 'lighter'
+    const blobs = 12
+    for (let i = 0; i < blobs; i++) {
+      const ang = rand(i + 1) * Math.PI * 2
+      const dist = R * (0.12 + 0.62 * rand(i + 31))
+      const fx = x + Math.cos(ang) * dist
+      const fy = y + Math.sin(ang) * dist
+      const flick = 0.55 + 0.45 * Math.sin(t * 9 + i * 1.7 + seed)
+      const fr = R * (0.16 + 0.13 * flick)
+      const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr)
+      g.addColorStop(0, `rgba(255, 235, 130, ${0.5 * flick})`)
+      g.addColorStop(0.45, `rgba(255, 140, 40, ${0.38 * flick})`)
+      g.addColorStop(1, 'rgba(200, 50, 10, 0)')
+      ctx.fillStyle = g
+      ctx.beginPath()
+      ctx.arc(fx, fy, fr, 0, Math.PI * 2)
+      ctx.fill()
+    }
   } else if (ev.kind === 'he') {
     ctx.globalAlpha = 1 - k
     ctx.strokeStyle = '#ffb020'
@@ -190,6 +255,86 @@ function drawGrenade(
     ctx.fill()
   }
   ctx.restore()
+  // Countdown for lingering effects (smoke dissipating / fire burning out).
+  if (ev.kind === 'smoke' || ev.kind === 'fire') {
+    drawGrenadeTimer(x, y, ev.endT - t, span, ev.kind)
+  }
+}
+
+/** Compact circular countdown shown at the center of a smoke/fire effect. The
+ *  ring drains clockwise as the effect runs out and the remaining whole seconds
+ *  are printed in the middle. */
+function drawGrenadeTimer(
+  x: number,
+  y: number,
+  remaining: number,
+  span: number,
+  kind: 'smoke' | 'fire',
+) {
+  if (!ctx) return
+  const p = clamp(remaining / span, 0, 1)
+  const radius = 11
+  const color = kind === 'smoke' ? 'rgba(232, 236, 244, 0.95)' : 'rgba(255, 150, 60, 0.98)'
+  ctx.save()
+  ctx.lineCap = 'round'
+  // track
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)'
+  ctx.lineWidth = 3.5
+  ctx.beginPath()
+  ctx.arc(x, y, radius, 0, Math.PI * 2)
+  ctx.stroke()
+  // remaining time (drains clockwise from the top)
+  ctx.strokeStyle = color
+  ctx.lineWidth = 3
+  ctx.beginPath()
+  ctx.arc(x, y, radius, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2)
+  ctx.stroke()
+  // remaining whole seconds in the middle
+  ctx.fillStyle = color
+  ctx.font = '700 11px system-ui, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)'
+  ctx.shadowBlur = 3
+  ctx.fillText(String(Math.max(0, Math.ceil(remaining))), x, y + 0.5)
+  ctx.restore()
+}
+
+/** Darkened patch left where a molotov/incendiary burned or an HE detonated.
+ *  It persists for the rest of the round (cleared when the round changes), so
+ *  it marks the affected ground without fading out. Reuses the effect's seeded
+ *  irregular outline so the mark matches the affected area. */
+function drawScorch(
+  ev: Extract<Round['events'][number], { type: 'grenade' }>,
+) {
+  if (!ctx) return
+  const { x, y } = w2s(ev.x, ev.y)
+  // HE blast covers a smaller area than fire
+  const R = unitsToScreen(ev.kind === 'he' ? 90 : 150)
+  const seed = ev.x * 0.013 + ev.y * 0.017
+  const rand = (n: number) => {
+    const v = Math.sin(n * 12.9898 + seed * 78.233) * 43758.5453
+    return v - Math.floor(v)
+  }
+  ctx.save()
+  ctx.globalAlpha = 0.5
+  const verts = 30
+  ctx.beginPath()
+  for (let i = 0; i < verts; i++) {
+    const ang = (i / verts) * Math.PI * 2
+    const wob = 0.82 + 0.14 * rand(i + 101)
+    const px = x + Math.cos(ang) * R * wob
+    const py = y + Math.sin(ang) * R * wob
+    if (i === 0) ctx.moveTo(px, py)
+    else ctx.lineTo(px, py)
+  }
+  ctx.closePath()
+  const grad = ctx.createRadialGradient(x, y, R * 0.1, x, y, R)
+  grad.addColorStop(0, 'rgba(16, 11, 8, 0.9)')
+  grad.addColorStop(1, 'rgba(28, 18, 12, 0.4)')
+  ctx.fillStyle = grad
+  ctx.fill()
+  ctx.restore()
 }
 
 const PATH_COLOR: Record<string, string> = {
@@ -198,6 +343,16 @@ const PATH_COLOR: Record<string, string> = {
   he: 'rgba(255, 90, 60, 0.9)',
   flash: 'rgba(255, 238, 170, 0.9)',
   decoy: 'rgba(140, 150, 165, 0.9)',
+}
+
+// Grenade kind -> weapon icon label (key into `weaponImgs`). 'fire' covers both
+// molotov and incendiary; we use the molotov icon as the shared symbol.
+const KIND_ICON: Record<string, string> = {
+  smoke: 'Smoke',
+  fire: 'Molotov',
+  he: 'HE',
+  flash: 'Flash',
+  decoy: 'Decoy',
 }
 
 /** Arc of the grenade in flight, traced up to its position at instant t. */
@@ -254,11 +409,27 @@ function drawGrenadePath(path: Round['grenadePaths'][number], t: number) {
   ctx.stroke()
   ctx.setLineDash([])
 
+  // Tip of the arc: while the grenade is still airborne, draw its icon so the
+  // viewer can tell which grenade it is; once it detonates the effect takes over.
   const head = draw[draw.length - 1]
-  ctx.fillStyle = PATH_COLOR[path.kind] ?? '#dee2ea'
-  ctx.beginPath()
-  ctx.arc(head.x, head.y, 3, 0, Math.PI * 2)
-  ctx.fill()
+  const img = weaponImgs.get(KIND_ICON[path.kind] ?? '')
+  if (t <= end && img && img.complete && img.naturalWidth) {
+    const boxH = clamp(unitsToScreen(34), 12, 20)
+    const s = boxH / img.naturalHeight
+    const iw = img.naturalWidth * s
+    const ih = boxH
+    ctx.globalAlpha = 1
+    ctx.fillStyle = 'rgba(7, 8, 12, 0.6)'
+    ctx.beginPath()
+    ctx.roundRect(head.x - iw / 2 - 2, head.y - ih / 2 - 1.5, iw + 4, ih + 3, 2)
+    ctx.fill()
+    ctx.drawImage(img, head.x - iw / 2, head.y - ih / 2, iw, ih)
+  } else {
+    ctx.fillStyle = PATH_COLOR[path.kind] ?? '#dee2ea'
+    ctx.beginPath()
+    ctx.arc(head.x, head.y, 3, 0, Math.PI * 2)
+    ctx.fill()
+  }
   ctx.restore()
 }
 
@@ -771,7 +942,11 @@ function draw() {
   // arcs of grenades in flight (under the detonations)
   for (const path of props.round?.grenadePaths ?? []) drawGrenadePath(path, t)
   for (const ev of props.round?.events ?? []) {
-    if (ev.type === 'grenade' && t >= ev.t && t <= ev.endT) drawGrenade(ev, t)
+    if (ev.type !== 'grenade') continue
+    if (t >= ev.t && t <= ev.endT) drawGrenade(ev, t)
+    // burnt mark left after a molotov/incendiary burns out or an HE detonates;
+    // stays for the rest of the round (the round change clears it)
+    else if ((ev.kind === 'fire' || ev.kind === 'he') && t > ev.endT) drawScorch(ev)
   }
   // C4 on the ground / planted (under the players). During the ~3.2s of the plant
   // we do not draw the icon here: the progress ring goes over the planter (below).
