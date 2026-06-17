@@ -82,10 +82,18 @@ function hasKnifeRound(rounds: Round[]): boolean {
   return r0.frames.every((f) => f.players.every((p) => p.weapon === 'Faca' || p.weapon === ''))
 }
 
-/** Sides sampled from a mid-round frame (locked there, unlike the freeze start). */
+/**
+ * Sides sampled from the middle of the live window [startTick, endTick]. Sampling
+ * by frame-array index is wrong when a round has a long post-round: the last round
+ * of a half absorbs the halftime break (and any tech pause), so its array middle
+ * lands in the break where players already hold their swapped, second-half sides.
+ * The freeze start is also unreliable (sides may still be mid-pick), so we anchor
+ * to gameplay.
+ */
 function sidesOf(r: Round): Map<string, Side> {
   const m = new Map<string, Side>()
-  const f = r.frames[Math.floor(r.frames.length / 2)]
+  const target = r.startTick + (r.endTick - r.startTick) / 2
+  const f = r.frames.find((f) => f.tick >= target) ?? r.frames[Math.floor(r.frames.length / 2)]
   for (const p of f?.players ?? []) m.set(p.steamId, p.side)
   return m
 }

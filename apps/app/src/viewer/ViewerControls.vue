@@ -100,12 +100,16 @@ const markers = computed(() => buildTimelineMarkers(props.round))
  */
 const sideSwaps = computed<Set<number>>(() => {
   const swaps = new Set<number>()
-  // Sample sides from a mid-round frame: sides are locked there, unlike the
-  // freeze start (e.g. round 1 begins during the FACEIT side pick, so its first
-  // frame can still hold the pre-pick sides).
+  // Sample sides from the middle of the live window [startTick, endTick]. The
+  // freeze start is unreliable (round 1 begins during the FACEIT side pick, so
+  // its first frame can still hold the pre-pick sides), and the frame-array
+  // middle breaks when a round has a long post-round: the last round of a half
+  // absorbs the halftime break (plus any tech pause), so its array middle lands
+  // in the break where players already hold their swapped, second-half sides.
   const sidesOf = (r: Round) => {
     const m = new Map<string, Side>()
-    const f = r.frames[Math.floor(r.frames.length / 2)]
+    const target = r.startTick + (r.endTick - r.startTick) / 2
+    const f = r.frames.find((f) => f.tick >= target) ?? r.frames[Math.floor(r.frames.length / 2)]
     for (const p of f?.players ?? []) m.set(p.steamId, p.side)
     return m
   }
