@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { onKeyStroke, useEventListener } from '@vueuse/core'
+import { onKeyStroke, useEventListener, useLocalStorage } from '@vueuse/core'
 import type { Replay, VoiceData } from '@/viewer/schema'
 import ViewerMap from '@/viewer/ViewerMap.vue'
 import ViewerControls from '@/viewer/ViewerControls.vue'
@@ -76,7 +76,8 @@ function jumpToThrow({ roundIndex, t }: { roundIndex: number; t: number }) {
 
 // Player advanced options ("Advanced" menu). Extensible: each item toggles a
 // behavior. For now: auto zoom that frames the players.
-const autoZoom = ref(false)
+// Advanced options persist across sessions (localStorage).
+const autoZoom = useLocalStorage('viewer.advanced.autoZoom', false)
 const advancedOptions = computed(() => [
   {
     key: 'autoZoom',
@@ -84,9 +85,16 @@ const advancedOptions = computed(() => [
     description: t('viewer.autoZoomDesc'),
     enabled: autoZoom.value,
   },
+  {
+    key: 'autoAdvance',
+    label: t('viewer.autoAdvance'),
+    description: t('viewer.autoAdvanceDesc'),
+    enabled: r.autoAdvance.value,
+  },
 ])
 function toggleAdvanced(key: string) {
   if (key === 'autoZoom') autoZoom.value = !autoZoom.value
+  else if (key === 'autoAdvance') r.autoAdvance.value = !r.autoAdvance.value
 }
 
 const calibration = computed(() => {

@@ -1,4 +1,5 @@
 import { computed, onUnmounted, ref, shallowRef } from 'vue'
+import { useLocalStorage } from '@vueuse/core'
 import type { PlayerMeta, PlayerState, Replay, Round, Side } from '@/viewer/schema'
 
 /** Playback speeds offered in the controls. */
@@ -34,6 +35,8 @@ export function useReplay() {
   const frac = ref(0) // progress [0,1] between the base sample and the next one
   const playing = ref(false)
   const speed = ref<number>(1)
+  /** When set, reaching the end of a round rolls straight into the next one. */
+  const autoAdvance = useLocalStorage('viewer.advanced.autoAdvance', false)
 
   const round = computed<Round | null>(() => replay.value?.rounds[roundIndex.value] ?? null)
   const frameCount = computed(() => round.value?.frames.length ?? 0)
@@ -251,8 +254,19 @@ export function useReplay() {
     // continuous position (in samples), advanced by real elapsed time
     const pos = frameIndex.value + frac.value + (dt * speed.value) / frameMs
 
-    // We always stop at the end of the round: advancing to the next round is manual.
+    // End of the round. With autoAdvance on, roll into the next round and keep
+    // playing; otherwise stop here (advancing is manual).
     if (pos >= frameCount.value - 1) {
+      const lastRound = replay.value ? replay.value.rounds.length - 1 : 0
+      if (autoAdvance.value && roundIndex.value < lastRound) {
+        // Start at frame 0 so the freeze time plays too (don't skip to "live").
+        roundIndex.value = roundIndex.value + 1
+        frameIndex.value = 0
+        frac.value = 0
+        last = 0 // reset timing so the gap between rounds isn't counted as elapsed
+        raf = requestAnimationFrame(tick)
+        return
+      }
       frameIndex.value = Math.max(0, frameCount.value - 1)
       frac.value = 0
       pause()
@@ -289,6 +303,7 @@ export function useReplay() {
     frameCount,
     playing,
     speed,
+    autoAdvance,
     round,
     players,
     currentT,

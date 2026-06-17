@@ -54,6 +54,7 @@ const icons: Record<string, string[]> = {
   signal: ['M6 20v-4', 'M12 20v-9', 'M18 20V6'],
   'arrow-right': ['M5 12h14', 'M13 5l7 7-7 7'],
   'arrow-left': ['M19 12H5', 'M11 19l-7-7 7-7'],
+  swap: ['M8 3 4 7l4 4', 'M4 7h16', 'M16 21l4-4-4-4', 'M20 17H4'],
   check: ['M20 6 9 17l-5-5'],
   map: ['M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z', 'M9 4v14', 'M15 6v14'],
   dollar: ['M12 2v20', 'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'],

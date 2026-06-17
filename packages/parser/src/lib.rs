@@ -589,7 +589,16 @@ fn active_weapon_label(ctx: &Context, pawn: &Entity) -> String {
         return String::new();
     }
     match ctx.entities().get_by_handle(handle as usize) {
-        Ok(w) => weapon_label(w.class().name()),
+        Ok(w) => {
+            let label = weapon_label(w.class().name());
+            // USP-S and P2000 share the CWeaponHKP2000 class; the item definition
+            // index distinguishes them (61 = USP-S, 32 = P2000).
+            if label == "P2000" && prop_u32(w, "m_iItemDefinitionIndex") == 61 {
+                "USP-S".into()
+            } else {
+                label
+            }
+        }
         Err(_) => String::new(),
     }
 }

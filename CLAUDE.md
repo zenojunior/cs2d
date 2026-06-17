@@ -1,5 +1,42 @@
 # CS Demo Analyzer
 
+## Workflow rules
+
+- NEVER run `git commit` or `git push` without explicit permission. All code must
+  be reviewed first.
+- Only commit, push, or open/post a review when the prompt explicitly asks for it.
+
+## Project layout
+
+- Monorepo (pnpm workspace + Turbo). Main app: `apps/app` (Vue 3 + Vite, port 5174).
+- Run from `apps/app`: `pnpm dev`, `pnpm build`, `pnpm type-check`.
+- Everything runs client-side: the demo is parsed in the browser (WASM); nothing
+  is uploaded to any server.
+
+## WASM demo parser
+
+- The Rust crate in `packages/parser/` compiles to the wasm the app consumes.
+  After ANY change under `packages/parser/src/`, rebuild with
+  `bash packages/parser/build.sh` — the artifacts are committed to
+  `apps/app/src/viewer/parser/` (no pipeline regenerates them).
+- The `wasm-bindgen-cli` version MUST match the `wasm-bindgen` dep in Cargo.toml
+  (currently 0.2.125).
+- To test the parser without a browser: `initSync({ module })` + `parse_demo(bytes, 8)`
+  in Node (see `apps/app/scripts/extract-preview.mjs`).
+
+## Decompression (.zst / .gz / .zip uploads)
+
+- zstd uses `@bokuweb/zstd-wasm` (NOT `fzstd`, which has a Huffman-decoding bug).
+  The wasm is copied to `public/zstd.wasm` by `scripts/sync-zstd-wasm.mjs`
+  (predev/prebuild hooks) and loaded via an explicit path.
+- Decompression runs in a throwaway worker, terminated before parsing, to reclaim
+  memory.
+
+## Conventions
+
+- Source-code comments in English.
+- i18n: 3 locales (pt/en/es) in `src/i18n.ts` — add every new key to all three.
+
 ## Assets
 
 ### Map radars
