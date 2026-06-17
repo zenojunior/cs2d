@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import UiIcon from '@/ui/UiIcon.vue'
 import { useI18n } from '@/i18n'
 
@@ -7,6 +8,15 @@ import { useI18n } from '@/i18n'
 const { t } = useI18n()
 
 const GITHUB_URL = 'https://github.com/zenojunior/cs-demo-analyzer'
+const AUTHOR_NAME = 'Zeno Junior'
+const AUTHOR_URL = 'https://zenojunior.com'
+
+// The author paragraph carries the name as a `{name}` placeholder so it can be
+// rendered as a link; split it into the text before and after the name.
+const authorParts = computed(() => {
+  const [before, after] = t('about.authorBody').split('{name}')
+  return { before, after: after ?? '' }
+})
 
 // Main libraries the app is built on (label + where to learn more).
 const TECH: { name: string; url: string }[] = [
@@ -20,7 +30,7 @@ const TECH: { name: string; url: string }[] = [
 
 // Open-source work this project depends on or is inspired by (proper credit).
 const CREDITS: { name: string; url: string; descKey: string }[] = [
-  { name: 'source2-demo', url: 'https://crates.io/crates/source2-demo', descKey: 'source2' },
+  { name: 'source2-demo', url: 'https://github.com/Rupas1k/source2-demo', descKey: 'source2' },
   { name: 'cs2-map-icons', url: 'https://github.com/MurkyYT/cs2-map-icons', descKey: 'mapIcons' },
   { name: '@bokuweb/zstd-wasm', url: 'https://github.com/bokuweb/zstd-wasm', descKey: 'zstd' },
   { name: 'fflate', url: 'https://github.com/101arrowz/fflate', descKey: 'fflate' },
@@ -33,6 +43,20 @@ const CREDIT_DESC: Record<string, string> = {
   zstd: 'WebAssembly Zstandard decoder for .zst demos.',
   fflate: 'Fast, tiny gzip/zip inflate used to read compressed demos.',
 }
+
+// Projects that inspired this one (not dependencies, just admiration).
+const RELATED: { name: string; url: string; desc: string }[] = [
+  {
+    name: 'CS Demo Manager',
+    url: 'https://github.com/akiver/cs-demo-manager',
+    desc: 'A full-featured desktop app to manage and analyze Counter-Strike demos, by akiver.',
+  },
+  {
+    name: 'csgo-2d-demo-viewer',
+    url: 'https://github.com/sparkoo/csgo-2d-demo-viewer',
+    desc: 'A browser-based 2D Counter-Strike demo viewer, by sparkoo.',
+  },
+]
 </script>
 
 <template>
@@ -62,7 +86,16 @@ const CREDIT_DESC: Record<string, string> = {
         <h2 class="text-sm font-semibold uppercase tracking-wide text-surge-400">
           {{ t('about.authorTitle') }}
         </h2>
-        <p class="mt-3 text-sm leading-relaxed text-ink-300">{{ t('about.authorBody') }}</p>
+        <p class="mt-3 text-sm leading-relaxed text-ink-300">
+          {{ authorParts.before
+          }}<a
+            :href="AUTHOR_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-medium text-ink-100 underline decoration-ink-600 underline-offset-2 transition-colors hover:text-ink-50 hover:decoration-ink-400"
+            >{{ AUTHOR_NAME }}</a
+          >{{ authorParts.after }}
+        </p>
         <a
           :href="GITHUB_URL"
           target="_blank"
@@ -94,7 +127,7 @@ const CREDIT_DESC: Record<string, string> = {
         </ul>
       </section>
 
-      <!-- Credits & related projects -->
+      <!-- Credits -->
       <section class="mt-10">
         <h2 class="text-sm font-semibold uppercase tracking-wide text-surge-400">
           {{ t('about.creditsTitle') }}
@@ -110,12 +143,38 @@ const CREDIT_DESC: Record<string, string> = {
               :href="credit.url"
               target="_blank"
               rel="noopener noreferrer"
-              class="inline-flex items-center gap-1.5 text-sm font-medium text-pulse-400 transition-colors hover:text-pulse-300"
+              class="inline-flex items-center gap-1.5 text-sm font-medium text-ink-200 transition-colors hover:text-ink-50"
             >
+              <UiIcon name="github" class="h-3.5 w-3.5 text-ink-400" />
               {{ credit.name }}
-              <UiIcon name="arrow-right" class="h-3 w-3" />
             </a>
             <p class="mt-1 text-xs leading-relaxed text-ink-400">{{ CREDIT_DESC[credit.descKey] }}</p>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Related projects -->
+      <section class="mt-10">
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-surge-400">
+          {{ t('about.relatedTitle') }}
+        </h2>
+        <p class="mt-3 text-sm leading-relaxed text-ink-300">{{ t('about.relatedBody') }}</p>
+        <ul class="mt-4 flex flex-col gap-3">
+          <li
+            v-for="project in RELATED"
+            :key="project.name"
+            class="rounded-lg border border-ink-800 bg-ink-900/40 p-3"
+          >
+            <a
+              :href="project.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1.5 text-sm font-medium text-ink-200 transition-colors hover:text-ink-50"
+            >
+              <UiIcon name="github" class="h-3.5 w-3.5 text-ink-400" />
+              {{ project.name }}
+            </a>
+            <p class="mt-1 text-xs leading-relaxed text-ink-400">{{ project.desc }}</p>
           </li>
         </ul>
       </section>
