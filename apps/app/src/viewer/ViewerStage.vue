@@ -123,8 +123,12 @@ const activeLevelRange = computed(() => {
 })
 
 function fmtClock(s: number) {
-  const m = Math.floor(s / 60)
-  const sec = Math.floor(s % 60)
+  // Ceil the total seconds so the clock holds the upper whole second and only
+  // hits 0:00 at the actual deadline (e.g. the bomb shows 0:00 the instant it
+  // blows, not a full second early). Split after rounding to avoid 1:60.
+  const total = Math.ceil(s)
+  const m = Math.floor(total / 60)
+  const sec = total % 60
   return `${m}:${sec.toString().padStart(2, '0')}`
 }
 
@@ -264,6 +268,12 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
               class="h-2.5 w-2.5 rounded-full bg-live transition-opacity duration-75"
               :class="r.bombBlink.value ? 'opacity-100 shadow-[0_0_6px_var(--color-live)]' : 'opacity-25'"
             />
+            <span
+              v-else-if="r.clock.value.phase === 'post'"
+              class="text-[10px] font-semibold uppercase tracking-wide text-ink-400"
+            >
+              {{ t('viewer.over') }}
+            </span>
             <UiIcon
               v-else
               :name="r.clock.value.phase === 'paused' ? 'pause' : 'clock'"
@@ -283,7 +293,13 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
               v-else
               class="font-mono text-xl tabular-nums"
               :class="
-                clockAlert ? 'text-live' : r.clock.value.phase === 'freeze' ? 'text-sky-200' : 'text-ink-50'
+                clockAlert
+                  ? 'text-live'
+                  : r.clock.value.phase === 'freeze'
+                    ? 'text-sky-200'
+                    : r.clock.value.phase === 'post'
+                      ? 'text-ink-400'
+                      : 'text-ink-50'
               "
             >
               {{ fmtClock(r.clock.value.seconds) }}

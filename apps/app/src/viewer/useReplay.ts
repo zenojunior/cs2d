@@ -9,7 +9,7 @@ export const SPEEDS = [1, 2, 4, 8] as const
 const ROUND_TIME = 115
 const BOMB_TIME = 40
 
-export type Clock = { phase: 'freeze' | 'round' | 'bomb' | 'paused'; seconds: number }
+export type Clock = { phase: 'freeze' | 'round' | 'bomb' | 'paused' | 'post'; seconds: number }
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
@@ -80,6 +80,12 @@ export function useReplay() {
     return ev ? ev.t : null
   })
 
+  /** Actual explosion time (s) in the current round, if the bomb went off. */
+  const explodeT = computed(() => {
+    const ev = round.value?.events.find((e) => e.type === 'bomb_exploded')
+    return ev ? ev.t : null
+  })
+
   /**
    * Round timeline in seconds from `t = 0` (freeze start). Marks where the round
    * goes live, when it was decided, the official end, and the total duration
@@ -106,7 +112,7 @@ export function useReplay() {
    */
   const clock = computed<Clock>(() => {
     const t = currentT.value
-    const { liveStart } = timeline.value
+    const { liveStart, decided, roundEnd } = timeline.value
     // Paused: during a tactical timeout / tech pause the game clock is frozen, so
     // show "paused" instead of a running timer. The current absolute tick is the
     // round's freeze start plus the elapsed round time.
@@ -122,9 +128,23 @@ export function useReplay() {
     if (t < liveStart) {
       return { phase: 'freeze', seconds: Math.max(0, liveStart - t) }
     }
+    // Post-round: once the round is decided (bomb blew, defuse, last kill) the game
+    // keeps running for a few seconds before the side switch / next freeze. Count
+    // down to the official round end instead of holding a red 0:00. The bomb's
+    // explosion is what decides those rounds, so its tick starts this phase.
+    const xt = explodeT.value
+    const postStart = xt !== null ? xt : decided
+    if (t >= postStart) {
+      return { phase: 'post', seconds: Math.max(0, roundEnd - t) }
+    }
     const pt = plantT.value
     if (pt !== null && t >= pt) {
-      return { phase: 'bomb', seconds: Math.max(0, BOMB_TIME - (t - pt)) }
+      // Anchor the countdown to the real explosion tick when the bomb went off,
+      // so 0:00 lands exactly on the detonation (the demo's plant->explosion gap
+      // isn't precisely BOMB_TIME). Fall back to the theoretical 40s otherwise
+      // (defused / round ended before it blew).
+      const seconds = xt !== null ? Math.max(0, xt - t) : Math.max(0, BOMB_TIME - (t - pt))
+      return { phase: 'bomb', seconds }
     }
     return { phase: 'round', seconds: Math.max(0, ROUND_TIME - (t - liveStart)) }
   })
