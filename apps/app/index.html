@@ -7,6 +7,19 @@
     <meta name="theme-color" content="#0a0c12" />
     <title>CS Demo Analyzer</title>
 
+    <!-- Warm the first ambient preview fixture so it downloads in parallel with
+         the JS bundle instead of waiting for the app to mount. Matches the
+         deterministic first preview in DemoAnalyzerView. Only on lg+ screens,
+         where the preview is actually shown. -->
+    <link
+      rel="preload"
+      as="fetch"
+      href="/replays/inferno-preview.json"
+      type="application/json"
+      crossorigin="anonymous"
+      media="(min-width: 1024px)"
+    />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
