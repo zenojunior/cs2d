@@ -300,7 +300,7 @@ onMounted(() => centerCurrent('auto'))
       <div class="overflow-hidden">
         <div
           ref="track"
-          class="flex gap-1.5 overflow-x-auto px-0.5 pb-3 pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          class="flex gap-1.5 overflow-x-auto px-1.5 pb-3 pt-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           @wheel="onRoundsWheel"
         >
           <template v-for="(r, i) in rounds" :key="r.number">
@@ -349,7 +349,9 @@ onMounted(() => centerCurrent('auto'))
               />
               <template v-else>{{ roundLabels[i] }}</template>
               <!-- Pause indicator: amber dot on rounds with a tactical timeout
-                   or tech pause (e.g. major matches). -->
+                   or tech pause (e.g. major matches). Sits just outside the
+                   bubble; the track's pt leaves room so the clipped overflow
+                   (scroll + reveal animation) doesn't cut it. -->
               <span
                 v-if="roundPauses.get(i)?.length"
                 class="pointer-events-none absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-ink-900"
