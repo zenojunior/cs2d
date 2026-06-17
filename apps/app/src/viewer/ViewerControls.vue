@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { onClickOutside } from '@vueuse/core'
-import type { Round } from '@/viewer/schema'
+import type { Round, Side } from '@/viewer/schema'
 import UiIcon from '@/ui/UiIcon.vue'
 import UiSwitch from '@/ui/UiSwitch.vue'
 import ViewerTimeline from './ViewerTimeline.vue'
@@ -92,6 +92,79 @@ const freezeSeconds = computed(() => liveStartT.value)
 
 const markers = computed(() => buildTimelineMarkers(props.round))
 
+/**
+ * Round indices where the teams switched sides versus the previous round
+ * (halftime and every overtime swap). Detected by comparing each player's side
+ * between consecutive rounds: at a swap most players flip CT<->T, within a half
+ * none do. Drives the swap marker drawn between the round bubbles.
+ */
+const sideSwaps = computed<Set<number>>(() => {
+  const swaps = new Set<number>()
+  // Sample sides from a mid-round frame: sides are locked there, unlike the
+  // freeze start (e.g. round 1 begins during the FACEIT side pick, so its first
+  // frame can still hold the pre-pick sides).
+  const sidesOf = (r: Round) => {
+    const m = new Map<string, Side>()
+    const f = r.frames[Math.floor(r.frames.length / 2)]
+    for (const p of f?.players ?? []) m.set(p.steamId, p.side)
+    return m
+  }
+  let prev: Map<string, Side> | null = null
+  props.rounds.forEach((r, i) => {
+    const cur = sidesOf(r)
+    if (!cur.size) return
+    if (prev) {
+      let flipped = 0
+      let same = 0
+      for (const [id, side] of cur) {
+        const before = prev.get(id)
+        if (before == null) continue
+        before === side ? same++ : flipped++
+      }
+      if (flipped > 0 && flipped >= same) swaps.add(i)
+    }
+    prev = cur
+  })
+  return swaps
+})
+
+// Pistol/utility loadout: anything outside this set is a primary (rifle, SMG,
+// shotgun, sniper, MG), which means the round was a buy, not a pistol round.
+const PISTOL_LOADOUT = new Set<string>([
+  'Deagle', 'R8 Revolver', 'Glock-18', 'USP-S', 'P2000', 'Five-SeveN', 'Tec-9',
+  'CZ75-Auto', 'P250', 'Dual Berettas',
+  'Faca', 'C4', 'HE', 'Flash', 'Smoke', 'Molotov', 'Decoy', 'Zeus x27', '',
+])
+
+/**
+ * Pistol rounds: a half-start round (after the knife round / after a side swap)
+ * where everyone is on pistols in the opening seconds. The half-start gate keeps
+ * mid-half ecos out; the loadout gate keeps overtime half-starts out (those have
+ * rifle money). Drives the pistol icon on the round bubble.
+ */
+const pistolRounds = computed<Set<number>>(() => {
+  const out = new Set<number>()
+  const halfStarts = new Set<number>(sideSwaps.value)
+  const firstReal = props.roundLabels.findIndex((l) => l !== '0')
+  if (firstReal >= 0) halfStarts.add(firstReal)
+  const tr = props.demoTickRate || 64
+  for (const i of halfStarts) {
+    const r = props.rounds[i]
+    if (!r) continue
+    const hi = r.startTick + 20 * tr // only the opening of the round
+    let pistolOnly = true
+    for (const f of r.frames) {
+      if (f.tick < r.startTick || f.tick > hi) continue
+      if (f.players.some((p) => !PISTOL_LOADOUT.has(p.weapon))) {
+        pistolOnly = false
+        break
+      }
+    }
+    if (pistolOnly) out.add(i)
+  }
+  return out
+})
+
 // The timeline works in fraction [0,1]; we convert to the nearest frame.
 function onSeek(fraction: number) {
   emit('seek', Math.round(fraction * Math.max(0, props.frameCount - 1)))
@@ -102,6 +175,13 @@ function fmt(s: number) {
   const sec = Math.floor(s % 60)
   return `${m}:${sec.toString().padStart(2, '0')}`
 }
+
+// Time readout: shows elapsed round time by default; click to toggle to a
+// countdown (time left until the round ends).
+const showRemaining = ref(false)
+const timeLabel = computed(() =>
+  showRemaining.value ? `-${fmt(Math.max(0, totalT.value - props.currentT))}` : fmt(props.currentT),
+)
 
 // Round button colors: background in the winner color (solid when active).
 function roundStyle(r: Round, active: boolean): Record<string, string> | undefined {
@@ -160,24 +240,50 @@ onMounted(() => centerCurrent('auto'))
           class="flex gap-1.5 overflow-x-auto px-0.5 pb-3 pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           @wheel="onRoundsWheel"
         >
-          <button
-            v-for="(r, i) in rounds"
-            :key="r.number"
-            :ref="(el) => setRoundEl(el as Element | null, i)"
-            v-tooltip="`${t('viewer.round')} ${roundLabels[i]}${r.winner ? ` · ${r.winner}` : ''}`"
-            class="h-7 w-7 shrink-0 cursor-pointer rounded-lg text-[0.65rem] font-mono transition-all duration-150"
-            :class="[
-              i === roundIndex
-                ? 'scale-110 font-semibold shadow-lg shadow-black/40'
-                : 'opacity-70 hover:scale-105 hover:opacity-100',
-              !r.winner &&
-                (i === roundIndex ? 'bg-ink-500 text-white' : 'bg-ink-700 text-ink-300'),
-            ]"
-            :style="roundStyle(r, i === roundIndex)"
-            @click="emit('selectRound', i)"
-          >
-            {{ roundLabels[i] }}
-          </button>
+          <template v-for="(r, i) in rounds" :key="r.number">
+            <!-- Side-swap marker (halftime / overtime): drawn before the round
+                 where the teams flipped CT<->T. -->
+            <div
+              v-if="sideSwaps.has(i)"
+              v-tooltip="t('viewer.sideSwap')"
+              class="flex shrink-0 items-center self-stretch px-0.5 text-ink-500"
+            >
+              <UiIcon name="swap" class="h-3.5 w-3.5" />
+            </div>
+            <button
+              :ref="(el) => setRoundEl(el as Element | null, i)"
+              v-tooltip="
+                roundLabels[i] === '0'
+                  ? t('viewer.knife')
+                  : `${t('viewer.round')} ${roundLabels[i]}${pistolRounds.has(i) ? ` · ${t('viewer.pistol')}` : ''}${r.winner ? ` · ${r.winner}` : ''}`
+              "
+              class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[0.65rem] font-mono transition-all duration-150"
+              :class="[
+                i === roundIndex
+                  ? 'scale-110 font-semibold shadow-lg shadow-black/40'
+                  : 'opacity-70 hover:scale-105 hover:opacity-100',
+                !r.winner &&
+                  (i === roundIndex ? 'bg-ink-500 text-white' : 'bg-ink-700 text-ink-300'),
+              ]"
+              :style="roundStyle(r, i === roundIndex)"
+              @click="emit('selectRound', i)"
+            >
+              <!-- Knife / pistol rounds: show the weapon icon instead of the label. -->
+              <img
+                v-if="roundLabels[i] === '0'"
+                src="/weapons/knife.svg"
+                :alt="t('viewer.knife')"
+                class="w-5 object-contain"
+              />
+              <img
+                v-else-if="pistolRounds.has(i)"
+                src="/weapons/glock.svg"
+                :alt="t('viewer.pistol')"
+                class="w-4 object-contain"
+              />
+              <template v-else>{{ roundLabels[i] }}</template>
+            </button>
+          </template>
         </div>
       </div>
     </div>
@@ -210,9 +316,13 @@ onMounted(() => centerCurrent('auto'))
         </button>
       </div>
 
-      <span class="shrink-0 font-mono text-xs text-ink-300 tabular-nums">
-        {{ fmt(currentT) }} / {{ fmt(totalT) }}
-      </span>
+      <button
+        v-tooltip="showRemaining ? t('viewer.showElapsed') : t('viewer.showRemaining')"
+        class="shrink-0 cursor-pointer font-mono text-xs text-ink-300 tabular-nums transition-colors hover:text-white"
+        @click="showRemaining = !showRemaining"
+      >
+        {{ timeLabel }}
+      </button>
 
       <ViewerTimeline
         :current-t="currentT"
