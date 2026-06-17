@@ -246,9 +246,11 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
             :class="
               clockAlert
                 ? 'border-live/50'
-                : r.clock.value.phase === 'freeze'
-                  ? 'border-sky-500/40'
-                  : 'border-ink-700'
+                : r.clock.value.phase === 'paused'
+                  ? 'border-amber-500/40'
+                  : r.clock.value.phase === 'freeze'
+                    ? 'border-sky-500/40'
+                    : 'border-ink-700'
             "
           >
             <span
@@ -264,11 +266,21 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
             />
             <UiIcon
               v-else
-              name="clock"
+              :name="r.clock.value.phase === 'paused' ? 'pause' : 'clock'"
               class="h-3.5 w-3.5"
-              :class="clockAlert ? 'text-live' : 'text-ink-400'"
+              :class="
+                clockAlert ? 'text-live' : r.clock.value.phase === 'paused' ? 'text-amber-400' : 'text-ink-400'
+              "
             />
+            <!-- During a pause the game clock is frozen: show "paused", no timer. -->
             <span
+              v-if="r.clock.value.phase === 'paused'"
+              class="text-sm font-semibold uppercase tracking-wide text-amber-300"
+            >
+              {{ t('viewer.paused') }}
+            </span>
+            <span
+              v-else
               class="font-mono text-xl tabular-nums"
               :class="
                 clockAlert ? 'text-live' : r.clock.value.phase === 'freeze' ? 'text-sky-200' : 'text-ink-50'

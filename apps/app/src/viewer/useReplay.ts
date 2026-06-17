@@ -9,7 +9,7 @@ export const SPEEDS = [1, 2, 4, 8] as const
 const ROUND_TIME = 115
 const BOMB_TIME = 40
 
-export type Clock = { phase: 'freeze' | 'round' | 'bomb'; seconds: number }
+export type Clock = { phase: 'freeze' | 'round' | 'bomb' | 'paused'; seconds: number }
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
@@ -107,6 +107,18 @@ export function useReplay() {
   const clock = computed<Clock>(() => {
     const t = currentT.value
     const { liveStart } = timeline.value
+    // Paused: during a tactical timeout / tech pause the game clock is frozen, so
+    // show "paused" instead of a running timer. The current absolute tick is the
+    // round's freeze start plus the elapsed round time.
+    const r = round.value
+    const pauses = replay.value?.pauses
+    if (r && pauses?.length) {
+      const fs = r.freezeStartTick ?? r.startTick
+      const tick = fs + t * (replay.value?.demoTickRate || 64)
+      if (pauses.some((p) => tick >= p.startTick && tick < p.endTick)) {
+        return { phase: 'paused', seconds: 0 }
+      }
+    }
     if (t < liveStart) {
       return { phase: 'freeze', seconds: Math.max(0, liveStart - t) }
     }
