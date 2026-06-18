@@ -6,7 +6,8 @@
  * leaves the machine.
  */
 import init, { parse_demo } from './parser/demo_parser.js'
-import type { VoiceData, VoiceTrack } from '@/viewer/schema'
+import type { VoiceData } from '@/viewer/schema'
+import { parseVoiceBlob } from '@/viewer/voiceCodec'
 
 export interface ParseRequest {
   buffer: ArrayBuffer
@@ -20,51 +21,6 @@ export type ParseResponse =
 
 // Initializes the wasm only once (idempotent across messages).
 let ready: Promise<unknown> | null = null
-
-/** Magic of the voice container emitted by the parser (see `build_voice_blob`). */
-const VOICE_MAGIC = 0x32564c43 // "CLV2" little-endian
-
-/**
- * Decodes the binary `CLV2` blob into a `VoiceData` structure. Layout (LE):
- * magic u32, sampleRate u32, tickRate u32, playerCount u32; per player:
- * steamId u64, packetCount u32; per packet: tick u32, level f32, len u32, opus[len].
- */
-function parseVoiceBlob(blob: Uint8Array): VoiceData {
-  const dv = new DataView(blob.buffer, blob.byteOffset, blob.byteLength)
-  let o = 0
-  if (blob.byteLength < 16 || dv.getUint32(o, true) !== VOICE_MAGIC) {
-    return { sampleRate: 48000, tickRate: 64, tracks: [] }
-  }
-  o += 4
-  const sampleRate = dv.getUint32(o, true)
-  o += 4
-  const tickRate = dv.getUint32(o, true)
-  o += 4
-  const playerCount = dv.getUint32(o, true)
-  o += 4
-
-  const tracks: VoiceTrack[] = []
-  for (let i = 0; i < playerCount; i++) {
-    const steamId = dv.getBigUint64(o, true).toString()
-    o += 8
-    const packetCount = dv.getUint32(o, true)
-    o += 4
-    const packets = new Array(packetCount)
-    for (let j = 0; j < packetCount; j++) {
-      const tick = dv.getUint32(o, true)
-      o += 4
-      const level = dv.getFloat32(o, true)
-      o += 4
-      const len = dv.getUint32(o, true)
-      o += 4
-      // Copy the slice into its own buffer (the original blob is discarded).
-      packets[j] = { tick, level, data: blob.slice(o, o + len) }
-      o += len
-    }
-    tracks.push({ steamId, packets })
-  }
-  return { sampleRate, tickRate, tracks }
-}
 
 self.onmessage = async (e: MessageEvent<ParseRequest>) => {
   const { buffer, frameRate = 8 } = e.data
