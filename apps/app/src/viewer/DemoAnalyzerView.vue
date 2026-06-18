@@ -11,6 +11,7 @@ import { useDemoParser } from '@/viewer/useDemoParser'
 import { useRecentDemos, type RecentDemo } from '@/viewer/useRecentDemos'
 import { importArchive } from '@/viewer/demoArchive'
 import { MAP_CALIBRATION } from '@/viewer/calibration'
+import type { Replay } from '@/viewer/schema'
 import { useI18n } from '@/i18n'
 
 const { t } = useI18n()
@@ -57,6 +58,8 @@ const loadingId = ref<string | null>(null)
 const routeLoading = ref(false)
 // Id of the currently open demo (avoids reloading when navigating to itself).
 const currentId = ref<string | null>(null)
+// URL of the currently open external replay (Major demo), if any (same purpose).
+const currentSrc = ref<string | null>(null)
 type Tab = 'viewer' | 'heatmap' | 'grenades' | 'economy'
 // The active tab is driven by the URL: `/:id` is the 2D stage, `/:id/heatmaps`
 // the heatmap, `/:id/grenades` the grenades page, `/:id/economy` the economy page.
@@ -208,18 +211,49 @@ async function loadById(id: string) {
   }
 }
 
-// The URL drives: /:id opens that demo; / shows the upload.
+/**
+ * Loads a pre-parsed replay JSON from a URL (e.g. a Major demo committed to the
+ * repo, fetched on demand), hydrating without re-parsing. Not persisted to history.
+ */
+async function loadExternal(url: string, label: string) {
+  if (currentSrc.value === url && parser.status.value === 'done') return
+  routeLoading.value = true
+  currentId.value = null
+  try {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const replay = (await res.json()) as Replay
+    parser.hydrate({ replay, voice: null, fileName: label })
+    currentSrc.value = url
+  } catch {
+    currentSrc.value = null
+    router.replace('/')
+  } finally {
+    routeLoading.value = false
+  }
+}
+
+// The URL drives: /:id opens a demo from history; `?replay=<url>` streams an
+// external replay (Major demos); `/` alone shows the upload.
 watch(
-  () => route.params.id,
-  (raw) => {
-    const id = Array.isArray(raw) ? raw[0] : raw
-    if (!id) {
-      parser.reset()
-      currentId.value = null
+  () => [route.params.id, route.query.replay, route.query.name] as const,
+  ([rawId, rawReplay, rawName]) => {
+    const id = Array.isArray(rawId) ? rawId[0] : rawId
+    if (id) {
+      currentSrc.value = null
+      if (id === currentId.value && parser.status.value === 'done') return
+      void loadById(id)
       return
     }
-    if (id === currentId.value && parser.status.value === 'done') return
-    void loadById(id)
+    const url = Array.isArray(rawReplay) ? rawReplay[0] : rawReplay
+    if (url) {
+      const label = (Array.isArray(rawName) ? rawName[0] : rawName) ?? ''
+      void loadExternal(url, label)
+      return
+    }
+    parser.reset()
+    currentId.value = null
+    currentSrc.value = null
   },
   { immediate: true },
 )

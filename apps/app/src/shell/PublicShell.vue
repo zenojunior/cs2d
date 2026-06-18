@@ -32,16 +32,27 @@ function choose(code: LocaleCode) {
     <header
       class="relative z-20 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-ink-800/80 bg-ink-950/80 px-4 backdrop-blur-md sm:px-6"
     >
-      <RouterLink
-        to="/"
-        :aria-label="t('shell.home')"
-        class="flex cursor-pointer items-center gap-2"
-        @pointerenter="brandHover = true"
-        @pointerleave="brandHover = false"
-      >
-        <Cs2Mark size="sm" :animate="brandHover" />
-        <span class="hidden text-sm font-medium text-ink-300 sm:inline">CS Demo Analyzer</span>
-      </RouterLink>
+      <div class="flex items-center gap-2 sm:gap-4">
+        <RouterLink
+          to="/"
+          :aria-label="t('shell.home')"
+          class="flex cursor-pointer items-center gap-2"
+          @pointerenter="brandHover = true"
+          @pointerleave="brandHover = false"
+        >
+          <Cs2Mark size="sm" :animate="brandHover" />
+          <span class="hidden text-sm font-medium text-ink-300 sm:inline">CS Demo Analyzer</span>
+        </RouterLink>
+
+        <RouterLink
+          to="/cologne-major-2026"
+          :aria-label="t('shell.major')"
+          class="flex cursor-pointer items-center gap-1.5 rounded-md border border-ink-700 bg-ink-900/60 px-2 py-1 text-xs text-ink-200 transition-colors hover:bg-ink-800"
+        >
+          <UiIcon name="trophy" class="h-3.5 w-3.5 text-ink-400" />
+          <span class="hidden font-medium sm:inline">{{ t('shell.major') }}</span>
+        </RouterLink>
+      </div>
 
       <!-- Center: tool actions (via Teleport, e.g. tabs) -->
       <div id="publicbar-center" class="absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center" />

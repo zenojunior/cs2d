@@ -10,6 +10,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/AboutPage.vue'),
   },
   {
+    path: '/cologne-major-2026',
+    name: 'major',
+    component: () => import('@/pages/MajorPage.vue'),
+  },
+  {
     path: '/:id?/:tab?',
     name: 'demoviewer',
     component: () => import('@/viewer/DemoAnalyzerView.vue'),
