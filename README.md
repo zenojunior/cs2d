@@ -53,7 +53,7 @@ Supported uploads: `.dem`, `.gz`, `.zip` and `.zst` (CS2 / Source 2).
 
 ## Getting started
 
-Requirements: **Node.js 20+** and **pnpm**.
+Requirements: **Node.js 24+** and **pnpm**.
 
 ```bash
 pnpm install
