@@ -8,7 +8,7 @@
 
 # ---- 1. Dependencies ---------------------------------------------------------
 # Isolated so this layer only rebuilds when manifests or the lockfile change.
-FROM node:22-slim AS deps
+FROM node:24-slim AS deps
 WORKDIR /app
 
 # corepack ships with Node and pins pnpm from the root "packageManager" field.
@@ -23,7 +23,7 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
 # ---- 2. Build ----------------------------------------------------------------
-FROM node:22-slim AS build
+FROM node:24-slim AS build
 WORKDIR /app
 RUN corepack enable
 
@@ -39,8 +39,8 @@ RUN pnpm build
 # ---- 3. Runtime --------------------------------------------------------------
 # Minimal Node image: a tiny dependency-free server (server.mjs) serves ./dist
 # with SPA history fallback and the correct application/wasm MIME type. No npm
-# install needed at runtime, so the image stays small.
-FROM node:22-slim AS runtime
+# install needed at runtime, so the Alpine base keeps the image small.
+FROM node:24-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
