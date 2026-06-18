@@ -1,27 +1,35 @@
 # CS Demo Analyzer
 
-Watch and analyze **Counter-Strike 2** demos in 2D, right in your browser.
-No install, no database, no Docker, no uploads: drop a `.dem` file and rewatch
-the match round by round. Everything is parsed locally on your machine, and not
-a single byte of the demo leaves your browser.
+The fastest free browser-based 2D replay analyzer for **Counter-Strike 2**
+demos. Drop a `.dem` file and rewatch the match round by round: no install,
+no upload, not a single byte leaving your machine.
 
 ![2D replay of a CS2 demo on de_dust2](apps/app/public/showcase.webp)
 
 ## Why
 
-I had been using other tools to analyze demos, but there was always a lot of
-bureaucracy to get them running: installing a database, spinning up a Docker
-container, configuring all sorts of things. And none of them had a good visual
-experience. Over the years I kept improving at UI/UX and front-end development,
-so I wanted to build the tool I always wished I had, and make it open source so
-it can grow with the community's support.
+I had been analyzing demos with other tools for years, and the experience always
+got in the way. Most of them ask you to install a database, spin up a Docker
+container and wire up a pile of configuration before you can watch a single
+round, and even then the visual side felt like an afterthought.
+
+I kept getting better at UI/UX and front-end work, so I decided to build the
+tool I always wished existed: something that opens instantly, looks good, and
+runs entirely on your machine. Making it open source means it can keep growing
+with the community instead of just scratching my own itch.
 
 ## Features
 
-- **2D replay** with round-by-round playback of player movement, duels and timing.
+- **2D replay** with round-by-round playback of player movement, duels and timing,
+  and auto-advance between rounds.
 - **Heatmaps** for deaths, presence and utility, filterable by side, player and round.
 - **Grenade trajectories** for smokes, molotovs, HEs, flashes and decoys, with the
-  option to jump straight into the replay from a throw.
+  option to jump straight into the replay from a throw, plus in-replay visual
+  effects for grenades and the bomb explosion.
+- **Economy** breakdown per round: buy types, equipment value and money flow.
+- **Replay comments**: annotate specific moments and revisit them later.
+- **Export / import**: save an analyzed match as a compact `.cs2dv` file and
+  reopen it instantly, without re-parsing the original demo.
 - **Player comms**: in-game voice replayed alongside the action.
 - **100% client-side**: the demo is read and parsed in a Web Worker; nothing is
   ever sent to a server.
@@ -86,6 +94,15 @@ This project stands on the shoulders of great open-source work:
   Zstandard decoder for `.zst` demos.
 - [`fflate`](https://github.com/101arrowz/fflate): fast, tiny gzip/zip inflate
   used to read compressed demos.
+
+## Related projects
+
+Other great open-source tools for Counter-Strike demos, worth checking out:
+
+- [CS Demo Manager](https://github.com/akiver/cs-demo-manager) by akiver: a
+  full-featured desktop app to manage and analyze Counter-Strike demos.
+- [csgo-2d-demo-viewer](https://github.com/sparkoo/csgo-2d-demo-viewer) by
+  sparkoo: a browser-based 2D Counter-Strike demo viewer.
 
 ## Contributing
 
