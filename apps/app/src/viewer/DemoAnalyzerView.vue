@@ -48,6 +48,9 @@ const importing = ref(false)
 const importError = ref<string | null>(null)
 const dragging = ref(false)
 const input = ref<HTMLInputElement | null>(null)
+// Dedicated picker for the import button, scoped to .cs2dv so its label stays
+// truthful (game demos go through the dropzone above).
+const importInput = ref<HTMLInputElement | null>(null)
 // Id of the recent demo currently being reloaded from local storage.
 const loadingId = ref<string | null>(null)
 // Loading a demo from the URL (/:id).
@@ -111,6 +114,10 @@ function onGrenadeJump(payload: { roundIndex: number; t: number }) {
 
 function pick() {
   input.value?.click()
+}
+
+function pickImport() {
+  importInput.value?.click()
 }
 
 async function onFiles(files: FileList | null | undefined) {
@@ -224,6 +231,13 @@ function onDrop(e: DragEvent) {
 
 function onInput(e: Event) {
   void onFiles((e.target as HTMLInputElement).files)
+}
+
+function onImportInput(e: Event) {
+  const el = e.target as HTMLInputElement
+  void onFiles(el.files)
+  // Allow re-picking the same file (no change event fires otherwise).
+  el.value = ''
 }
 
 // Reopening a demo from history = navigate to the id (the URL drives loading).
@@ -429,20 +443,30 @@ function fmtDate(ms: number) {
             />
           </div>
 
-          <!-- Import an exported replay (.cs2dv); reuses the file picker -->
-          <button
-            type="button"
-            class="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-ink-800 bg-ink-900/40 px-4 py-2.5 text-sm text-ink-300 transition-colors hover:border-ink-600 hover:bg-ink-900/70 hover:text-ink-100 disabled:cursor-not-allowed disabled:opacity-60"
-            :disabled="importing"
-            @click="pick"
-          >
-            <UiIcon
-              :name="importing ? 'loader' : 'download'"
-              class="h-4 w-4"
-              :class="{ 'animate-spin': importing }"
+          <!-- Import an exported replay (.cs2dv); scoped picker, not the demo dropzone -->
+          <div class="mt-3">
+            <button
+              type="button"
+              class="flex w-full items-center justify-center gap-2 rounded-lg border border-ink-800 bg-ink-900/40 px-4 py-2.5 text-sm text-ink-300 transition-colors hover:border-ink-600 hover:bg-ink-900/70 hover:text-ink-100 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="importing"
+              @click="pickImport"
+            >
+              <UiIcon
+                :name="importing ? 'loader' : 'download'"
+                class="h-4 w-4"
+                :class="{ 'animate-spin': importing }"
+              />
+              {{ importing ? t('analyzer.importing') : t('analyzer.import') }}
+            </button>
+            <p class="mt-1.5 text-center text-xs text-ink-500">{{ t('analyzer.importHint') }}</p>
+            <input
+              ref="importInput"
+              type="file"
+              accept=".cs2dv"
+              class="hidden"
+              @change="onImportInput"
             />
-            {{ importing ? t('analyzer.importing') : t('analyzer.import') }}
-          </button>
+          </div>
 
           <div
             v-if="parser.status.value === 'error'"
