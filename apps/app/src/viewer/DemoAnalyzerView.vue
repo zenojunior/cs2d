@@ -64,7 +64,9 @@ type Tab = 'viewer' | 'heatmap' | 'grenades' | 'economy'
 // The active tab is driven by the URL: `/:id` is the 2D stage, `/:id/heatmaps`
 // the heatmap, `/:id/grenades` the grenades page, `/:id/economy` the economy page.
 const activeTab = computed<Tab>(() => {
-  const raw = route.params.tab
+  // History demos carry the tab as a path segment (/:id/:tab); external replays
+  // (?replay=) have no id, so the tab rides along as ?tab=.
+  const raw = route.params.tab || route.query.tab
   const tab = Array.isArray(raw) ? raw[0] : raw
   if (tab === 'heatmaps') return 'heatmap'
   if (tab === 'grenades') return 'grenades'
@@ -77,7 +79,21 @@ const TAB_SEGMENT: Record<Tab, string> = {
   grenades: '/grenades',
   economy: '/economy',
 }
+// Tab name used in the ?tab= query for external replays ('viewer' = no param).
+const TAB_QUERY: Record<Tab, string | undefined> = {
+  viewer: undefined,
+  heatmap: 'heatmaps',
+  grenades: 'grenades',
+  economy: 'economy',
+}
 function goTab(tab: Tab) {
+  // External replay: keep ?replay=/?name= and switch the tab via ?tab=.
+  if (currentSrc.value) {
+    const query = { ...route.query, tab: TAB_QUERY[tab] }
+    if (!query.tab) delete query.tab
+    router.push({ path: '/', query })
+    return
+  }
   const id = currentId.value
   if (id) router.push(`/${id}${TAB_SEGMENT[tab]}`)
 }
