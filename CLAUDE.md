@@ -12,6 +12,19 @@
 - Run from `apps/app`: `pnpm dev`, `pnpm build`, `pnpm type-check`.
 - Everything runs client-side: the demo is parsed in the browser (WASM); nothing
   is uploaded to any server.
+- The viewer lives in `apps/app/src/viewer/`, grouped by concern (see its
+  `README.md`):
+  - `ingest/` — load bytes into a `Replay` (parser worker, decompression,
+    `.dca` archive, recent-demos store).
+  - `player/` — the replay stage and its parts (`ViewerStage`, `ViewerMap`,
+    controls, roster, killfeed, voice playback, timeline markers).
+  - `analysis/` — the stat tabs (economy, grenades, heatmap).
+  - `comments/` — replay annotations.
+  - `domain/` — pure types and data (`schema.ts`, `calibration.ts`, `colors.ts`,
+    weapon icons, round outcome).
+  - `parser/` — committed WASM artifacts (written by `build.sh`, do not move).
+  - `DemoAnalyzerView.vue` is the route entry (`router.ts`).
+  - Internal imports use the `@/viewer/<group>/<file>` alias.
 
 ## WASM demo parser
 
@@ -44,7 +57,7 @@ The radar images in `apps/app/public/maps/` come from the **cs2-map-icons** repo
 https://github.com/MurkyYT/cs2-map-icons/tree/main/images/radars
 
 When adding support for a new map, grab its radar from there and add a matching
-entry to `MAP_CALIBRATION` in `apps/app/src/viewer/calibration.ts` (using the
+entry to `MAP_CALIBRATION` in `apps/app/src/viewer/domain/calibration.ts` (using the
 official overview `pos_x` / `pos_y` / `scale` values). Without a calibration
 entry the viewer falls back to `de_dust2`, so the map renders with the wrong
 radar and coordinates.
