@@ -1,17 +1,19 @@
-// Parses a raw `.dem` into a full-match `Replay` JSON, consumed on demand by the
-// Major page's "watch" button. The JSON is committed under the repo-root
-// `replays/` folder (NOT public/) so it ships only via GitHub raw, never in the
-// app bundle or the PWA precache.
+// Parses a raw `.dem` into a compressed `.cs2dv` replay archive, consumed on
+// demand by the Major page's "watch" button. The archive is committed under the
+// repo-root `replays/` folder (NOT public/) so it ships only via GitHub raw,
+// never in the app bundle or the PWA precache. gzip cuts the ~40MB replay JSON
+// to ~1.5MB; the browser hydrates it via `importArchive`.
 //
 //   node scripts/process-major-demo.mjs <demPath> <outPath>
 //   e.g. node scripts/process-major-demo.mjs ../../aurora-vs-betboom-m1-nuke.dem \
-//          ../../replays/major-cologne-2026/qf1-nuke.json
+//          ../../replays/major-cologne-2026/qf1-nuke.cs2dv
 //
 // Large demos need extra heap: `node --max-old-space-size=8192 ...`.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { basename, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { initSync, parse_demo } from '../src/viewer/parser/demo_parser.js'
+import { encodeArchive } from './lib/cs2dv.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const [demArg, outArg] = process.argv.slice(2)
@@ -34,9 +36,10 @@ const replay = JSON.parse(replayJson)
 
 const outPath = resolve(process.cwd(), outArg)
 mkdirSync(dirname(outPath), { recursive: true })
-writeFileSync(outPath, replayJson)
+const archive = encodeArchive({ replay, fileName: basename(demArg) })
+writeFileSync(outPath, archive)
 console.log(
   `wrote ${outArg}: map=${replay.map} rounds=${replay.rounds.length} ` +
     `score=${replay.finalCtName} ${replay.finalScoreCt}-${replay.finalScoreT} ${replay.finalTName} ` +
-    `(${(replayJson.length / 1024 / 1024).toFixed(1)} MB)`,
+    `(${(replayJson.length / 1024 / 1024).toFixed(1)} MB JSON -> ${(archive.length / 1024 / 1024).toFixed(1)} MB .cs2dv)`,
 )

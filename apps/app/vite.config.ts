@@ -1,12 +1,39 @@
+import { createReadStream, existsSync, statSync } from 'node:fs'
+import { join, normalize, sep } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
+import type { Plugin } from 'vite'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// Dev-only: serve the repo `replays/` dir (Major demos, outside public/ so they
+// stay out of the bundle) under `/_replays/`, matching the prod replay base
+// (raw.githubusercontent). Lets `?replay=major-cologne-2026/qf1-nuke.cs2dv`
+// resolve the same locally. See src/viewer/ingest/replaySource.ts.
+function serveRepoReplays(): Plugin {
+  const dir = fileURLToPath(new URL('../../replays', import.meta.url))
+  return {
+    name: 'serve-repo-replays',
+    configureServer(server) {
+      server.middlewares.use('/_replays', (req, res, next) => {
+        const rel = decodeURIComponent((req.url ?? '').split('?')[0]).replace(/^\/+/, '')
+        const full = normalize(join(dir, rel))
+        if (!full.startsWith(dir + sep) || !existsSync(full) || !statSync(full).isFile()) {
+          next()
+          return
+        }
+        res.setHeader('Content-Type', full.endsWith('.cs2dv') ? 'application/octet-stream' : 'application/json')
+        createReadStream(full).pipe(res)
+      })
+    },
+  }
+}
+
 // App isolado do analisador de demo 2D (CS2 Demo Viewer), com porta própria.
 export default defineConfig({
   plugins: [
+    serveRepoReplays(),
     vue(),
     tailwindcss(),
     VitePWA({

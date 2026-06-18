@@ -10,8 +10,8 @@ import DemoPreviewLoop from '@/viewer/player/DemoPreviewLoop.vue'
 import { useDemoParser } from '@/viewer/ingest/useDemoParser'
 import { useRecentDemos, type RecentDemo } from '@/viewer/ingest/useRecentDemos'
 import { importArchive } from '@/viewer/ingest/demoArchive'
+import { fetchReplay } from '@/viewer/ingest/replaySource'
 import { MAP_CALIBRATION } from '@/viewer/domain/calibration'
-import type { Replay } from '@/viewer/domain/schema'
 import { useI18n } from '@/i18n'
 
 const { t } = useI18n()
@@ -228,19 +228,19 @@ async function loadById(id: string) {
 }
 
 /**
- * Loads a pre-parsed replay JSON from a URL (e.g. a Major demo committed to the
- * repo, fetched on demand), hydrating without re-parsing. Not persisted to history.
+ * Loads a pre-parsed replay from a `?replay=` ref (e.g. a Major demo committed
+ * to the repo, fetched on demand), hydrating without re-parsing. The ref can be
+ * a short relative path (`major-cologne-2026/qf1-nuke.cs2dv`) or a full URL; see
+ * `resolveReplayRef`. Not persisted to history.
  */
-async function loadExternal(url: string, label: string) {
-  if (currentSrc.value === url && parser.status.value === 'done') return
+async function loadExternal(ref: string, label: string) {
+  if (currentSrc.value === ref && parser.status.value === 'done') return
   routeLoading.value = true
   currentId.value = null
   try {
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const replay = (await res.json()) as Replay
-    parser.hydrate({ replay, voice: null, fileName: label })
-    currentSrc.value = url
+    const { replay, voice } = await fetchReplay(ref)
+    parser.hydrate({ replay, voice, fileName: label })
+    currentSrc.value = ref
   } catch {
     currentSrc.value = null
     router.replace('/')

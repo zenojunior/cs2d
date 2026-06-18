@@ -11,16 +11,17 @@ export interface MajorTeam {
 
 export interface MajorMapReplay {
   map: string
-  // Full URL of the pre-parsed replay JSON, fetched on demand; null until the
-  // demo has been parsed and committed. See REPLAY_BASE.
+  // Relative replay ref passed to `?replay=`, resolved by `resolveReplayRef`
+  // (repo `replays/` dir in dev, raw.githubusercontent in prod); null until the
+  // demo has been parsed and committed.
   replay: string | null
 }
 
-// Replays are served straight from the open-source repo (raw.githubusercontent
-// sends `Access-Control-Allow-Origin: *`), so the ~50MB files stay out of the
-// app bundle and the PWA precache and are downloaded only when the user hits play.
-const REPLAY_BASE =
-  'https://raw.githubusercontent.com/zenojunior/cs-demo-analyzer/main/replays/major-cologne-2026'
+// Replays live in the repo `replays/` dir, outside the app bundle and PWA
+// precache, fetched on demand (in prod from raw.githubusercontent, which sends
+// `Access-Control-Allow-Origin: *`). Refs are relative so the same value
+// resolves locally too; see `resolveReplayRef`.
+const REPLAY_DIR = 'major-cologne-2026'
 
 export type MajorRound = 'quarterfinal' | 'semifinal' | 'final'
 
@@ -69,8 +70,8 @@ export const MATCHES: MajorMatch[] = [
     scoreA: 2,
     scoreB: 0,
     maps: [
-      { map: 'de_nuke', replay: `${REPLAY_BASE}/qf1-nuke.json` },
-      { map: 'de_anubis', replay: `${REPLAY_BASE}/qf1-anubis.json` },
+      { map: 'de_nuke', replay: `${REPLAY_DIR}/qf1-nuke.cs2dv` },
+      { map: 'de_anubis', replay: `${REPLAY_DIR}/qf1-anubis.cs2dv` },
     ],
   },
   {
