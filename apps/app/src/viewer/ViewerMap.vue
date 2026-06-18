@@ -182,6 +182,8 @@ function drawGrenade(
   t: number,
 ) {
   if (!ctx) return
+  // Multi-floor maps: only the floor where the grenade went off (effect + timer).
+  if (!zOnActiveLevel(ev.z)) return
   const { x, y } = w2s(ev.x, ev.y)
   const span = Math.max(0.001, ev.endT - ev.t)
   const k = clamp((t - ev.t) / span, 0, 1)
@@ -347,6 +349,7 @@ function drawScorch(
   ev: Extract<Round['events'][number], { type: 'grenade' }>,
 ) {
   if (!ctx) return
+  if (!zOnActiveLevel(ev.z)) return
   const { x, y } = w2s(ev.x, ev.y)
   // HE blast covers a smaller area than fire
   const R = unitsToScreen(ev.kind === 'he' ? 90 : 150)
@@ -779,6 +782,26 @@ function onActiveLevel(p: PlayerState) {
 function zOnActiveLevel(z: number | null | undefined) {
   const lvl = props.levelRange
   return !lvl || z == null || (z >= lvl.minZ && z < lvl.maxZ)
+}
+
+/** Detonation Z of a flight path (its points carry none): the nearest grenade
+ *  event of the same kind in the round. Null when there is no match, which the
+ *  level filter then treats as visible. */
+function grenadePathZ(path: Round['grenadePaths'][number]): number | null {
+  const evs = props.round?.events
+  const last = path.points[path.points.length - 1]
+  if (!evs || !last) return null
+  let best: number | null = null
+  let bestDist = Infinity
+  for (const e of evs) {
+    if (e.type !== 'grenade' || e.kind !== path.kind) continue
+    const d = Math.hypot(e.x - last.x, e.y - last.y)
+    if (d < bestDist) {
+      bestDist = d
+      best = e.z
+    }
+  }
+  return best
 }
 
 function drawPlayer(p: PlayerState, death: { x: number; y: number } | undefined) {
@@ -1392,8 +1415,10 @@ function draw() {
     if (ev.type === 'kill' && ev.t <= killCutoff) deaths.set(ev.victimSteamId, { x: ev.x, y: ev.y })
   }
 
-  // arcs of grenades in flight (under the detonations)
-  for (const path of props.round?.grenadePaths ?? []) drawGrenadePath(path, t)
+  // arcs of grenades in flight (under the detonations), active floor only
+  for (const path of props.round?.grenadePaths ?? []) {
+    if (zOnActiveLevel(grenadePathZ(path))) drawGrenadePath(path, t)
+  }
   for (const ev of props.round?.events ?? []) {
     if (ev.type !== 'grenade') continue
     if (t >= ev.t && t <= ev.endT) drawGrenade(ev, t)
