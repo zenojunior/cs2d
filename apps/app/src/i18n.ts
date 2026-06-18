@@ -34,6 +34,12 @@ export function setLocale(code: LocaleCode) {
 
 const messages: Record<LocaleCode, Record<string, unknown>> = {
   pt: {
+    pwa: {
+      offlineReady: 'Pronto para funcionar offline.',
+      updateAvailable: 'Nova versão disponível.',
+      reload: 'Atualizar',
+      dismiss: 'Agora não',
+    },
     shell: {
       home: 'Início',
       github: 'Ver no GitHub',
@@ -228,6 +234,12 @@ const messages: Record<LocaleCode, Record<string, unknown>> = {
   },
 
   en: {
+    pwa: {
+      offlineReady: 'Ready to work offline.',
+      updateAvailable: 'A new version is available.',
+      reload: 'Reload',
+      dismiss: 'Not now',
+    },
     shell: {
       home: 'Home',
       github: 'View on GitHub',
@@ -422,6 +434,12 @@ const messages: Record<LocaleCode, Record<string, unknown>> = {
   },
 
   es: {
+    pwa: {
+      offlineReady: 'Listo para funcionar sin conexión.',
+      updateAvailable: 'Hay una nueva versión disponible.',
+      reload: 'Actualizar',
+      dismiss: 'Ahora no',
+    },
     shell: {
       home: 'Inicio',
       github: 'Ver en GitHub',
