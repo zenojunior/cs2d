@@ -906,6 +906,15 @@ impl Collector {
             if steam == 0 {
                 continue;
             }
+            // Skip coaches: they own a CCSPlayerController and a pawn that is
+            // stuck on a playing team (CT/T), but the controller itself sits on
+            // the spectator team (m_iTeamNum == 1). Real players have the
+            // controller on the same playing side as their pawn. Gating on the
+            // controller's team drops the coach, who would otherwise show up as
+            // a 6th "player" permanently dead at a fixed spot.
+            if side_of(prop_i32(ctrl, "m_iTeamNum")).is_none() {
+                continue;
+            }
             let steam_id = steam.to_string();
             let handle = prop_u32(ctrl, "m_hPlayerPawn");
             let pawn = match ctx.entities().get_by_handle(handle as usize) {
