@@ -94,3 +94,15 @@ export function worldToFraction(
   const fy = (cal.posY - y) / cal.scale / RADAR_PX
   return { fx, fy }
 }
+
+/** Inverse of `worldToFraction`: a radar fraction [0,1] back to game coordinates.
+ *  Used to turn a click on the map into a world anchor for a comment pin. */
+export function worldFromFraction(
+  cal: MapCalibration,
+  fx: number,
+  fy: number,
+): { x: number; y: number } {
+  const x = fx * RADAR_PX * cal.scale + cal.posX
+  const y = cal.posY - fy * RADAR_PX * cal.scale
+  return { x, y }
+}

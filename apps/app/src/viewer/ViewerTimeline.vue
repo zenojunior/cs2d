@@ -26,6 +26,19 @@ const emit = defineEmits<{ seek: [fraction: number] }>()
 const frac = (t: number) => (props.duration > 0 ? Math.min(1, Math.max(0, t / props.duration)) : 0)
 const progress = computed(() => frac(props.currentT))
 
+/** Style for a duration-band marker (comments): a faint fill from t to endT with
+ *  solid edges. */
+function markerBand(m: TimelineMarker) {
+  const a = frac(m.t)
+  const b = frac(m.endT ?? m.t)
+  return {
+    left: `${a * 100}%`,
+    width: `${Math.max(0.5, (b - a) * 100)}%`,
+    backgroundColor: `${m.color}33`,
+    borderColor: m.color,
+  }
+}
+
 // Freeze / post-round shaded bands (only when they have a visible width).
 const freezePct = computed(() => frac(props.liveStartT ?? 0) * 100)
 const postPct = computed(() => {
@@ -168,14 +181,21 @@ function leave() {
       <div class="h-full bg-ink-500" :style="{ width: progress * 100 + '%' }" />
     </div>
 
-    <!-- markers (vertical lines): plant, first kill, etc. -->
-    <div
-      v-for="(m, i) in markers"
-      :key="m.kind + i"
-      v-tooltip="m.label"
-      class="absolute inset-y-3 w-[3px] -translate-x-1/2 rounded-full transition-transform duration-150 group-hover:scale-y-110"
-      :style="{ left: frac(m.t) * 100 + '%', backgroundColor: m.color }"
-    />
+    <!-- markers: comments render as a band [t, endT]; the rest as vertical risks -->
+    <template v-for="(m, i) in markers" :key="m.kind + i">
+      <div
+        v-if="m.endT != null"
+        v-tooltip="m.label"
+        class="absolute inset-y-2.5 rounded-sm border-x"
+        :style="markerBand(m)"
+      />
+      <div
+        v-else
+        v-tooltip="m.label"
+        class="absolute inset-y-3 w-[3px] -translate-x-1/2 rounded-full transition-transform duration-150 group-hover:scale-y-110"
+        :style="{ left: frac(m.t) * 100 + '%', backgroundColor: m.color }"
+      />
+    </template>
 
     <!-- hover line: follows the cursor over the track -->
     <div

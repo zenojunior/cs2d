@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import type { Replay, VoiceData } from '@/viewer/schema'
+import type { Replay, ReplayComment, VoiceData } from '@/viewer/schema'
 
 /**
  * Local history of already-analyzed demos. Since the raw demo never leaves the
@@ -38,7 +38,11 @@ export interface RecentDemoPayload {
 const INDEX_KEY = 'cs2dv:recent-demos'
 const DB_NAME = 'cs2dv-demos'
 const STORE = 'payloads'
-const DB_VERSION = 1
+const STORE_COMMENTS = 'comments'
+// v3: forces onupgradeneeded to run again for databases that reached v2 without
+// the `comments` store (an interrupted/intermediate dev upgrade left some without
+// it), recreating any missing store via the idempotent guards below.
+const DB_VERSION = 3
 /** How many demos to keep in history (the oldest are dropped). */
 const MAX = 6
 
@@ -50,6 +54,9 @@ function openDb(): Promise<IDBDatabase> {
     req.onupgradeneeded = () => {
       const db = req.result
       if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE)
+      // v2: user comments, keyed by demo id. Kept apart from the heavy payload
+      // so editing a comment doesn't rewrite the whole replay+voice blob.
+      if (!db.objectStoreNames.contains(STORE_COMMENTS)) db.createObjectStore(STORE_COMMENTS)
     }
     req.onsuccess = () => resolve(req.result)
     req.onerror = () => reject(req.error)
@@ -90,6 +97,48 @@ async function idbDelete(id: string): Promise<void> {
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE, 'readwrite')
       tx.objectStore(STORE).delete(id)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+    })
+  } finally {
+    db.close()
+  }
+}
+
+async function idbGetComments(id: string): Promise<ReplayComment[] | undefined> {
+  const db = await openDb()
+  try {
+    return await new Promise<ReplayComment[] | undefined>((resolve, reject) => {
+      const tx = db.transaction(STORE_COMMENTS, 'readonly')
+      const req = tx.objectStore(STORE_COMMENTS).get(id)
+      req.onsuccess = () => resolve(req.result as ReplayComment[] | undefined)
+      req.onerror = () => reject(req.error)
+    })
+  } finally {
+    db.close()
+  }
+}
+
+async function idbPutComments(id: string, comments: ReplayComment[]): Promise<void> {
+  const db = await openDb()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_COMMENTS, 'readwrite')
+      tx.objectStore(STORE_COMMENTS).put(comments, id)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+    })
+  } finally {
+    db.close()
+  }
+}
+
+async function idbDeleteComments(id: string): Promise<void> {
+  const db = await openDb()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_COMMENTS, 'readwrite')
+      tx.objectStore(STORE_COMMENTS).delete(id)
       tx.oncomplete = () => resolve()
       tx.onerror = () => reject(tx.error)
     })
@@ -179,10 +228,13 @@ export function useRecentDemos() {
     }
 
     const next = [meta, ...list.value].slice(0, MAX)
-    // Delete from IndexedDB the payloads of demos that fell off the list.
+    // Delete from IndexedDB the payloads + comments of demos that fell off the list.
     const kept = new Set(next.map((d) => d.id))
     for (const old of list.value) {
-      if (!kept.has(old.id)) void idbDelete(old.id)
+      if (!kept.has(old.id)) {
+        void idbDelete(old.id)
+        void idbDeleteComments(old.id)
+      }
     }
     list.value = next
     writeIndex(next)
@@ -199,12 +251,33 @@ export function useRecentDemos() {
     }
   }
 
-  /** Removes a demo from history (index + payload). */
+  /** Removes a demo from history (index + payload + comments). */
   function remove(id: string): void {
     list.value = list.value.filter((d) => d.id !== id)
     writeIndex(list.value)
     void idbDelete(id)
+    void idbDeleteComments(id)
   }
 
-  return { list, save, load, remove }
+  /** Loads the comments stored for a demo (empty list when none/unavailable). */
+  async function loadComments(id: string): Promise<ReplayComment[]> {
+    try {
+      return (await idbGetComments(id)) ?? []
+    } catch (err) {
+      console.warn('[comments] load failed', err)
+      return []
+    }
+  }
+
+  /** Persists the comments for a demo (best-effort; ignored when storage fails). */
+  async function saveComments(id: string, comments: ReplayComment[]): Promise<void> {
+    try {
+      await idbPutComments(id, comments)
+    } catch (err) {
+      // Storage unavailable/over quota, or a value that can't be structured-cloned.
+      console.warn('[comments] save failed', err)
+    }
+  }
+
+  return { list, save, load, remove, loadComments, saveComments }
 }

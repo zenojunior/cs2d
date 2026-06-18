@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { onClickOutside } from '@vueuse/core'
-import type { Pause, Round, Side } from '@/viewer/schema'
+import type { Pause, ReplayComment, Round, Side } from '@/viewer/schema'
 import UiIcon from '@/ui/UiIcon.vue'
 import UiSwitch from '@/ui/UiSwitch.vue'
 import ViewerTimeline from './ViewerTimeline.vue'
@@ -38,6 +38,12 @@ const props = defineProps<{
   pauses?: Pause[]
   /** "Advanced" menu options (viewer behavior toggles). */
   advancedOptions?: { key: string; label: string; description?: string; enabled: boolean }[]
+  /** User comments anchored to the current round (drives the timeline markers). */
+  comments?: ReplayComment[]
+  /** Round indices that have at least one comment (drives the round badge). */
+  commentedRounds?: Set<number>
+  /** Whether comment mode (drop/edit pins on the map) is active. */
+  commentMode?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -50,6 +56,7 @@ const emit = defineEmits<{
   setMasterVolume: [value: number]
   setBalance: [value: number]
   toggleAdvanced: [key: string]
+  toggleCommentMode: []
 }>()
 
 // Vertical master-volume slider, revealed on hover over the comms button.
@@ -92,7 +99,7 @@ const postStartT = computed(() => {
 /** Freeze duration (s), for the badge — only when there is a real freeze. */
 const freezeSeconds = computed(() => liveStartT.value)
 
-const markers = computed(() => buildTimelineMarkers(props.round))
+const markers = computed(() => buildTimelineMarkers(props.round, props.comments))
 
 /**
  * Round indices where the teams switched sides versus the previous round
@@ -348,13 +355,12 @@ onMounted(() => centerCurrent('auto'))
                 class="w-4 object-contain"
               />
               <template v-else>{{ roundLabels[i] }}</template>
-              <!-- Pause indicator: amber dot on rounds with a tactical timeout
-                   or tech pause (e.g. major matches). Sits just outside the
-                   bubble; the track's pt leaves room so the clipped overflow
-                   (scroll + reveal animation) doesn't cut it. -->
+              <!-- Comment badge: white dot on rounds that have comments. Sits
+                   just outside the bubble; the track's pt leaves room so the
+                   clipped overflow (scroll + reveal animation) doesn't cut it. -->
               <span
-                v-if="roundPauses.get(i)?.length"
-                class="pointer-events-none absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-ink-900"
+                v-if="commentedRounds?.has(i)"
+                class="pointer-events-none absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-white ring-2 ring-ink-900"
               />
             </button>
           </template>
@@ -493,6 +499,16 @@ onMounted(() => centerCurrent('auto'))
           <span class="font-mono text-[10px] leading-none" :style="{ color: SIDE_COLOR.T }">T</span>
         </div>
       </div>
+
+      <!-- Comment mode: drop and edit comments on the map -->
+      <button
+        v-tooltip="t('viewer.comment.mode')"
+        class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-150"
+        :class="commentMode ? 'bg-surge-500 text-white' : 'text-ink-200 hover:bg-white/10 hover:text-white'"
+        @click="emit('toggleCommentMode')"
+      >
+        <UiIcon name="map-pin" class="h-4 w-4" />
+      </button>
 
       <!-- Advanced: menu of viewer behavior toggles -->
       <div v-if="advancedOptions?.length" ref="advancedMenu" class="relative shrink-0">

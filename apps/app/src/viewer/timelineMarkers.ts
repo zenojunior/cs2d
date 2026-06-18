@@ -1,4 +1,5 @@
-import type { Round } from '@/viewer/schema'
+import type { ReplayComment, Round } from '@/viewer/schema'
+import { commentDuration } from '@/viewer/commentAnchor'
 
 /**
  * Marker placed on the round timeline (an instant in seconds). This is the
@@ -9,15 +10,22 @@ import type { Round } from '@/viewer/schema'
 export interface TimelineMarker {
   /** Instante no round, em segundos. */
   t: number
+  /** Fim do intervalo, em segundos: marcadores com duração (comentários) viram
+   *  uma faixa de `t` a `endT`; sem ele, um risco pontual. */
+  endT?: number
   kind: 'plant' | 'firstkill' | 'comment' | 'explode'
-  /** Cor do risco na timeline. */
+  /** Cor do risco/faixa na timeline. */
   color: string
   /** Texto do tooltip. */
   label: string
 }
 
-/** Derives the markers for a round. Extensible: add new `push` calls here. */
-export function buildTimelineMarkers(round: Round | null): TimelineMarker[] {
+/** Derives the markers for a round. Extensible: add new `push` calls here.
+ *  `comments` are the user comments anchored to this round (already filtered). */
+export function buildTimelineMarkers(
+  round: Round | null,
+  comments?: ReplayComment[],
+): TimelineMarker[] {
   if (!round) return []
   const markers: TimelineMarker[] = []
 
@@ -36,7 +44,15 @@ export function buildTimelineMarkers(round: Round | null): TimelineMarker[] {
     markers.push({ t: explode.t, kind: 'explode', color: '#ff6b35', label: 'Bomba explodiu' })
   }
 
-  // Future: comments, 1vX, bomb site rotation, etc.
+  for (const c of comments ?? []) {
+    markers.push({
+      t: c.t,
+      endT: c.t + commentDuration(c),
+      kind: 'comment',
+      color: '#ffffff',
+      label: c.text || 'Comentário',
+    })
+  }
 
   return markers
 }

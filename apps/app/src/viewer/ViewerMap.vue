@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue'
-import type { GrenadePath, PlayerMeta, PlayerState, Round, Side } from '@/viewer/schema'
-import { worldToFraction, DEFAULT_BLAST_RADIUS, type MapCalibration } from './calibration'
+import type { CommentAnchor, CommentKind, GrenadePath, PlayerMeta, PlayerState, ReplayComment, Round, Side } from '@/viewer/schema'
+import { worldToFraction, worldFromFraction, DEFAULT_BLAST_RADIUS, type MapCalibration } from './calibration'
 import { SIDE_COLOR } from './colors'
+import { commentPositionAt, isCommentActive } from './commentAnchor'
+import { commentKindMeta } from './commentKinds'
 import { WEAPON_LABELS, weaponIconPath } from './weaponIcons'
 import { useI18n } from '@/i18n'
 
@@ -32,6 +34,37 @@ const props = defineProps<{
   levelRange?: { minZ: number; maxZ: number } | null
   /** Show the zoom buttons (hidden in the decorative preview). Default: true. */
   controls?: boolean
+  /** Comments anchored to the current round (pins drawn on the map). */
+  comments?: ReplayComment[]
+  /** Comment mode: a click on the map drops a new comment pin. */
+  commentMode?: boolean
+  /** Currently selected/edited comment (highlighted). */
+  activeCommentId?: string | null
+  /** An area rectangle being created (world coords), kept visible while its
+   *  popover is open so the selection never disappears. */
+  pendingArea?: { x: number; y: number; x2: number; y2: number; kind?: CommentKind } | null
+  /** Anchor of the open popover (world coords + kind), to keep it pinned as the
+   *  view or the anchored player moves. */
+  popoverAnchor?: { anchor: CommentAnchor; wx: number; wy: number } | null
+}>()
+
+const emit = defineEmits<{
+  /** A click in comment mode: world anchor + detected target + the reference rect in
+   *  viewport coords (vx,vy = top-left, vw,vh = size; a point is 0x0) the popover
+   *  anchors to, so an area opens above its top and flips below its bottom. */
+  dropComment: [{ x: number; y: number; anchor: CommentAnchor; vx: number; vy: number; vw: number; vh: number }]
+  /** A click on an existing comment: its id + reference rect in viewport coords. */
+  selectComment: [{ id: string; vx: number; vy: number; vw: number; vh: number }]
+  /** Right-click target: the comment under the cursor (with its reference rect) or
+   *  null, so the stage shows comment actions in the context menu (both modes). */
+  contextComment: [{ id: string; vx: number; vy: number; vw: number; vh: number } | null]
+  /** An area comment was resized: its new opposite corners in world coords. */
+  resizeArea: [{ id: string; x: number; y: number; x2: number; y2: number }]
+  /** Right-click target for a new comment (a player) or null, so the stage can
+   *  offer "add a comment" in the context menu. */
+  contextTarget: [{ x: number; y: number; anchor: CommentAnchor; vx: number; vy: number } | null]
+  /** The open popover's anchor moved on screen (view/player change): its new rect. */
+  popoverMoved: [{ vx: number; vy: number; vw: number; vh: number }]
 }>()
 
 const KILL_FADE = 1.4
@@ -113,6 +146,12 @@ function w2s(wx: number, wy: number) {
 }
 function unitsToScreen(u: number) {
   return (u / props.calibration.scale / 1024) * L * zoom.value
+}
+// --- screen -> world (inverse of w2s): turns a click into a map anchor ---
+function s2w(sx: number, sy: number) {
+  const fx = (sx - panX) / (L * zoom.value)
+  const fy = (sy - panY) / (L * zoom.value)
+  return worldFromFraction(props.calibration, fx, fy)
 }
 
 // Dot radius sized in game units (~hitbox), so it grows with the map on zoom
@@ -915,6 +954,413 @@ function drawPlayer(p: PlayerState, death: { x: number; y: number } | undefined)
   }
 }
 
+// --- comments -----------------------------------------------------------------
+/** Rounded-rect path helper (starts a fresh path). */
+function roundRect(x: number, y: number, w: number, h: number, r: number) {
+  if (!ctx) return
+  const rr = Math.min(r, w / 2, h / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + rr, y)
+  ctx.arcTo(x + w, y, x + w, y + h, rr)
+  ctx.arcTo(x + w, y + h, x, y + h, rr)
+  ctx.arcTo(x, y + h, x, y, rr)
+  ctx.arcTo(x, y, x + w, y, rr)
+  ctx.closePath()
+}
+
+/** Wraps `text` to at most `maxWidth` px, capping at `maxLines` (ellipsis). */
+function wrapText(text: string, maxWidth: number, maxLines: number): string[] {
+  if (!ctx) return [text]
+  const words = text.split(/\s+/).filter(Boolean)
+  const lines: string[] = []
+  let line = ''
+  for (const w of words) {
+    const test = line ? `${line} ${w}` : w
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line)
+      line = w
+      if (lines.length === maxLines) break
+    } else {
+      line = test
+    }
+  }
+  if (line && lines.length < maxLines) lines.push(line)
+  if (lines.join(' ').length < text.replace(/\s+/g, ' ').trim().length && lines.length) {
+    lines[lines.length - 1] = `${lines[lines.length - 1].replace(/\s*\S*$/, '')}…`
+  }
+  return lines
+}
+
+// Cache of Path2D per comment kind, for drawing the kind icon on the bubble.
+const kindIconCache = new Map<string, Path2D[]>()
+function kindIconPaths(kind: CommentKind | undefined): Path2D[] {
+  const meta = commentKindMeta(kind)
+  let p = kindIconCache.get(meta.kind)
+  if (!p) {
+    p = meta.paths.map((d) => new Path2D(d))
+    kindIconCache.set(meta.kind, p)
+  }
+  return p
+}
+
+/**
+ * Draws a comment text bubble around an anchor `box`: a small white rounded card
+ * with dark text, a soft shadow, the kind icon on the left, and a stem pointing
+ * into the box (a point/player uses a tiny box; an area uses its rectangle, so the
+ * card sits outside and the arrow dips inside). The text is capped so the card
+ * never gets large. It tries four placements (below/above/right/left) and picks
+ * the one that overlaps the fewest players and best stays on screen.
+ */
+function drawCommentBubble(
+  box: { cx: number; cy: number; halfW: number; halfH: number; inset: number },
+  text: string,
+  kind: CommentKind | undefined,
+  obstacles: { x: number; y: number; r: number }[],
+): { x: number; y: number; w: number; h: number } | null {
+  if (!ctx) return null
+  const PAD = 8
+  const MAXW = 180
+  const lineH = 15
+  const STEM = 8
+  const ICON = 15
+  const IGAP = 6
+  ctx.save()
+  ctx.font = '500 12.5px Inter, sans-serif'
+  const lines = wrapText(text, MAXW, 3)
+  let textW = 0
+  for (const l of lines) textW = Math.max(textW, ctx.measureText(l).width)
+  const w = ICON + IGAP + Math.min(MAXW, textW) + PAD * 2
+  const h = PAD * 2 + lines.length * lineH
+  const { cx, cy, halfW, halfH, inset } = box
+
+  // Candidates: the card sits just OUTSIDE the anchor box on each side, the stem
+  // starts at the card edge and the tip dips `inset` INSIDE the box (so for an
+  // area the arrow points into the rectangle). Preference order: below/above/R/L.
+  type Cand = { rx: number; ry: number; tipX: number; tipY: number; bx: number; by: number; horiz: boolean }
+  const cands: Cand[] = [
+    { rx: cx - w / 2, ry: cy + halfH + STEM, tipX: cx, tipY: cy + halfH - inset, bx: cx, by: cy + halfH + STEM, horiz: false },
+    { rx: cx - w / 2, ry: cy - halfH - STEM - h, tipX: cx, tipY: cy - halfH + inset, bx: cx, by: cy - halfH - STEM, horiz: false },
+    { rx: cx + halfW + STEM, ry: cy - h / 2, tipX: cx + halfW - inset, tipY: cy, bx: cx + halfW + STEM, by: cy, horiz: true },
+    { rx: cx - halfW - STEM - w, ry: cy - h / 2, tipX: cx - halfW + inset, tipY: cy, bx: cx - halfW - STEM, by: cy, horiz: true },
+  ]
+  const costOf = (c: Cand) => {
+    let cost = 0
+    // overlap with player circles (closest point on the card to each center)
+    for (const o of obstacles) {
+      const px = clamp(o.x, c.rx, c.rx + w)
+      const py = clamp(o.y, c.ry, c.ry + h)
+      const d = Math.hypot(o.x - px, o.y - py)
+      if (d < o.r) cost += o.r - d + 6
+    }
+    // staying on screen
+    cost += Math.max(0, 4 - c.rx) + Math.max(0, c.rx + w - (cw - 4))
+    cost += Math.max(0, 4 - c.ry) + Math.max(0, c.ry + h - (ch - 4))
+    return cost
+  }
+  let best = cands[0]
+  let bestCost = costOf(cands[0])
+  for (let i = 1; i < cands.length; i++) {
+    const cost = costOf(cands[i])
+    if (cost < bestCost - 0.5) {
+      best = cands[i]
+      bestCost = cost
+    }
+  }
+
+  // soft shadow so the white card stands out over the radar
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'
+  ctx.shadowBlur = 8
+  ctx.shadowOffsetY = 2
+  // stem: a small triangle from the card edge to the tip near the anchor
+  ctx.beginPath()
+  if (best.horiz) {
+    ctx.moveTo(best.bx, best.by - 5)
+    ctx.lineTo(best.bx, best.by + 5)
+  } else {
+    ctx.moveTo(best.bx - 5, best.by)
+    ctx.lineTo(best.bx + 5, best.by)
+  }
+  ctx.lineTo(best.tipX, best.tipY)
+  ctx.closePath()
+  ctx.fillStyle = '#ffffff'
+  ctx.fill()
+  // card
+  roundRect(best.rx, best.ry, w, h, 8)
+  ctx.fillStyle = '#ffffff'
+  ctx.fill()
+  // colored marker (the kind color) on the anchor tip
+  const meta = commentKindMeta(kind)
+  ctx.beginPath()
+  ctx.arc(best.tipX, best.tipY, 5, 0, Math.PI * 2)
+  ctx.fillStyle = meta.color
+  ctx.fill()
+  ctx.shadowColor = 'transparent'
+  ctx.shadowBlur = 0
+  ctx.shadowOffsetY = 0
+  ctx.lineWidth = 1.5
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)'
+  ctx.stroke()
+  // kind icon, left side, vertically centered
+  ctx.save()
+  ctx.translate(best.rx + PAD, best.ry + (h - ICON) / 2)
+  ctx.scale(ICON / 24, ICON / 24)
+  ctx.strokeStyle = meta.color
+  ctx.lineWidth = 2.2
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  for (const p of kindIconPaths(kind)) ctx.stroke(p)
+  ctx.restore()
+  // text: dark, shifted right of the icon
+  ctx.fillStyle = '#16181f'
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'top'
+  ctx.font = '500 12.5px Inter, sans-serif'
+  const textX = best.rx + PAD + ICON + IGAP
+  let ty = best.ry + PAD
+  for (const l of lines) {
+    ctx.fillText(l, textX, ty)
+    ty += lineH
+  }
+  ctx.restore()
+  return { x: best.rx, y: best.ry, w, h }
+}
+
+/** Draws a dashed rectangle for an area comment (or the live area drag), tinted by
+ *  the kind color. `highlighted` thickens the border and deepens the fill. */
+function drawAreaRect(
+  sx1: number,
+  sy1: number,
+  sx2: number,
+  sy2: number,
+  color: string,
+  highlighted: boolean,
+) {
+  if (!ctx) return
+  const x = Math.min(sx1, sx2)
+  const y = Math.min(sy1, sy2)
+  const w = Math.abs(sx2 - sx1)
+  const h = Math.abs(sy2 - sy1)
+  ctx.save()
+  ctx.globalAlpha = highlighted ? 0.22 : 0.13
+  ctx.fillStyle = color
+  ctx.fillRect(x, y, w, h)
+  ctx.globalAlpha = 1
+  ctx.lineWidth = highlighted ? 2.5 : 1.5
+  ctx.strokeStyle = color
+  ctx.setLineDash([5, 4])
+  ctx.strokeRect(x, y, w, h)
+  ctx.restore()
+}
+
+/** Draws a comment's text + kind icon as a label hugging the rectangle's top edge
+ *  (or below it, if there's no room above), for area comments during playback. */
+function drawAreaLabel(
+  rx: number,
+  ry: number,
+  rw: number,
+  rh: number,
+  text: string,
+  kind: CommentKind | undefined,
+): { x: number; y: number; w: number; h: number } | null {
+  if (!ctx) return null
+  const PAD = 6
+  const ICON = 14
+  const IGAP = 5
+  const lineH = 14
+  ctx.save()
+  ctx.font = '600 12px Inter, sans-serif'
+  const lines = wrapText(text, 200, 2)
+  let textW = 0
+  for (const l of lines) textW = Math.max(textW, ctx.measureText(l).width)
+  const w = ICON + IGAP + textW + PAD * 2
+  const h = PAD * 2 + lines.length * lineH
+  const lx = clamp(rx + rw / 2 - w / 2, 4, Math.max(4, cw - w - 4))
+  let ly = ry - h - 4
+  if (ly < 4) ly = Math.min(ry + rh + 4, ch - h - 4)
+  // background strip
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.45)'
+  ctx.shadowBlur = 6
+  ctx.shadowOffsetY = 1
+  roundRect(lx, ly, w, h, 6)
+  ctx.fillStyle = 'rgba(17, 18, 26, 0.92)'
+  ctx.fill()
+  ctx.shadowColor = 'transparent'
+  ctx.shadowBlur = 0
+  ctx.shadowOffsetY = 0
+  // kind icon
+  const meta = commentKindMeta(kind)
+  ctx.save()
+  ctx.translate(lx + PAD, ly + (h - ICON) / 2)
+  ctx.scale(ICON / 24, ICON / 24)
+  ctx.strokeStyle = meta.color
+  ctx.lineWidth = 2.2
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  for (const p of kindIconPaths(kind)) ctx.stroke(p)
+  ctx.restore()
+  // text
+  ctx.fillStyle = '#ffffff'
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'top'
+  ctx.font = '600 12px Inter, sans-serif'
+  let ty = ly + PAD
+  for (const l of lines) {
+    ctx.fillText(l, lx + PAD + ICON + IGAP, ty)
+    ty += lineH
+  }
+  ctx.restore()
+  return { x: lx, y: ly, w, h }
+}
+
+/** A rounded violet outline around a comment element, drawn while hovered to make
+ *  it read as clickable. */
+function drawHoverOutline(x: number, y: number, w: number, h: number, radius: number) {
+  if (!ctx) return
+  ctx.save()
+  roundRect(x - 2, y - 2, w + 4, h + 4, radius)
+  ctx.strokeStyle = '#a78bfa'
+  ctx.lineWidth = 2
+  ctx.stroke()
+  ctx.restore()
+}
+
+/** Draws the comment text inside the area rectangle (textInside mode), auto-sizing
+ *  the font to the box: binary-searches the largest size whose wrapped text fits
+ *  the available width and height. White with a shadow for legibility. */
+function drawAreaText(rx: number, ry: number, rw: number, rh: number, text: string) {
+  if (!ctx) return
+  const padX = 8
+  const padY = 6
+  const maxW = Math.max(12, rw - padX * 2)
+  const maxH = Math.max(12, rh - padY * 2)
+  ctx.save()
+  // Cap the font at the player-name size (same scale, see drawLabel for names) so
+  // area text never reads larger than a player label; then take the largest size
+  // whose fully-wrapped text fits both width and height.
+  const nameSize = 11 * clamp(playerRadius() / 16, 0.9, 2)
+  const MIN = 7
+  let lo = MIN
+  let hi = Math.min(Math.round(nameSize), Math.floor(maxH))
+  let chosen = MIN
+  while (lo <= hi) {
+    const fs = (lo + hi) >> 1
+    ctx.font = `600 ${fs}px Inter, sans-serif`
+    const lineH = Math.round(fs * 1.3)
+    const lines = wrapText(text, maxW, 999)
+    let widest = 0
+    for (const l of lines) widest = Math.max(widest, ctx.measureText(l).width)
+    if (widest <= maxW && lines.length * lineH <= maxH) {
+      chosen = fs
+      lo = fs + 1
+    } else {
+      hi = fs - 1
+    }
+  }
+  // Draw at the chosen size, clamping the line count to the box (ellipsis if a tiny
+  // box can't fit even the minimum size).
+  ctx.font = `600 ${chosen}px Inter, sans-serif`
+  const lineH = Math.round(chosen * 1.3)
+  const lines = wrapText(text, maxW, Math.max(1, Math.floor(maxH / lineH)))
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = '#ffffff'
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)'
+  ctx.shadowBlur = 4
+  const cx = rx + rw / 2
+  let ty = ry + rh / 2 - ((lines.length - 1) * lineH) / 2
+  for (const l of lines) {
+    ctx.fillText(l, cx, ty)
+    ty += lineH
+  }
+  ctx.restore()
+}
+
+// Bubble card rects drawn this frame (comment mode), for click hit-testing.
+let commentHitboxes: { id: string; x: number; y: number; w: number; h: number }[] = []
+
+/** Returns the topmost active comment under (sx, sy): inside an area rectangle, or
+ *  inside a drawn bubble card. Matches the draw (only comments visible now). */
+function hitTestComment(sx: number, sy: number): ReplayComment | null {
+  const list = (props.comments ?? []).filter((c) => isCommentActive(c, props.currentT))
+  // Area rectangles (topmost first).
+  for (let i = list.length - 1; i >= 0; i--) {
+    const c = list[i]
+    if (c.anchor.kind !== 'area') continue
+    const p1 = w2s(c.x, c.y)
+    const p2 = w2s(c.anchor.x2, c.anchor.y2)
+    const x = Math.min(p1.x, p2.x)
+    const y = Math.min(p1.y, p2.y)
+    if (sx >= x && sx <= x + Math.abs(p2.x - p1.x) && sy >= y && sy <= y + Math.abs(p2.y - p1.y)) {
+      return c
+    }
+  }
+  // Bubble cards drawn this frame (topmost first).
+  for (let i = commentHitboxes.length - 1; i >= 0; i--) {
+    const b = commentHitboxes[i]
+    if (sx >= b.x && sx <= b.x + b.w && sy >= b.y && sy <= b.y + b.h) {
+      return list.find((c) => c.id === b.id) ?? null
+    }
+  }
+  return null
+}
+
+/**
+ * Detects what the user clicked, to anchor a new comment: a living player, an
+ * active grenade detonation, or a plain point. Returns the world anchor + target.
+ */
+function detectTarget(sx: number, sy: number): { x: number; y: number; anchor: CommentAnchor } {
+  // 1. A living player under the click?
+  const pr = playerRadius() + 4
+  for (const p of props.players) {
+    if (!p.alive) continue
+    const { x, y } = w2s(p.x, p.y)
+    if (Math.hypot(sx - x, sy - y) <= pr) {
+      return { x: p.x, y: p.y, anchor: { kind: 'player', steamId: p.steamId } }
+    }
+  }
+  // 2. An active grenade detonation under the click?
+  const tt = props.currentT
+  for (const ev of props.round?.events ?? []) {
+    if (ev.type !== 'grenade') continue
+    if (tt < ev.t || tt > ev.endT) continue
+    const { x, y } = w2s(ev.x, ev.y)
+    const tol = Math.max(16, unitsToScreen(80))
+    if (Math.hypot(sx - x, sy - y) <= tol) {
+      return { x: ev.x, y: ev.y, anchor: { kind: 'grenade', grenadeKind: ev.kind } }
+    }
+  }
+  // 3. A plain point on the map.
+  const w = s2w(sx, sy)
+  return { x: w.x, y: w.y, anchor: { kind: 'point' } }
+}
+
+/**
+ * The player/grenade under the cursor in comment mode: screen centre + radius for
+ * the hover ring (or null over the empty map). Recomputed each draw so the ring
+ * tracks a moving target.
+ */
+function hoverAt(sx: number, sy: number): { sx: number; sy: number; r: number; key: string } | null {
+  const pr = playerRadius()
+  for (const p of props.players) {
+    if (!p.alive) continue
+    const { x, y } = w2s(p.x, p.y)
+    if (Math.hypot(sx - x, sy - y) <= pr + 4) {
+      return { sx: x, sy: y, r: pr + 6, key: `p:${p.steamId}` }
+    }
+  }
+  const tt = props.currentT
+  for (const ev of props.round?.events ?? []) {
+    if (ev.type !== 'grenade') continue
+    if (tt < ev.t || tt > ev.endT) continue
+    const { x, y } = w2s(ev.x, ev.y)
+    const tol = Math.max(16, unitsToScreen(80))
+    if (Math.hypot(sx - x, sy - y) <= tol) {
+      return { sx: x, sy: y, r: tol, key: `g:${ev.t}` }
+    }
+  }
+  return null
+}
+
 function draw() {
   if (!ctx) return
   ctx.clearRect(0, 0, cw, ch)
@@ -1043,6 +1489,104 @@ function draw() {
     const alpha = props.previewPaths.length > 1 ? 0.55 : 1
     for (const path of props.previewPaths) drawGrenadePathPreview(path, alpha)
   }
+
+  // Comments, on top of everything. Only those active at the current time show
+  // (so each disappears after its duration), positioned at their anchor and
+  // following the player they're tied to. Comment mode draws a clickable pin;
+  // playback draws the text bubble. The full list lives in the side panel.
+  const activeComments = (props.comments ?? []).filter((c) => isCommentActive(c, t))
+  // Living-player circles (screen space) the bubbles steer around.
+  const obstacles = props.players
+    .filter((p) => p.alive)
+    .map((p) => {
+      const s = w2s(p.x, p.y)
+      return { x: s.x, y: s.y, r: playerRadius() }
+    })
+  commentHitboxes = []
+  activeComments.forEach((c) => {
+    // The area being resized is drawn as a live draft below; skip its stale copy.
+    if (resizing && c.id === resizing.id) return
+    const hovered = c.id === hoveredCommentId.value
+    if (c.anchor.kind === 'area') {
+      // Area: dashed rectangle + a text label hugging it; the rectangle is the
+      // click target (see hitTestComment).
+      const p1 = w2s(c.x, c.y)
+      const p2 = w2s(c.anchor.x2, c.anchor.y2)
+      drawAreaRect(p1.x, p1.y, p2.x, p2.y, commentKindMeta(c.kind).color, hovered || c.id === props.activeCommentId)
+      const ax = Math.min(p1.x, p2.x)
+      const ay = Math.min(p1.y, p2.y)
+      const aw = Math.abs(p2.x - p1.x)
+      const ah = Math.abs(p2.y - p1.y)
+      if (c.textInside) {
+        // Text inside the box; the rectangle itself is the click target.
+        drawAreaText(ax, ay, aw, ah, c.text)
+      } else {
+        const labelRect = drawAreaLabel(ax, ay, aw, ah, c.text, c.kind)
+        if (labelRect) {
+          commentHitboxes.push({ id: c.id, ...labelRect })
+          if (hovered) drawHoverOutline(labelRect.x, labelRect.y, labelRect.w, labelRect.h, 6)
+        }
+      }
+      // Resize handles on the hovered area (comment mode).
+      if (props.commentMode && hovered) drawAreaHandles(p1.x, p1.y, p2.x, p2.y)
+      return
+    }
+    // The open comment bubble (text + kind icon + colored marker on the anchor),
+    // shown in both modes; clickable to edit.
+    const pos = commentPositionAt(c, props.players)
+    const { x, y } = w2s(pos.x, pos.y)
+    const clearR = c.anchor.kind === 'player' ? playerRadius() : 0
+    const rect = drawCommentBubble({ cx: x, cy: y, halfW: clearR, halfH: clearR, inset: 0 }, c.text, c.kind, obstacles)
+    if (rect) {
+      // Hitboxes feed both the click (comment mode) and the right-click menu (both
+      // modes); the hover outline only shows in comment mode (hovered is set there).
+      commentHitboxes.push({ id: c.id, ...rect })
+      if (hovered) drawHoverOutline(rect.x, rect.y, rect.w, rect.h, 10)
+    }
+  })
+
+  // Area being created (its popover is open): keep the rectangle on screen,
+  // highlighted, so the selection stays visible and tied to the popover.
+  if (props.pendingArea) {
+    const p1 = w2s(props.pendingArea.x, props.pendingArea.y)
+    const p2 = w2s(props.pendingArea.x2, props.pendingArea.y2)
+    drawAreaRect(p1.x, p1.y, p2.x, p2.y, commentKindMeta(props.pendingArea.kind).color, true)
+  }
+
+  // Hover highlight in comment mode: a dashed white ring around the target the
+  // click would anchor to (a living player or an active grenade detonation).
+  if (props.commentMode && hoverMouse) {
+    const h = hoverAt(hoverMouse.sx, hoverMouse.sy)
+    if (h) {
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(h.sx, h.sy, h.r, 0, Math.PI * 2)
+      ctx.strokeStyle = '#ffffff'
+      ctx.lineWidth = 2.5
+      ctx.setLineDash([5, 4])
+      ctx.stroke()
+      ctx.restore()
+    }
+  }
+
+  // Area being drawn (comment-mode drag): live dashed rectangle.
+  if (props.commentMode && areaStart && areaCur) {
+    drawAreaRect(areaStart.sx, areaStart.sy, areaCur.sx, areaCur.sy, '#ffffff', true)
+  }
+
+  // Area being resized: live draft rectangle (kind-tinted) + handles.
+  if (resizing) {
+    const rid = resizing.id
+    const c = (props.comments ?? []).find((x) => x.id === rid)
+    const f = w2s(resizing.fwx, resizing.fwy)
+    drawAreaRect(f.x, f.y, resizing.sx, resizing.sy, commentKindMeta(c?.kind).color, true)
+    drawAreaHandles(f.x, f.y, resizing.sx, resizing.sy)
+  }
+
+  // Keep the open popover pinned to its anchor as the view or the player moves.
+  if (props.popoverAnchor) {
+    emit('popoverMoved', popoverAnchorRect(props.popoverAnchor))
+  }
 }
 
 // --- auto zoom: frames all players, easing in/out ---
@@ -1120,25 +1664,299 @@ function onWheel(e: WheelEvent) {
 let dragging = false
 let lastX = 0
 let lastY = 0
+let downX = 0
+let downY = 0
+// Cursor position over the map in comment mode, to highlight the hover target.
+let hoverMouse: { sx: number; sy: number } | null = null
+let hoverKey: string | null = null
+// Comment under the cursor (both modes), for the hover highlight + pointer cursor.
+const hoveredCommentId = ref<string | null>(null)
+// Area drag in comment mode: start + current corner (screen px), null when idle.
+let areaStart: { sx: number; sy: number } | null = null
+let areaCur: { sx: number; sy: number } | null = null
+// Resizing an existing area: comment id + its fixed (opposite) corner in world +
+// the dragged corner in screen px. Null when not resizing.
+const HANDLE_R = 6
+let resizing: { id: string; fwx: number; fwy: number; sx: number; sy: number } | null = null
+// Resize cursor shown while hovering/holding a corner handle (null otherwise).
+const resizeCursor = ref<string | null>(null)
+
+function localPoint(e: PointerEvent): { sx: number; sy: number } {
+  const rect = canvas.value!.getBoundingClientRect()
+  return { sx: e.clientX - rect.left, sy: e.clientY - rect.top }
+}
+/** Canvas-local point -> viewport (clientX/clientY), for floating-ui anchoring. */
+function toClient(sx: number, sy: number): { vx: number; vy: number } {
+  const rect = canvas.value!.getBoundingClientRect()
+  return { vx: rect.left + sx, vy: rect.top + sy }
+}
+/** Reference rect (viewport) for a comment's popover: the area rectangle (so it
+ *  opens above/below the whole box), or a zero-size point at the click otherwise. */
+function commentClientRect(
+  c: ReplayComment,
+  e: MouseEvent,
+): { vx: number; vy: number; vw: number; vh: number } {
+  if (c.anchor.kind === 'area') {
+    const p1 = w2s(c.x, c.y)
+    const p2 = w2s(c.anchor.x2, c.anchor.y2)
+    const c1 = toClient(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y))
+    const c2 = toClient(Math.max(p1.x, p2.x), Math.max(p1.y, p2.y))
+    return { vx: c1.vx, vy: c1.vy, vw: c2.vx - c1.vx, vh: c2.vy - c1.vy }
+  }
+  return { vx: e.clientX, vy: e.clientY, vw: 0, vh: 0 }
+}
+
+/** Current viewport rect of the open popover's anchor: the area rectangle, the live
+ *  player position, or a fixed world point. */
+function popoverAnchorRect(pa: {
+  anchor: CommentAnchor
+  wx: number
+  wy: number
+}): { vx: number; vy: number; vw: number; vh: number } {
+  const anchor = pa.anchor
+  if (anchor.kind === 'area') {
+    const p1 = w2s(pa.wx, pa.wy)
+    const p2 = w2s(anchor.x2, anchor.y2)
+    const c1 = toClient(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y))
+    const c2 = toClient(Math.max(p1.x, p2.x), Math.max(p1.y, p2.y))
+    return { vx: c1.vx, vy: c1.vy, vw: c2.vx - c1.vx, vh: c2.vy - c1.vy }
+  }
+  let wx = pa.wx
+  let wy = pa.wy
+  if (anchor.kind === 'player') {
+    const sid = anchor.steamId
+    const player = props.players.find((p) => p.steamId === sid)
+    if (player) {
+      wx = player.x
+      wy = player.y
+    }
+  }
+  const s = w2s(wx, wy)
+  const c = toClient(s.x, s.y)
+  return { vx: c.vx, vy: c.vy, vw: 0, vh: 0 }
+}
+
+/** Returns the area-resize handle under (sx, sy): the comment id, its opposite
+ *  (anchored) corner in world coords, and the resize cursor. Null if none. */
+function hitTestAreaHandle(
+  sx: number,
+  sy: number,
+): { id: string; fwx: number; fwy: number; cursor: string } | null {
+  const list = (props.comments ?? []).filter(
+    (c) => isCommentActive(c, props.currentT) && c.anchor.kind === 'area',
+  )
+  for (let i = list.length - 1; i >= 0; i--) {
+    const c = list[i]
+    const a = c.anchor as { x2: number; y2: number }
+    const p1 = w2s(c.x, c.y)
+    const p2 = w2s(a.x2, a.y2)
+    // Each corner: its screen point + the opposite (fixed) corner in world coords.
+    const corners = [
+      { sx: p1.x, sy: p1.y, ox: a.x2, oy: a.y2 },
+      { sx: p2.x, sy: p2.y, ox: c.x, oy: c.y },
+      { sx: p2.x, sy: p1.y, ox: c.x, oy: a.y2 },
+      { sx: p1.x, sy: p2.y, ox: a.x2, oy: c.y },
+    ]
+    const midX = (p1.x + p2.x) / 2
+    const midY = (p1.y + p2.y) / 2
+    for (const corner of corners) {
+      if (Math.hypot(sx - corner.sx, sy - corner.sy) <= HANDLE_R + 4) {
+        const sameSide = corner.sx < midX === corner.sy < midY
+        return {
+          id: c.id,
+          fwx: corner.ox,
+          fwy: corner.oy,
+          cursor: sameSide ? 'nwse-resize' : 'nesw-resize',
+        }
+      }
+    }
+  }
+  return null
+}
+
+/** Draws the 4 corner resize handles of an area rectangle (screen corners). */
+function drawAreaHandles(sx1: number, sy1: number, sx2: number, sy2: number) {
+  if (!ctx) return
+  ctx.save()
+  ctx.setLineDash([])
+  for (const hx of [sx1, sx2]) {
+    for (const hy of [sy1, sy2]) {
+      ctx.beginPath()
+      ctx.rect(hx - HANDLE_R, hy - HANDLE_R, HANDLE_R * 2, HANDLE_R * 2)
+      ctx.fillStyle = '#ffffff'
+      ctx.fill()
+      ctx.lineWidth = 1.5
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)'
+      ctx.stroke()
+    }
+  }
+  ctx.restore()
+}
+
 function onPointerDown(e: PointerEvent) {
-  // Only the left button pans; the right one is free for the context menu.
-  if (e.button !== 0 || props.autoZoom) return
-  dragging = true
-  lastX = e.clientX
-  lastY = e.clientY
-  canvas.value?.setPointerCapture(e.pointerId)
+  if (e.button !== 0) return
+  downX = e.clientX
+  downY = e.clientY
+  if (props.commentMode) {
+    const p = localPoint(e)
+    // Grabbing an area's corner handle resizes it; anywhere else starts a new area.
+    const handle = hitTestAreaHandle(p.sx, p.sy)
+    if (handle) {
+      resizing = { id: handle.id, fwx: handle.fwx, fwy: handle.fwy, sx: p.sx, sy: p.sy }
+      canvas.value?.setPointerCapture(e.pointerId)
+      return
+    }
+    // Comment mode locks panning: a drag marks a rectangular area, a click drops
+    // a point/player/grenade comment (decided on pointerup by how far it moved).
+    areaStart = p
+    areaCur = p
+    canvas.value?.setPointerCapture(e.pointerId)
+    return
+  }
+  // Normal mode: left button pans (disabled in auto zoom).
+  if (!props.autoZoom) {
+    dragging = true
+    lastX = e.clientX
+    lastY = e.clientY
+    canvas.value?.setPointerCapture(e.pointerId)
+  }
 }
 function onPointerMove(e: PointerEvent) {
-  if (!dragging) return
-  panX += e.clientX - lastX
-  panY += e.clientY - lastY
-  lastX = e.clientX
-  lastY = e.clientY
-  draw()
+  if (dragging) {
+    panX += e.clientX - lastX
+    panY += e.clientY - lastY
+    lastX = e.clientX
+    lastY = e.clientY
+    draw()
+    return
+  }
+  // Resizing an area (corner handle held): track the dragged corner.
+  if (resizing) {
+    const p = localPoint(e)
+    resizing.sx = p.sx
+    resizing.sy = p.sy
+    draw()
+    return
+  }
+  // Drawing an area (comment mode, button held): track the moving corner.
+  if (props.commentMode && areaStart) {
+    areaCur = localPoint(e)
+    draw()
+    return
+  }
+  // Hover affordances (pointer/resize cursor + highlight) are comment-mode only.
+  if (!props.commentMode) {
+    if (hoveredCommentId.value || resizeCursor.value) {
+      hoveredCommentId.value = null
+      resizeCursor.value = null
+      draw()
+    }
+    return
+  }
+  const { sx, sy } = localPoint(e)
+  hoverMouse = { sx, sy }
+  const handle = hitTestAreaHandle(sx, sy)
+  resizeCursor.value = handle?.cursor ?? null
+  // A handle also counts as hovering its area, so the handles stay visible.
+  const overComment = handle?.id ?? hitTestComment(sx, sy)?.id ?? null
+  // Comment mode also rings the player/grenade a new pin would anchor to.
+  const key = hoverAt(sx, sy)?.key ?? null
+  if (overComment !== hoveredCommentId.value || key !== hoverKey) {
+    hoveredCommentId.value = overComment
+    hoverKey = key
+    draw()
+  }
 }
 function onPointerUp(e: PointerEvent) {
+  const moved = Math.hypot(e.clientX - downX, e.clientY - downY)
   dragging = false
+  // Finishing an area resize: commit the new world rect (fixed corner + dragged one).
+  if (resizing) {
+    const f = resizing
+    resizing = null
+    canvas.value?.releasePointerCapture(e.pointerId)
+    if (e.button === 0 && moved > 3) {
+      const corner = s2w(f.sx, f.sy)
+      emit('resizeArea', { id: f.id, x: f.fwx, y: f.fwy, x2: corner.x, y2: corner.y })
+    }
+    draw()
+    return
+  }
+  const start = areaStart
+  const cur = areaCur
+  areaStart = null
+  areaCur = null
   canvas.value?.releasePointerCapture(e.pointerId)
+  // Comments are interactive only in comment mode; a normal click just ends a pan.
+  if (e.button !== 0 || !props.commentMode) {
+    draw()
+    return
+  }
+
+  // A real drag marks a rectangular area; a click adds a point comment.
+  if (moved > 6 && start && cur) {
+    const a = s2w(start.sx, start.sy)
+    const b = s2w(cur.sx, cur.sy)
+    // Anchor the popover to the whole rectangle (top-left + size), so it opens
+    // above the top and, when flipped, below the bottom.
+    const c1 = toClient(Math.min(start.sx, cur.sx), Math.min(start.sy, cur.sy))
+    const c2 = toClient(Math.max(start.sx, cur.sx), Math.max(start.sy, cur.sy))
+    emit('dropComment', {
+      x: a.x,
+      y: a.y,
+      anchor: { kind: 'area', x2: b.x, y2: b.y },
+      vx: c1.vx,
+      vy: c1.vy,
+      vw: c2.vx - c1.vx,
+      vh: c2.vy - c1.vy,
+    })
+    // No draw() here: the canvas keeps the just-drawn rectangle until the
+    // popover's pendingArea prop arrives next tick and the watch repaints it,
+    // so the selection never blinks out.
+    return
+  }
+  const { sx, sy } = localPoint(e)
+  // A click on an existing comment edits it; otherwise drop a new one on whatever
+  // is under it (a living player, an active grenade detonation, or a point).
+  const hit = hitTestComment(sx, sy)
+  if (hit) {
+    emit('selectComment', { id: hit.id, ...commentClientRect(hit, e) })
+    return
+  }
+  const target = detectTarget(sx, sy)
+  emit('dropComment', { ...target, vx: e.clientX, vy: e.clientY, vw: 0, vh: 0 })
+}
+function onPointerLeave() {
+  if (hoverMouse || hoverKey || areaStart || hoveredCommentId.value) {
+    hoverMouse = null
+    hoverKey = null
+    hoveredCommentId.value = null
+    areaStart = null
+    areaCur = null
+    draw()
+  }
+}
+function onContextMenu(e: MouseEvent) {
+  if (!canvas.value) return
+  const rect = canvas.value.getBoundingClientRect()
+  const sx = e.clientX - rect.left
+  const sy = e.clientY - rect.top
+  // Right-click on an existing comment -> let the menu open with its actions.
+  const hit = hitTestComment(sx, sy)
+  if (hit) {
+    emit('contextComment', { id: hit.id, ...commentClientRect(hit, e) })
+    return
+  }
+  emit('contextComment', null)
+  // Right-click on a player -> the menu offers "add a comment on them". The reka-ui
+  // trigger still opens the menu (no preventDefault here).
+  const target = detectTarget(sx, sy)
+  emit(
+    'contextTarget',
+    target.anchor.kind === 'player'
+      ? { x: target.x, y: target.y, anchor: target.anchor, vx: e.clientX, vy: e.clientY }
+      : null,
+  )
 }
 
 function zoomBy(factor: number) {
@@ -1167,6 +1985,14 @@ watch(() => props.previewPaths, draw)
 watch(() => props.levelRange, draw, { deep: true })
 watch(() => props.talking, draw)
 watch(() => props.muted, draw, { deep: true })
+watch(() => props.comments, draw)
+watch(() => props.activeCommentId, draw)
+watch(() => props.commentMode, () => {
+  if (!props.commentMode) hoveredCommentId.value = null
+  draw()
+})
+watch(() => props.pendingArea, draw)
+watch(() => props.popoverAnchor, draw)
 watch(radarSource, (src) => {
   radarReady = false
   radar.src = src
@@ -1192,13 +2018,25 @@ onUnmounted(() => {
   <div ref="wrap" class="absolute inset-0 overflow-hidden bg-ink-950">
     <canvas
       ref="canvas"
+      data-viewer-canvas
       class="h-full w-full touch-none"
-      :class="autoZoom ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'"
+      :class="
+        commentMode
+          ? hoveredCommentId
+            ? 'cursor-pointer'
+            : 'cursor-crosshair'
+          : autoZoom
+            ? 'cursor-default'
+            : 'cursor-grab active:cursor-grabbing'
+      "
+      :style="resizeCursor ? { cursor: resizeCursor } : {}"
       @wheel="onWheel"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
       @pointerup="onPointerUp"
       @pointercancel="onPointerUp"
+      @pointerleave="onPointerLeave"
+      @contextmenu="onContextMenu"
     />
 
     <!-- Zoom controls (hidden in auto zoom and in the preview) -->

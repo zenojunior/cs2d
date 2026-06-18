@@ -318,3 +318,62 @@ export interface VoicePacket {
   /** Raw Opus frame, directly decodable (48kHz mono). */
   data: Uint8Array
 }
+
+// ------------------------------------------------------------------ comments
+
+/**
+ * A user comment anchored to a moment of the replay and a point on the map.
+ *
+ * Comments are not part of the parsed `Replay` (the user authors them in the
+ * viewer). They persist in IndexedDB keyed by demo id, and travel with the demo
+ * inside the `.cs2dv` archive so whoever imports it sees the same annotations.
+ */
+/**
+ * What a comment is anchored to over time. `point` (a clicked spot) and
+ * `grenade` (fixed at the detonation) keep a constant position; `player` is
+ * followed: during playback the comment tracks that player's interpolated
+ * position.
+ */
+export type CommentAnchor =
+  | { kind: 'point' }
+  | { kind: 'player'; steamId: string }
+  | { kind: 'grenade'; grenadeKind: GrenadeKind }
+  /** A rectangular region: `(x, y)` is one corner, `(x2, y2)` the opposite one. */
+  | { kind: 'area'; x2: number; y2: number }
+
+/** Feedback flavor of a comment (coach-style); drives the icon shown on the map. */
+export type CommentKind = 'note' | 'good' | 'bad' | 'warning' | 'idea'
+
+export interface ReplayComment {
+  /** Stable unique id (e.g. `crypto.randomUUID()`). */
+  id: string
+  /** Index into `Replay.rounds` (the raw array index, so it stays correct even
+   *  with a knife round; the displayed label is derived separately). */
+  roundIndex: number
+  /** Seconds since the round `freezeStartTick` (same reference as `Frame.t`). */
+  t: number
+  /** How long the comment stays visible from `t`, in seconds (playback). */
+  duration: number
+  /** Anchor point in game units: the player's spot at `t`, the detonation point,
+   *  or the clicked point. Used directly for fixed anchors, and as a fallback for
+   *  a followed player when absent from the frame. */
+  x: number
+  y: number
+  /** Height (Z axis) at the anchor, for multi-floor maps (omitted when unknown). */
+  z?: number
+  /** How the comment is positioned over time (follows a player, or stays put). */
+  anchor: CommentAnchor
+  /** Comment body. */
+  text: string
+  /** Feedback flavor (defaults to `note` when absent). */
+  kind?: CommentKind
+  /** Area comments only: draw the text inside the rectangle instead of as a label
+   *  hugging its edge. Defaults to false. */
+  textInside?: boolean
+  /** Optional author display name (free text; the app has no accounts). */
+  author?: string
+  /** Epoch in ms when the comment was created. */
+  createdAt: number
+  /** Epoch in ms of the last edit (absent until edited). */
+  updatedAt?: number
+}
