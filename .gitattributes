@@ -1,0 +1,2 @@
+# Compressed replay archives are binary (gzip); never diff or normalize them.
+*.cs2dv binary
