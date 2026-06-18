@@ -179,6 +179,8 @@ export interface BombKeyframe {
   /** Position on the ground/planted (game units). */
   x?: number
   y?: number
+  /** Height (Z axis), for the multi-floor level filter (dropped/planted C4). */
+  z?: number
   /** Carrier, when `carried`. */
   carrierSteamId?: string
 }

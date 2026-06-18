@@ -220,6 +220,9 @@ struct BombKeyframe {
     x: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     y: Option<f64>,
+    /// Height (Z axis), for the multi-floor level filter (dropped/planted C4).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    z: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     carrier_steam_id: Option<String>,
 }
@@ -279,6 +282,7 @@ enum RawEvent {
         player: Option<String>,
         x: Option<f64>,
         y: Option<f64>,
+        z: Option<f64>,
     },
 }
 
@@ -322,7 +326,7 @@ impl GrenadeKind {
 #[derive(Clone, PartialEq)]
 enum C4Sample {
     Carried(String),
-    Ground(f64, f64),
+    Ground(f64, f64, f64),
 }
 
 #[derive(Default)]
@@ -987,6 +991,7 @@ impl Collector {
                 Err(_) => C4Sample::Ground(
                     round1(world_coord(e, "CBodyComponent.m_cellX", "CBodyComponent.m_vecX")),
                     round1(world_coord(e, "CBodyComponent.m_cellY", "CBodyComponent.m_vecY")),
+                    round1(world_coord(e, "CBodyComponent.m_cellZ", "CBodyComponent.m_vecZ")),
                 ),
             };
             self.c4_samples.push((tick, sample));
@@ -1150,16 +1155,17 @@ impl Collector {
                 }
                 let player = ev_i32(ge, "userid_pawn")
                     .and_then(|h| steam_from_pawn_handle(self, ctx, h));
-                let (mut x, mut y) = (None, None);
+                let (mut x, mut y, mut z) = (None, None, None);
                 if matches!(kind, BombKind::Planted) {
                     if let Some(h) = ev_i32(ge, "userid_pawn") {
                         if let Ok(p) = ctx.entities().get_by_handle(h as u32 as usize) {
                             x = Some(round1(world_coord(p, "CBodyComponent.m_cellX", "CBodyComponent.m_vecX")));
                             y = Some(round1(world_coord(p, "CBodyComponent.m_cellY", "CBodyComponent.m_vecY")));
+                            z = Some(round1(world_coord(p, "CBodyComponent.m_cellZ", "CBodyComponent.m_vecZ")));
                         }
                     }
                 }
-                self.events.push(RawEvent::Bomb { tick, kind, player, x, y });
+                self.events.push(RawEvent::Bomb { tick, kind, player, x, y, z });
             }
             "bomb_begindefuse" => {
                 if let Some(uid) = ev_i32(ge, "userid") {
@@ -1519,7 +1525,7 @@ fn build_replay(c: &Collector) -> Replay {
                     z: *z,
                 });
             }
-            RawEvent::Bomb { kind, player, x, y, .. } => {
+            RawEvent::Bomb { kind, player, x, y, z, .. } => {
                 match kind {
                     BombKind::Planted => {
                         rounds[idx].events.push(Event::BombPlanted {
@@ -1532,6 +1538,7 @@ fn build_replay(c: &Collector) -> Replay {
                             state: "planted".into(),
                             x: *x,
                             y: *y,
+                            z: *z,
                             carrier_steam_id: None,
                         });
                     }
@@ -1546,6 +1553,7 @@ fn build_replay(c: &Collector) -> Replay {
                             state: "gone".into(),
                             x: None,
                             y: None,
+                            z: None,
                             carrier_steam_id: None,
                         });
                     }
@@ -1560,6 +1568,7 @@ fn build_replay(c: &Collector) -> Replay {
                             state: "gone".into(),
                             x: None,
                             y: None,
+                            z: None,
                             carrier_steam_id: None,
                         });
                     }
@@ -1735,7 +1744,7 @@ fn build_replay(c: &Collector) -> Replay {
             (Some(k), C4Sample::Carried(s)) => {
                 k.state == "carried" && k.carrier_steam_id.as_deref() == Some(s.as_str())
             }
-            (Some(k), C4Sample::Ground(x, y)) => {
+            (Some(k), C4Sample::Ground(x, y, _z)) => {
                 k.state == "ground" && k.x == Some(*x) && k.y == Some(*y)
             }
             _ => false,
@@ -1751,13 +1760,15 @@ fn build_replay(c: &Collector) -> Replay {
                 state: "carried".into(),
                 x: None,
                 y: None,
+                z: None,
                 carrier_steam_id: Some(s.clone()),
             },
-            C4Sample::Ground(x, y) => BombKeyframe {
+            C4Sample::Ground(x, y, z) => BombKeyframe {
                 t,
                 state: "ground".into(),
                 x: Some(*x),
                 y: Some(*y),
+                z: Some(*z),
                 carrier_steam_id: None,
             },
         };

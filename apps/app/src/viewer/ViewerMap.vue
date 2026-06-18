@@ -774,6 +774,13 @@ function onActiveLevel(p: PlayerState) {
   return !lvl || (p.z >= lvl.minZ && p.z < lvl.maxZ)
 }
 
+/** Is a world Z on the active floor? Visible by default when there is no
+ *  multi-level map or the Z is unknown (e.g. the C4 before z was emitted). */
+function zOnActiveLevel(z: number | null | undefined) {
+  const lvl = props.levelRange
+  return !lvl || z == null || (z >= lvl.minZ && z < lvl.maxZ)
+}
+
 function drawPlayer(p: PlayerState, death: { x: number; y: number } | undefined) {
   if (!ctx) return
   const color = SIDE_COLOR[p.side]
@@ -1400,7 +1407,12 @@ function draw() {
   const plantedKf = props.round?.bomb.find((k) => k.state === 'planted')
   const planting =
     !!plantedKf && plantedKf.x != null && t >= plantedKf.t - PLANT_TIME && t < plantedKf.t
-  if (!planting && bomb && (bomb.state === 'ground' || bomb.state === 'planted')) {
+  if (
+    !planting &&
+    bomb &&
+    (bomb.state === 'ground' || bomb.state === 'planted') &&
+    zOnActiveLevel(bomb.z)
+  ) {
     const { x, y } = w2s(bomb.x ?? 0, bomb.y ?? 0)
     drawBombIcon(x, y, bomb.state === 'planted' ? 11 : 14, bomb.state === 'planted')
   }
@@ -1428,7 +1440,7 @@ function draw() {
   const blastEv = props.round?.events.find((e) => e.type === 'bomb_exploded')
   if (blastEv) {
     const pk = props.round?.bomb.find((k) => k.state === 'planted')
-    if (pk && pk.x != null) drawBlast(pk.x, pk.y ?? 0, blastEv.t, t)
+    if (pk && pk.x != null && zOnActiveLevel(pk.z)) drawBlast(pk.x, pk.y ?? 0, blastEv.t, t)
   }
 
   // Plant in progress: progress ring around the planter (on top of everything,
@@ -1442,18 +1454,20 @@ function draw() {
       : undefined
     const prog = (t - (plantedKf.t - PLANT_TIME)) / PLANT_TIME
     if (planter) {
-      const { x, y } = w2s(planter.x, planter.y)
-      drawPlanting(x, y, playerRadius(), prog)
-    } else {
+      if (onActiveLevel(planter)) {
+        const { x, y } = w2s(planter.x, planter.y)
+        drawPlanting(x, y, playerRadius(), prog)
+      }
+    } else if (zOnActiveLevel(plantedKf.z)) {
       const { x, y } = w2s(plantedKf.x ?? 0, plantedKf.y ?? 0)
       drawPlanting(x, y, playerRadius(), prog)
     }
   } else if (bomb && bomb.state === 'carried') {
-    // C4 carried: marker next to the carrier (alive)
+    // C4 carried: marker next to the carrier (alive), only on the active floor.
     const carrier = props.players.find(
       (p) => p.steamId === bomb.carrierSteamId && p.alive && !deaths.has(p.steamId),
     )
-    if (carrier) {
+    if (carrier && onActiveLevel(carrier)) {
       const r = playerRadius()
       const { x, y } = w2s(carrier.x, carrier.y)
       drawBombIcon(x + r + 7, y, 11, false)
@@ -1469,11 +1483,13 @@ function draw() {
       ? props.players.find((p) => p.steamId === def.steamId && p.alive && !deaths.has(p.steamId))
       : undefined
     if (defuser) {
-      const { x, y } = w2s(defuser.x, defuser.y)
-      drawDefusing(x, y, playerRadius(), prog)
+      if (onActiveLevel(defuser)) {
+        const { x, y } = w2s(defuser.x, defuser.y)
+        drawDefusing(x, y, playerRadius(), prog)
+      }
     } else {
       const pk = props.round?.bomb.find((k) => k.state === 'planted')
-      if (pk && pk.x != null) {
+      if (pk && pk.x != null && zOnActiveLevel(pk.z)) {
         const { x, y } = w2s(pk.x, pk.y ?? 0)
         drawDefusing(x, y, playerRadius(), prog)
       }
