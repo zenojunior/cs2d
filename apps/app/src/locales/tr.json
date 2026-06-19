@@ -85,6 +85,8 @@
     "fwd5": "5sn ileri",
     "copyPos": "Konumu kopyala (setpos)",
     "copyPosDone": "Konum kopyalandı",
+    "fullscreen": "Tam ekran",
+    "exitFullscreen": "Tam ekrandan çık",
     "speed": "Hız",
     "rounds": "Rauntlar",
     "knife": "Bıçak",

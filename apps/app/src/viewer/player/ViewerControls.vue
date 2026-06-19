@@ -44,6 +44,8 @@ const props = defineProps<{
   commentedRounds?: Set<number>
   /** Whether comment mode (drop/edit pins on the map) is active. */
   commentMode?: boolean
+  /** Whether the player is in fullscreen (drives the toggle icon/tooltip). */
+  fullscreen?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -57,6 +59,7 @@ const emit = defineEmits<{
   setBalance: [value: number]
   toggleAdvanced: [key: string]
   toggleCommentMode: []
+  toggleFullscreen: []
 }>()
 
 // Vertical master-volume slider, revealed on hover over the comms button.
@@ -508,6 +511,15 @@ onMounted(() => centerCurrent('auto'))
         @click="emit('toggleCommentMode')"
       >
         <UiIcon name="map-pin" class="h-4 w-4" />
+      </button>
+
+      <!-- Fullscreen: let the player fill the screen (hides the top bar) -->
+      <button
+        v-tooltip="fullscreen ? t('viewer.exitFullscreen') : t('viewer.fullscreen')"
+        class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink-200 transition-colors duration-150 hover:bg-white/10 hover:text-white"
+        @click="emit('toggleFullscreen')"
+      >
+        <UiIcon :name="fullscreen ? 'minimize' : 'maximize'" class="h-4 w-4" />
       </button>
 
       <!-- Advanced: menu of viewer behavior toggles -->

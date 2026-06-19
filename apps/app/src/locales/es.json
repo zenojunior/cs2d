@@ -85,6 +85,8 @@
     "fwd5": "Adelante 5s",
     "copyPos": "Copiar posición (setpos)",
     "copyPosDone": "Posición copiada",
+    "fullscreen": "Pantalla completa",
+    "exitFullscreen": "Salir de pantalla completa",
     "speed": "Velocidad",
     "rounds": "Rondas",
     "knife": "Cuchillo",

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { onClickOutside } from '@vueuse/core'
+import { computed, provide, ref } from 'vue'
+import { onClickOutside, useFullscreen } from '@vueuse/core'
 import { Flag } from '@blade-flags/vue'
 import { circleFlags } from '@blade-flags/core/flags/circle'
 import Cs2Mark from '@/shell/Cs2Mark.vue'
 import UiIcon from '@/ui/UiIcon.vue'
+import { appFullscreenKey } from '@/shell/appFullscreen'
 import { useI18n, type LocaleCode } from '@/i18n'
 
 // Lean CS Demo Analyzer shell: thin bar with the CS2 mark, a language
@@ -27,11 +28,18 @@ function choose(code: LocaleCode) {
   setLocale(code)
   langOpen.value = false
 }
+
+// Fullscreen the whole shell (so the top bar can hide and the player fills the
+// screen). Shared down to the viewer, which renders the toggle button.
+const shellRoot = ref<HTMLElement | null>(null)
+const { isFullscreen, toggle } = useFullscreen(shellRoot)
+provide(appFullscreenKey, { isFullscreen, toggle })
 </script>
 
 <template>
-  <div class="flex h-dvh flex-col overflow-hidden bg-ink-950">
+  <div ref="shellRoot" class="flex h-dvh flex-col overflow-hidden bg-ink-950">
     <header
+      v-show="!isFullscreen"
       class="relative z-20 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-ink-800/80 bg-ink-950/80 px-4 backdrop-blur-md sm:px-6"
     >
       <div class="flex items-center gap-2 sm:gap-4">

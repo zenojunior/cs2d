@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import { onKeyStroke, useEventListener, useLocalStorage } from '@vueuse/core'
+import { appFullscreenKey } from '@/shell/appFullscreen'
 import type { CommentAnchor, CommentKind, Replay, VoiceData } from '@/viewer/domain/schema'
 import ViewerMap from '@/viewer/player/ViewerMap.vue'
 import ViewerControls from '@/viewer/player/ViewerControls.vue'
@@ -33,6 +34,13 @@ import { roundOutcome } from '@/viewer/domain/roundOutcome'
 import { useI18n } from '@/i18n'
 
 const { t } = useI18n()
+
+// Fullscreen toggle, provided by the app shell (hides the top bar when active).
+const appFullscreen = inject(appFullscreenKey, null)
+const isFullscreen = computed(() => appFullscreen?.isFullscreen.value ?? false)
+function toggleFullscreen() {
+  void appFullscreen?.toggle()
+}
 
 /**
  * 2D replay stage: map, players, killfeed, rosters, clock and transport. Takes a
@@ -836,8 +844,10 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
           :comments="roundComments"
           :commented-rounds="commentedRounds"
           :comment-mode="commentMode"
+          :fullscreen="isFullscreen"
           @toggle="r.toggle"
           @toggle-comment-mode="toggleCommentMode"
+          @toggle-fullscreen="toggleFullscreen"
           @seek="r.seek"
           @select-round="selectRound"
           @set-speed="(s) => (r.speed.value = s)"
