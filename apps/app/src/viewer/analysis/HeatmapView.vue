@@ -88,7 +88,10 @@ const rawPoints = computed<Pt[]>(() => {
       }
     } else {
       // Presence: every sample of every player. High volume, but binning is O(n).
+      // Skip freeze-time frames: players sit still in spawn during the buy period,
+      // which otherwise makes the CT/T bases dwarf every real position on the map.
       for (const f of round.frames) {
+        if (f.tick < round.startTick) continue
         for (const p of f.players) {
           if (!p.alive) continue
           out.push({ x: p.x, y: p.y, z: p.z, side: p.side, steamId: p.steamId })
