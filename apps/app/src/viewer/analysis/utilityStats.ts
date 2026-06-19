@@ -45,6 +45,20 @@ export function roundSides(round: Round): Map<string, Side> {
 }
 
 /**
+ * Knife round: some servers (FACEIT, scrims) open with a knife-only round to
+ * pick sides. It does not count on the scoreboard, so we detect it by the
+ * absence of any weapon other than the knife across all samples.
+ */
+export function isKnifeRound(round: Round): boolean {
+  return (
+    round.frames.length > 0 &&
+    round.frames.every((f) =>
+      f.players.every((p) => p.weapon === 'Faca' || p.weapon === ''),
+    )
+  )
+}
+
+/**
  * The flash that set up a kill: the most recent blind still active on the victim
  * at the moment of death, thrown by someone on the killer's team against an
  * enemy. Returns the flasher (which may be the killer themselves, a self-flash)

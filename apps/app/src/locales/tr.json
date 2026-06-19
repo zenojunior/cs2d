@@ -176,7 +176,8 @@
     "tabs": {
       "throws": "Atışlar",
       "flashes": "Flaşlar",
-      "damage": "Hasar"
+      "damage": "Hasar",
+      "heatmap": "Heatmap"
     },
     "empty": "Bu demo için ekipman verisi yok.",
     "flash": {
@@ -213,9 +214,9 @@
     "title": "Heatmap",
     "points": "nokta",
     "data": "Veri",
+    "kills": "Öldürmeler",
     "deaths": "Ölümler",
     "presence": "Varlık",
-    "utility": "Utility",
     "level": "Kat",
     "side": "Taraf",
     "both": "İkisi de",
@@ -223,7 +224,9 @@
     "all": "Tümü",
     "round": "Raunt",
     "allRounds": "Tüm rauntlar",
-    "multiLevelNote": "{map} iki katlıdır: her grafik bir katı gösterir."
+    "time": "Tur süresi",
+    "multiLevelNote": "{map} iki katlıdır: her grafik bir katı gösterir.",
+    "team": "Takım"
   },
   "economy": {
     "outcomesTitle": "Ekonomi türüne göre raunt sonuçları",

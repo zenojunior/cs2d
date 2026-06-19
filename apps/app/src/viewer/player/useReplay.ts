@@ -1,7 +1,7 @@
 import { computed, onUnmounted, ref, shallowRef } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 import type { PlayerMeta, PlayerState, Replay, Round, Side } from '@/viewer/domain/schema'
-import { roundSides } from '@/viewer/analysis/utilityStats'
+import { isKnifeRound, roundSides } from '@/viewer/analysis/utilityStats'
 
 /** Playback speeds offered in the controls. */
 export const SPEEDS = [1, 2, 4, 8] as const
@@ -183,16 +183,12 @@ export function useReplay() {
 
   /**
    * Knife round: some servers (FACEIT, scrims) open with a knife-only round to
-   * pick sides. It does not count on the scoreboard, so we detect it by the
-   * absence of any weapon other than the knife across all samples and treat it as
-   * round 0.
+   * pick sides. It does not count on the scoreboard, so we treat the opener as
+   * round 0 when it is knife-only.
    */
   const hasKnifeRound = computed(() => {
     const r0 = replay.value?.rounds[0]
-    if (!r0) return false
-    return r0.frames.every((f) =>
-      f.players.every((p) => p.weapon === 'Faca' || p.weapon === ''),
-    )
+    return r0 ? isKnifeRound(r0) : false
   })
 
   /** Label shown per round (knife becomes "0" and shifts the rest). */

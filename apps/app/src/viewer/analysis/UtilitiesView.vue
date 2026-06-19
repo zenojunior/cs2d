@@ -4,6 +4,7 @@ import type { PlayerMeta, Replay } from '@/viewer/domain/schema'
 import UtilityThrowsView from '@/viewer/analysis/UtilityThrowsView.vue'
 import UtilityFlashesView from '@/viewer/analysis/UtilityFlashesView.vue'
 import UtilityDamageView from '@/viewer/analysis/UtilityDamageView.vue'
+import UtilityHeatmapView from '@/viewer/analysis/UtilityHeatmapView.vue'
 import { useI18n } from '@/i18n'
 
 const { t } = useI18n()
@@ -11,8 +12,8 @@ const { t } = useI18n()
 /**
  * Utilities tab: groups everything about grenades under one tab, split by a
  * sub-navigation into "Throws" (where utility was used: the list + radar arcs),
- * "Flashes" (flashbang metrics + a flasher x victim blind matrix) and "Damage"
- * (HE / molotov damage per player).
+ * "Flashes" (flashbang metrics + a flasher x victim blind matrix), "Damage"
+ * (HE / molotov damage per player) and "Heatmap" (grenade detonation density).
  */
 const props = defineProps<{
   replay: Replay
@@ -24,9 +25,9 @@ const emit = defineEmits<{
   (e: 'jump', payload: { roundIndex: number; t: number }): void
 }>()
 
-type Sub = 'throws' | 'flashes' | 'damage'
+type Sub = 'throws' | 'flashes' | 'damage' | 'heatmap'
 const sub = ref<Sub>('throws')
-const SUBS: Sub[] = ['throws', 'flashes', 'damage']
+const SUBS: Sub[] = ['throws', 'flashes', 'damage', 'heatmap']
 </script>
 
 <template>
@@ -58,7 +59,8 @@ const SUBS: Sub[] = ['throws', 'flashes', 'damage']
         :replay="props.replay"
         @jump="(p) => emit('jump', p)"
       />
-      <UtilityDamageView v-else :replay="props.replay" />
+      <UtilityDamageView v-else-if="sub === 'damage'" :replay="props.replay" />
+      <UtilityHeatmapView v-else :replay="props.replay" />
     </div>
   </div>
 </template>

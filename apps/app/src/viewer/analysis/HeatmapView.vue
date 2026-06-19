@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { Replay, Round, Side } from '@/viewer/domain/schema'
 import { MAP_CALIBRATION } from '@/viewer/domain/calibration'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
 import HeatmapPlot from '@/viewer/analysis/HeatmapPlot.vue'
 import { roundSides } from '@/viewer/analysis/utilityStats'
-import UiIcon from '@/ui/UiIcon.vue'
+import UiSelect from '@/ui/UiSelect.vue'
+import UiRangeSlider from '@/ui/UiRangeSlider.vue'
 import { useI18n } from '@/i18n'
 
 const { t } = useI18n()
@@ -24,16 +25,39 @@ const calibration = computed(
 const levels = computed(() => calibration.value.levels ?? null)
 
 // --- Filters ---
-type Source = 'deaths' | 'presence' | 'utility'
+type Source = 'kills' | 'deaths' | 'presence'
 const source = ref<Source>('deaths')
 const sideFilter = ref<Side | 'all'>('all')
 const playerFilter = ref<string | 'all'>('all')
 const roundFilter = ref<number | 'all'>('all')
 
+// Round-time window (live seconds, i.e. since the round went live), so the
+// heatmap can be narrowed to a moment of the round (e.g. the last X seconds).
+const timeRange = ref<number[]>([0, 0])
+/** Freeze-time duration of a round, in seconds (event/frame `t` is since freeze). */
+function freezeSeconds(round: Round): number {
+  return (round.startTick - round.freezeStartTick) / props.replay.demoTickRate
+}
+/** Longest live round time across the match: the slider's upper bound. */
+const maxRoundTime = computed(() => {
+  let max = 0
+  for (const round of props.replay.rounds) {
+    const fz = freezeSeconds(round)
+    const last = round.frames[round.frames.length - 1]
+    if (last) max = Math.max(max, last.t - fz)
+  }
+  return Math.ceil(max)
+})
+// Start (and reset, if the demo changes) with the full range selected.
+watch(maxRoundTime, (m) => (timeRange.value = [0, m]), { immediate: true })
+const isFullRange = computed(
+  () => timeRange.value[0] <= 0 && timeRange.value[1] >= maxRoundTime.value,
+)
+
 const SOURCE_META: Record<Source, { labelKey: string; identity: boolean }> = {
+  kills: { labelKey: 'heatmap.kills', identity: true },
   deaths: { labelKey: 'heatmap.deaths', identity: true },
   presence: { labelKey: 'heatmap.presence', identity: true },
-  utility: { labelKey: 'heatmap.utility', identity: false },
 }
 // Identity (side/player) only exists when the point carries who it is. Grenade
 // detonations do not carry the thrower, so the filter is ignored for them.
@@ -48,12 +72,30 @@ function sideInRound(round: Round, roundIdx: number, steamId: string): Side | nu
   return sides.get(steamId) ?? null
 }
 
+/** A player's position at (or nearest to) a tick, from the round's frames. Used
+ *  for kills, where the event only carries the victim's position, not the killer's. */
+function playerPosAt(round: Round, steamId: string, tick: number) {
+  let best: { x: number; y: number; z: number } | null = null
+  let bestDiff = Infinity
+  for (const f of round.frames) {
+    const diff = Math.abs(f.tick - tick)
+    if (diff >= bestDiff) continue
+    const p = f.players.find((pl) => pl.steamId === steamId)
+    if (!p) continue
+    bestDiff = diff
+    best = { x: p.x, y: p.y, z: p.z }
+  }
+  return best
+}
+
 interface Pt {
   x: number
   y: number
   z: number
   side: Side | null
   steamId: string | null
+  /** Live round time of the point, in seconds (since the round went live). */
+  t: number
 }
 
 /** Collects the points for the selected source (before side/level filters). */
@@ -62,6 +104,7 @@ const rawPoints = computed<Pt[]>(() => {
   const rounds = props.replay.rounds
   rounds.forEach((round, idx) => {
     if (roundFilter.value !== 'all' && idx !== roundFilter.value) return
+    const fz = freezeSeconds(round)
     if (source.value === 'deaths') {
       for (const ev of round.events) {
         if (ev.type !== 'kill') continue
@@ -71,12 +114,24 @@ const rawPoints = computed<Pt[]>(() => {
           z: ev.z,
           steamId: ev.victimSteamId,
           side: sideInRound(round, idx, ev.victimSteamId),
+          t: Math.max(0, ev.t - fz),
         })
       }
-    } else if (source.value === 'utility') {
+    } else if (source.value === 'kills') {
+      // The kill event carries the victim's position, so the killer's spot is
+      // read from the frames at the kill tick.
       for (const ev of round.events) {
-        if (ev.type !== 'grenade') continue
-        out.push({ x: ev.x, y: ev.y, z: ev.z, side: null, steamId: null })
+        if (ev.type !== 'kill' || !ev.attackerSteamId) continue
+        const pos = playerPosAt(round, ev.attackerSteamId, ev.tick)
+        if (!pos) continue
+        out.push({
+          x: pos.x,
+          y: pos.y,
+          z: pos.z,
+          steamId: ev.attackerSteamId,
+          side: sideInRound(round, idx, ev.attackerSteamId),
+          t: Math.max(0, ev.t - fz),
+        })
       }
     } else {
       // Presence: every sample of every player. High volume, but binning is O(n).
@@ -86,7 +141,7 @@ const rawPoints = computed<Pt[]>(() => {
         if (f.tick < round.startTick) continue
         for (const p of f.players) {
           if (!p.alive) continue
-          out.push({ x: p.x, y: p.y, z: p.z, side: p.side, steamId: p.steamId })
+          out.push({ x: p.x, y: p.y, z: p.z, side: p.side, steamId: p.steamId, t: Math.max(0, f.t - fz) })
         }
       }
     }
@@ -94,9 +149,10 @@ const rawPoints = computed<Pt[]>(() => {
   return out
 })
 
-/** Points after side/player (the level filter happens per plot). */
+/** Points after side/player/time (the level filter happens per plot). */
 const points = computed<Pt[]>(() =>
   rawPoints.value.filter((p) => {
+    if (!isFullRange.value && (p.t < timeRange.value[0] || p.t > timeRange.value[1])) return false
     if (hasIdentity.value) {
       if (sideFilter.value !== 'all' && p.side !== sideFilter.value) return false
       if (playerFilter.value !== 'all' && p.steamId !== playerFilter.value) return false
@@ -125,21 +181,26 @@ const plots = computed<Plot[]>(() => {
   return [{ key: 'single', radar: calibration.value.radar, points: points.value }]
 })
 
-const totalPoints = computed(() => points.value.length)
+// --- Select options (UiSelect uses string values) ---
+const playerOptions = computed(() => [
+  { value: 'all', label: t('heatmap.all') },
+  ...props.replay.players.map((p) => ({ value: p.steamId, label: p.name })),
+])
+const roundOptions = computed(() => [
+  { value: 'all', label: t('heatmap.allRounds') },
+  ...props.replay.rounds.map((r, i) => ({ value: String(i), label: `${t('heatmap.round')} ${r.number}` })),
+])
+/** Bridges the string-valued round select to the `number | 'all'` filter. */
+const roundFilterModel = computed<string>({
+  get: () => (roundFilter.value === 'all' ? 'all' : String(roundFilter.value)),
+  set: (v) => (roundFilter.value = v === 'all' ? 'all' : Number(v)),
+})
 </script>
 
 <template>
   <div class="flex h-full w-full">
     <!-- Filters panel -->
     <aside class="flex w-64 shrink-0 flex-col gap-4 overflow-y-auto border-r border-ink-800 bg-ink-900/40 p-4">
-      <div>
-        <h3 class="flex items-center gap-2 font-display text-sm text-ink-50">
-          <UiIcon name="bar-chart" class="h-4 w-4 text-surge-400" />
-          {{ t('heatmap.title') }}
-        </h3>
-        <p class="mt-1 text-xs text-ink-500">{{ totalPoints }} {{ t('heatmap.points') }}</p>
-      </div>
-
       <!-- Source -->
       <div>
         <label class="mb-1.5 block text-xs font-medium text-ink-300">{{ t('heatmap.data') }}</label>
@@ -178,25 +239,22 @@ const totalPoints = computed(() => points.value.length)
       <!-- Player -->
       <div :class="{ 'pointer-events-none opacity-40': !hasIdentity }">
         <label class="mb-1.5 block text-xs font-medium text-ink-300">{{ t('heatmap.player') }}</label>
-        <select
-          v-model="playerFilter"
-          class="w-full cursor-pointer rounded-md border border-ink-700 bg-ink-950 px-2 py-1.5 text-xs text-ink-200"
-        >
-          <option value="all">{{ t('heatmap.all') }}</option>
-          <option v-for="p in replay.players" :key="p.steamId" :value="p.steamId">{{ p.name }}</option>
-        </select>
+        <UiSelect v-model="playerFilter" :options="playerOptions" class="w-full" />
       </div>
 
       <!-- Round -->
       <div>
         <label class="mb-1.5 block text-xs font-medium text-ink-300">{{ t('heatmap.round') }}</label>
-        <select
-          v-model="roundFilter"
-          class="w-full cursor-pointer rounded-md border border-ink-700 bg-ink-950 px-2 py-1.5 text-xs text-ink-200"
-        >
-          <option :value="'all'">{{ t('heatmap.allRounds') }}</option>
-          <option v-for="(r, i) in replay.rounds" :key="i" :value="i">{{ t('heatmap.round') }} {{ r.number }}</option>
-        </select>
+        <UiSelect v-model="roundFilterModel" :options="roundOptions" class="w-full" />
+      </div>
+
+      <!-- Round time window -->
+      <div>
+        <div class="mb-1 flex items-center justify-between">
+          <label class="text-xs font-medium text-ink-300">{{ t('heatmap.time') }}</label>
+          <span class="font-mono text-xs text-ink-500">{{ timeRange[0] }}s – {{ timeRange[1] }}s</span>
+        </div>
+        <UiRangeSlider v-model="timeRange" :max="maxRoundTime" />
       </div>
 
       <p v-if="levels" class="text-xs text-ink-600">

@@ -176,7 +176,8 @@
     "tabs": {
       "throws": "Würfe",
       "flashes": "Flashes",
-      "damage": "Schaden"
+      "damage": "Schaden",
+      "heatmap": "Heatmap"
     },
     "empty": "Keine Utility-Daten für dieses Demo.",
     "flash": {
@@ -213,9 +214,9 @@
     "title": "Heatmap",
     "points": "Punkte",
     "data": "Daten",
+    "kills": "Kills",
     "deaths": "Tode",
     "presence": "Präsenz",
-    "utility": "Utility",
     "level": "Ebene",
     "side": "Seite",
     "both": "Beide",
@@ -223,7 +224,9 @@
     "all": "Alle",
     "round": "Runde",
     "allRounds": "Alle Runden",
-    "multiLevelNote": "{map} hat zwei Etagen: jeder Plot zeigt eine Ebene."
+    "time": "Rundenzeit",
+    "multiLevelNote": "{map} hat zwei Etagen: jeder Plot zeigt eine Ebene.",
+    "team": "Team"
   },
   "economy": {
     "outcomesTitle": "Rundenergebnisse nach Economy-Typ",

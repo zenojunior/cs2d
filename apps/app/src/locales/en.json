@@ -176,7 +176,8 @@
     "tabs": {
       "throws": "Throws",
       "flashes": "Flashes",
-      "damage": "Damage"
+      "damage": "Damage",
+      "heatmap": "Heatmap"
     },
     "empty": "No utility data for this demo.",
     "flash": {
@@ -213,9 +214,9 @@
     "title": "Heatmap",
     "points": "points",
     "data": "Data",
+    "kills": "Kills",
     "deaths": "Deaths",
     "presence": "Presence",
-    "utility": "Utility",
     "level": "Level",
     "side": "Side",
     "both": "Both",
@@ -223,7 +224,9 @@
     "all": "All",
     "round": "Round",
     "allRounds": "All rounds",
-    "multiLevelNote": "{map} has two floors: each plot shows one level."
+    "time": "Round time",
+    "multiLevelNote": "{map} has two floors: each plot shows one level.",
+    "team": "Team"
   },
   "economy": {
     "outcomesTitle": "Round outcomes by economy type",

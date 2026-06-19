@@ -11,6 +11,7 @@ import type {
 } from '@/viewer/domain/schema'
 import { MAP_CALIBRATION } from '@/viewer/domain/calibration'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
+import { KIND_ORDER, grenadeIconStyle as iconStyle } from '@/viewer/domain/grenades'
 import ViewerMap from '@/viewer/player/ViewerMap.vue'
 import UiSelect from '@/ui/UiSelect.vue'
 import { useI18n } from '@/i18n'
@@ -101,43 +102,10 @@ function floorLabel(floor: number | null): string {
   return floor == null ? '' : (mapLevels.value?.[floor]?.name ?? '')
 }
 
-/** Color per grenade type (data color, applied via :style). The label comes
- *  from i18n (`grenadeKind.<type>`). */
-const KIND_COLOR: Record<GrenadeKind, string> = {
-  smoke: 'rgba(206, 211, 222, 0.95)',
-  fire: 'rgba(255, 120, 30, 0.95)',
-  he: 'rgba(255, 90, 60, 0.95)',
-  flash: 'rgba(255, 238, 170, 0.95)',
-  decoy: 'rgba(140, 150, 165, 0.95)',
-}
-/** Utility icon (white SVG under /public/weapons) per grenade type. */
-const KIND_ICON: Record<GrenadeKind, string> = {
-  smoke: '/weapons/smoke.svg',
-  fire: '/weapons/molotov.svg',
-  he: '/weapons/he.svg',
-  flash: '/weapons/flash.svg',
-  decoy: '/weapons/decoy.svg',
-}
-/** Inline CSS mask painting the single-color icon SVG in the kind's data color. */
-function iconStyle(kind: GrenadeKind) {
-  const src = KIND_ICON[kind]
-  return {
-    maskImage: `url(${src})`,
-    WebkitMaskImage: `url(${src})`,
-    maskSize: 'contain',
-    WebkitMaskSize: 'contain',
-    maskRepeat: 'no-repeat',
-    WebkitMaskRepeat: 'no-repeat',
-    maskPosition: 'center',
-    WebkitMaskPosition: 'center',
-    backgroundColor: KIND_COLOR[kind],
-  }
-}
 /** Translated grenade type label. */
 function kindLabel(k: GrenadeKind): string {
   return tr(`grenadeKind.${k}`)
 }
-const KIND_ORDER: GrenadeKind[] = ['smoke', 'flash', 'he', 'fire', 'decoy']
 
 /** A player's side in that round, read from the first frame that contains them. */
 function sideInRound(round: Round, steamId: string | null): Side | null {

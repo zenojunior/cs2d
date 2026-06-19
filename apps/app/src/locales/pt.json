@@ -176,7 +176,8 @@
     "tabs": {
       "throws": "Lançamentos",
       "flashes": "Flashes",
-      "damage": "Dano"
+      "damage": "Dano",
+      "heatmap": "Heatmap"
     },
     "empty": "Sem dados de utilitárias para esta demo.",
     "flash": {
@@ -213,9 +214,9 @@
     "title": "Heatmap",
     "points": "pontos",
     "data": "Dado",
+    "kills": "Abates",
     "deaths": "Mortes",
     "presence": "Presença",
-    "utility": "Utilitárias",
     "level": "Nível",
     "side": "Lado",
     "both": "Ambos",
@@ -223,7 +224,9 @@
     "all": "Todos",
     "round": "Round",
     "allRounds": "Todos os rounds",
-    "multiLevelNote": "{map} tem dois andares: cada plot mostra um nível."
+    "time": "Tempo do round",
+    "multiLevelNote": "{map} tem dois andares: cada plot mostra um nível.",
+    "team": "Equipe"
   },
   "economy": {
     "outcomesTitle": "Resultado por tipo de economia",

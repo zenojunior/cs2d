@@ -35,13 +35,54 @@ function fmt(n: number, digits = 1): string {
   return n.toFixed(digits)
 }
 
+/** Every shown player's steamId (both teams), for "best of the match" stars. */
+const allPlayerIds = computed(() => teams.value.flatMap((tm) => tm.players.map((p) => p.steamId)))
+
+/** SteamIds achieving the max of `num` across shown players (empty if max <= 0). */
+function bestSet(num: (id: string) => number): Set<string> {
+  const ids = allPlayerIds.value
+  let max = 0
+  for (const id of ids) max = Math.max(max, num(id))
+  const set = new Set<string>()
+  if (max > 0) for (const id of ids) if (num(id) === max) set.add(id)
+  return set
+}
+
 const rows = computed(() => {
   const by = stats.value.byPlayer
   const rounds = Math.max(1, stats.value.roundCount)
   const get = (id: string) => by.get(id)
+  // Numeric value per metric (used both for display and to pick the match best).
+  const num = {
+    thrown: (id: string) => get(id)?.thrown ?? 0,
+    total: (id: string) => get(id)?.damage ?? 0,
+    perThrow: (id: string) => {
+      const s = get(id)
+      return s && s.thrown ? s.damage / s.thrown : 0
+    },
+    perRound: (id: string) => (get(id)?.damage ?? 0) / rounds,
+    kills: (id: string) => get(id)?.kills ?? 0,
+  }
+  const best = {
+    thrown: bestSet(num.thrown),
+    total: bestSet(num.total),
+    perThrow: bestSet(num.perThrow),
+    perRound: bestSet(num.perRound),
+    kills: bestSet(num.kills),
+  }
   return [
-    { key: 'thrown', label: t('utilities.damage.thrown'), value: (id: string) => get(id)?.thrown ?? 0 },
-    { key: 'total', label: t('utilities.damage.total'), value: (id: string) => get(id)?.damage ?? 0 },
+    {
+      key: 'thrown',
+      label: t('utilities.damage.thrown'),
+      value: num.thrown,
+      best: (id: string) => best.thrown.has(id),
+    },
+    {
+      key: 'total',
+      label: t('utilities.damage.total'),
+      value: num.total,
+      best: (id: string) => best.total.has(id),
+    },
     {
       key: 'perThrow',
       label: t('utilities.damage.perThrow'),
@@ -49,13 +90,20 @@ const rows = computed(() => {
         const s = get(id)
         return s && s.thrown ? fmt(s.damage / s.thrown) : '-'
       },
+      best: (id: string) => best.perThrow.has(id),
     },
     {
       key: 'perRound',
       label: t('utilities.damage.perRound'),
-      value: (id: string) => fmt((get(id)?.damage ?? 0) / rounds),
+      value: (id: string) => fmt(num.perRound(id)),
+      best: (id: string) => best.perRound.has(id),
     },
-    { key: 'kills', label: t('utilities.damage.kills'), value: (id: string) => get(id)?.kills ?? 0 },
+    {
+      key: 'kills',
+      label: t('utilities.damage.kills'),
+      value: num.kills,
+      best: (id: string) => best.kills.has(id),
+    },
   ]
 })
 </script>

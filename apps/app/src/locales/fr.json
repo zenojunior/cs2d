@@ -176,7 +176,8 @@
     "tabs": {
       "throws": "Lancers",
       "flashes": "Flashes",
-      "damage": "Dégâts"
+      "damage": "Dégâts",
+      "heatmap": "Heatmap"
     },
     "empty": "Aucune donnée utilitaire pour cette démo.",
     "flash": {
@@ -213,9 +214,9 @@
     "title": "Heatmap",
     "points": "points",
     "data": "Données",
+    "kills": "Frags",
     "deaths": "Morts",
     "presence": "Présence",
-    "utility": "Utilitaires",
     "level": "Niveau",
     "side": "Camp",
     "both": "Les deux",
@@ -223,7 +224,9 @@
     "all": "Tous",
     "round": "Round",
     "allRounds": "Tous les rounds",
-    "multiLevelNote": "{map} a deux étages : chaque graphique montre un niveau."
+    "time": "Temps de manche",
+    "multiLevelNote": "{map} a deux étages : chaque graphique montre un niveau.",
+    "team": "Équipe"
   },
   "economy": {
     "outcomesTitle": "Résultats des rounds par type d'économie",
