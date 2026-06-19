@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onClickOutside } from '@vueuse/core'
+import { Flag } from '@blade-flags/vue'
+import { circleFlags } from '@blade-flags/core/flags/circle'
 import Cs2Mark from '@/shell/Cs2Mark.vue'
 import UiIcon from '@/ui/UiIcon.vue'
 import { useI18n, type LocaleCode } from '@/i18n'
@@ -87,7 +89,7 @@ function choose(code: LocaleCode) {
             class="flex cursor-pointer items-center gap-1.5 rounded-md border border-ink-700 bg-ink-900/60 px-2 py-1 text-ink-200 transition-colors hover:bg-ink-800"
             @click="langOpen = !langOpen"
           >
-            <UiIcon name="globe" class="h-3.5 w-3.5 text-ink-400" />
+            <Flag :code="current.flag" :flags="circleFlags" class="h-4 w-4 shrink-0" />
             <span class="font-mono text-[11px] font-medium">{{ current.label }}</span>
             <UiIcon name="chevron-down" class="h-3 w-3 text-ink-500" />
           </button>
@@ -104,7 +106,7 @@ function choose(code: LocaleCode) {
               :class="locale === l.code ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:bg-ink-800 hover:text-ink-100'"
               @click="choose(l.code)"
             >
-              <span class="w-7 shrink-0 font-mono text-[11px] text-ink-400">{{ l.label }}</span>
+              <Flag :code="l.flag" :flags="circleFlags" class="h-4 w-4 shrink-0" />
               <span class="flex-1 truncate">{{ l.name }}</span>
               <UiIcon v-if="locale === l.code" name="check" class="h-3.5 w-3.5 shrink-0 text-surge-400" />
             </button>
