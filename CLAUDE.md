@@ -48,7 +48,11 @@
 ## Conventions
 
 - Source-code comments in English.
-- i18n: 3 locales (pt/en/es) in `src/i18n.ts` — add every new key to all three.
+- i18n: `vue-i18n`. Each locale is a JSON catalog in `src/locales/<code>.json`;
+  add every new key to all of them. `src/i18n.ts` wires it up: pt is bundled as the
+  fallback, the rest lazy-load on selection. To add a locale, drop a `<code>.json`
+  (same shape as `pt.json`) and add an entry to `LOCALES` (with its circle-flag
+  country code) plus the `LocaleCode` union.
 
 ## Assets
 
