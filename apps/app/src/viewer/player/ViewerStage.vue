@@ -166,13 +166,49 @@ function onResizeArea(p: { id: string; x: number; y: number; x2: number; y2: num
 
 // Right-click target for a new comment (a player under the cursor), for the
 // "add a comment" context-menu action.
-const contextTarget = ref<{ x: number; y: number; anchor: CommentAnchor; vx: number; vy: number } | null>(null)
-function onContextTarget(p: { x: number; y: number; anchor: CommentAnchor; vx: number; vy: number } | null) {
+const contextTarget = ref<{
+  x: number
+  y: number
+  z: number
+  yaw: number
+  anchor: CommentAnchor
+  vx: number
+  vy: number
+} | null>(null)
+function onContextTarget(
+  p: { x: number; y: number; z: number; yaw: number; anchor: CommentAnchor; vx: number; vy: number } | null,
+) {
   contextTarget.value = p
 }
 function addContextComment() {
   const tgt = contextTarget.value
   if (tgt) onDropComment({ x: tgt.x, y: tgt.y, anchor: tgt.anchor, vx: tgt.vx, vy: tgt.vy, vw: 0, vh: 0 })
+}
+
+// Brief confirmation toast (auto-hides), used when copying a position to the clipboard.
+const toast = ref('')
+let toastTimer: ReturnType<typeof setTimeout> | undefined
+function showToast(msg: string) {
+  toast.value = msg
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => (toast.value = ''), 1800)
+}
+
+/**
+ * Copies a CS2 console teleport command for the right-clicked player, mirroring
+ * the in-game `getpos` output: `setpos x y z;setang pitch yaw roll`. We only know
+ * the yaw, so pitch and roll are left at 0.
+ */
+async function copyContextSetpos() {
+  const tgt = contextTarget.value
+  if (!tgt) return
+  const cmd = `setpos ${tgt.x.toFixed(2)} ${tgt.y.toFixed(2)} ${tgt.z.toFixed(2)};setang 0 ${tgt.yaw.toFixed(2)} 0`
+  try {
+    await navigator.clipboard.writeText(cmd)
+    showToast(t('viewer.copyPosDone'))
+  } catch {
+    showToast(cmd)
+  }
 }
 const commentMode = ref(false)
 const lastAuthor = useLocalStorage('viewer.comment.author', '')
@@ -537,6 +573,21 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
       @popover-moved="onPopoverMoved"
     />
 
+    <!-- Transient confirmation toast (e.g. "position copied") -->
+    <Transition
+      enter-active-class="transition-opacity duration-150"
+      leave-active-class="transition-opacity duration-300"
+      enter-from-class="opacity-0"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="toast"
+        class="pointer-events-none absolute bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-md bg-ink-900/90 px-3 py-1.5 text-sm text-ink-100 shadow-lg ring-1 ring-ink-700"
+      >
+        {{ toast }}
+      </div>
+    </Transition>
+
     <!-- Top: score and current round -->
     <div
       class="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-ink-950/90 to-transparent p-4"
@@ -858,6 +909,10 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
           <span class="ml-auto max-w-28 truncate pl-3 text-ink-400">
             {{ anchorLabel(contextTarget.anchor) }}
           </span>
+        </ContextMenuItem>
+        <ContextMenuItem @select="copyContextSetpos">
+          <UiIcon name="copy" class="h-4 w-4 text-ink-400" />
+          {{ t('viewer.copyPos') }}
         </ContextMenuItem>
         <ContextMenuSeparator />
       </template>

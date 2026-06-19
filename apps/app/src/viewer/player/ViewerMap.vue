@@ -62,7 +62,9 @@ const emit = defineEmits<{
   resizeArea: [{ id: string; x: number; y: number; x2: number; y2: number }]
   /** Right-click target for a new comment (a player) or null, so the stage can
    *  offer "add a comment" in the context menu. */
-  contextTarget: [{ x: number; y: number; anchor: CommentAnchor; vx: number; vy: number } | null]
+  contextTarget: [
+    { x: number; y: number; z: number; yaw: number; anchor: CommentAnchor; vx: number; vy: number } | null,
+  ]
   /** The open popover's anchor moved on screen (view/player change): its new rect. */
   popoverMoved: [{ vx: number; vy: number; vw: number; vh: number }]
 }>()
@@ -1992,12 +1994,22 @@ function onContextMenu(e: MouseEvent) {
   // Right-click on a player -> the menu offers "add a comment on them". The reka-ui
   // trigger still opens the menu (no preventDefault here).
   const target = detectTarget(sx, sy)
-  emit(
-    'contextTarget',
-    target.anchor.kind === 'player'
-      ? { x: target.x, y: target.y, anchor: target.anchor, vx: e.clientX, vy: e.clientY }
-      : null,
-  )
+  const anchor = target.anchor
+  if (anchor.kind === 'player') {
+    // Pull z/yaw from the current frame so the menu can offer a setpos command.
+    const p = props.players.find((pl) => pl.steamId === anchor.steamId)
+    emit('contextTarget', {
+      x: target.x,
+      y: target.y,
+      z: p?.z ?? 0,
+      yaw: p?.yaw ?? 0,
+      anchor,
+      vx: e.clientX,
+      vy: e.clientY,
+    })
+  } else {
+    emit('contextTarget', null)
+  }
 }
 
 function zoomBy(factor: number) {

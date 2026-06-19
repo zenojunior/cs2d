@@ -83,6 +83,8 @@
     "pause": "Duraklat",
     "back5": "5sn geri",
     "fwd5": "5sn ileri",
+    "copyPos": "Konumu kopyala (setpos)",
+    "copyPosDone": "Konum kopyalandı",
     "speed": "Hız",
     "rounds": "Rauntlar",
     "knife": "Bıçak",

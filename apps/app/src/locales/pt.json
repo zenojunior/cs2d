@@ -83,6 +83,8 @@
     "pause": "Pausar",
     "back5": "Voltar 5s",
     "fwd5": "Avançar 5s",
+    "copyPos": "Copiar posição (setpos)",
+    "copyPosDone": "Posição copiada",
     "speed": "Velocidade",
     "rounds": "Rounds",
     "knife": "Faca",
