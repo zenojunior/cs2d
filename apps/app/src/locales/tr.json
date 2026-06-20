@@ -10,7 +10,13 @@
     "github": "GitHub'da görüntüle",
     "language": "Dil",
     "about": "Hakkında",
-    "major": "Major"
+    "major": "Major",
+    "upload": "Yükle",
+    "library": "Kütüphane",
+    "info": "Bilgi",
+    "toggleMenu": "Menüyü aç/kapat",
+    "back": "Geri",
+    "project": "Proje"
   },
   "major": {
     "back": "Analiz aracına dön",
@@ -76,7 +82,14 @@
     "importError": "Bu dosya içe aktarılamadı.",
     "extConnecting": "Uzantıya bağlanılıyor...",
     "extDownloading": "Demo indiriliyor...",
-    "extDownloadError": "Demo indirilemedi."
+    "extDownloadError": "Demo indirilemedi.",
+    "menu": {
+      "open": "Tekrarı aç",
+      "copyName": "Dosya adını kopyala",
+      "remove": "Geçmişten kaldır",
+      "rounds": "raunt",
+      "withVoice": "Oyuncu sesiyle"
+    }
   },
   "viewer": {
     "round": "Raunt",
@@ -177,7 +190,8 @@
       },
       "undo": "Geri al",
       "redo": "Yinele"
-    }
+    },
+    "knifeRound": "Bıçak raundu"
   },
   "grenadeKind": {
     "smoke": "Smoke",
@@ -286,5 +300,14 @@
     "bombDefused": "Bomba imha edildi",
     "elimination": "Eleme",
     "timeExpired": "Süre doldu"
+  },
+  "library": {
+    "title": "Kütüphane",
+    "count": "{n} demo",
+    "stored": "yerel olarak saklanıyor",
+    "device": "cihazda {quota} alanın {used} kullanılıyor",
+    "empty": "Henüz demo analiz edilmedi.",
+    "uploadCta": "Demo analiz et",
+    "allMaps": "Tüm haritalar"
   }
 }

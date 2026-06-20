@@ -8,11 +8,11 @@ import UtilitiesView from '@/viewer/analysis/UtilitiesView.vue'
 import EconomyView from '@/viewer/analysis/EconomyView.vue'
 import DemoPreviewLoop from '@/viewer/player/DemoPreviewLoop.vue'
 import { useDemoParser } from '@/viewer/ingest/useDemoParser'
-import { useRecentDemos, type RecentDemo } from '@/viewer/ingest/useRecentDemos'
+import { useRecentDemos } from '@/viewer/ingest/useRecentDemos'
 import { importArchive } from '@/viewer/ingest/demoArchive'
 import { fetchReplay } from '@/viewer/ingest/replaySource'
 import { listenForExtensionDemo } from '@/viewer/ingest/extensionBridge'
-import { MAP_CALIBRATION } from '@/viewer/domain/calibration'
+import { fmtSize } from '@/viewer/domain/demoMeta'
 import { useI18n } from '@/i18n'
 
 const { t } = useI18n()
@@ -53,8 +53,6 @@ const input = ref<HTMLInputElement | null>(null)
 // Dedicated picker for the import button, scoped to .cs2dv so its label stays
 // truthful (game demos go through the dropzone above).
 const importInput = ref<HTMLInputElement | null>(null)
-// Id of the recent demo currently being reloaded from local storage.
-const loadingId = ref<string | null>(null)
 // Loading a demo from the URL (/:id).
 const routeLoading = ref(false)
 // Id of the currently open demo (avoids reloading when navigating to itself).
@@ -209,7 +207,6 @@ async function onImportArchive(file: File) {
 async function loadById(id: string) {
   if (currentId.value === id && parser.status.value === 'done') return
   routeLoading.value = true
-  loadingId.value = id
   try {
     const payload = await recent.load(id)
     if (!payload) {
@@ -228,7 +225,6 @@ async function loadById(id: string) {
     currentId.value = id
   } finally {
     routeLoading.value = false
-    loadingId.value = null
   }
 }
 
@@ -334,39 +330,6 @@ function onImportInput(e: Event) {
   el.value = ''
 }
 
-// Reopening a demo from history = navigate to the id (the URL drives loading).
-function openRecent(demo: RecentDemo) {
-  if (loadingId.value) return
-  router.push(`/${demo.id}`)
-}
-
-function fmtSize(bytes: number) {
-  const mb = bytes / (1024 * 1024)
-  return `${mb.toFixed(0)} MB`
-}
-
-// "de_dust2" -> "Dust2"; strips the game-mode prefix and capitalizes.
-function prettyMap(map: string) {
-  const base = map.replace(/^(de|cs|ar|dz)_/, '')
-  return base.charAt(0).toUpperCase() + base.slice(1)
-}
-
-// Maps with preview art (16:9) in /maps/thumbs.
-const MAP_THUMBS = new Set([
-  'de_ancient', 'de_anubis', 'de_cache', 'de_dust2',
-  'de_inferno', 'de_mirage', 'de_nuke', 'de_overpass',
-])
-
-// Map image for the thumbnail: the preview art when it exists; otherwise the
-// radar used in the viewer; otherwise nothing (falls back to the generic icon).
-function mapImage(map: string): string | null {
-  if (MAP_THUMBS.has(map)) return `/maps/thumbs/${map}.webp`
-  return MAP_CALIBRATION[map]?.radar ?? null
-}
-
-function fmtDate(ms: number) {
-  return new Date(ms).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
-}
 </script>
 
 <template>
@@ -629,86 +592,6 @@ function fmtDate(ms: number) {
             </div>
           </div>
         </div>
-
-        <!-- Local history: previously analyzed demos, stored in the browser -->
-        <section v-if="recent.list.value.length" class="mx-auto mt-10 max-w-xl">
-          <div class="mb-3 flex items-center gap-2">
-            <UiIcon name="history" class="h-4 w-4 text-ink-400" />
-            <h2 class="text-sm font-semibold text-ink-200">{{ t('analyzer.recentTitle') }}</h2>
-          </div>
-
-          <ul class="space-y-2">
-            <li v-for="demo in recent.list.value" :key="demo.id">
-              <div
-                class="group flex items-center gap-3 rounded-lg border border-ink-800 bg-ink-900/40 p-3 transition-colors hover:border-ink-600 hover:bg-ink-900/70"
-              >
-                <button
-                  type="button"
-                  class="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
-                  :disabled="Boolean(loadingId)"
-                  @click="openRecent(demo)"
-                >
-                  <div
-                    class="relative grid h-12 w-20 shrink-0 place-items-center overflow-hidden rounded-md bg-ink-800 text-ink-300"
-                  >
-                    <img
-                      v-if="mapImage(demo.map)"
-                      :src="mapImage(demo.map)!"
-                      :alt="prettyMap(demo.map)"
-                      class="absolute inset-0 h-full w-full object-cover opacity-90"
-                    />
-                    <UiIcon v-else name="map" class="h-4 w-4" />
-                    <!-- Loading overlay while reopening the demo -->
-                    <div
-                      v-if="loadingId === demo.id"
-                      class="absolute inset-0 grid place-items-center bg-ink-950/60"
-                    >
-                      <UiIcon name="loader" class="h-4 w-4 animate-spin text-surge-400" />
-                    </div>
-                  </div>
-
-                  <div class="min-w-0 flex-1">
-                    <p class="flex items-center gap-2 text-sm font-medium text-ink-50">
-                      <span class="truncate">{{ prettyMap(demo.map) }}</span>
-                      <span class="font-mono text-xs text-ink-400">
-                        <span class="text-pulse-300">{{ demo.scoreCt }}</span>
-                        <span class="text-ink-600"> : </span>
-                        <span class="text-warn">{{ demo.scoreT }}</span>
-                      </span>
-                      <span
-                        v-if="demo.hasVoice"
-                        class="inline-flex items-center gap-0.5 text-ink-500"
-                        title="Com voz dos jogadores"
-                      >
-                        <UiIcon name="mic" class="h-3 w-3" />
-                      </span>
-                    </p>
-                    <p class="mt-0.5 flex items-center gap-1.5 truncate text-xs text-ink-500">
-                      <span class="truncate">{{ demo.fileName }}</span>
-                      <span class="text-ink-700">·</span>
-                      <span class="shrink-0">{{ fmtSize(demo.fileSize) }}</span>
-                      <span class="text-ink-700">·</span>
-                      <span class="shrink-0">{{ fmtDate(demo.savedAt) }}</span>
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  aria-label="Remover do histórico"
-                  class="shrink-0 cursor-pointer rounded-md p-1.5 text-ink-500 opacity-0 transition-colors hover:bg-ink-800 hover:text-ink-200 focus-visible:opacity-100 group-hover:opacity-100"
-                  @click="recent.remove(demo.id)"
-                >
-                  <UiIcon name="x" class="h-4 w-4" />
-                </button>
-              </div>
-            </li>
-          </ul>
-
-          <p class="mt-3 text-xs text-ink-600">
-            {{ t('analyzer.recentNote') }}
-          </p>
-        </section>
       </div>
       </div>
     </div>

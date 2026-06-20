@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import UiIcon from '@/ui/UiIcon.vue'
 import { useI18n } from '@/i18n'
+import { prettyMap } from '@/viewer/domain/demoMeta'
 import { TEAMS, matchById, type MajorMapReplay, type MajorMatch, type MajorTeam } from './playoffs'
 
 const props = defineProps<{ match: MajorMatch }>()
@@ -52,12 +53,6 @@ function play(map: MajorMapReplay) {
   if (!map.replay) return
   emit('play', map)
   open.value = false
-}
-
-// "de_nuke" -> "Nuke"; radar art lives at /maps/<map>_radar.png.
-function prettyMap(map: string) {
-  const base = map.replace(/^de_/, '')
-  return base.charAt(0).toUpperCase() + base.slice(1)
 }
 </script>
 

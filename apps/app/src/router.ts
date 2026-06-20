@@ -15,6 +15,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/MajorPage.vue'),
   },
   {
+    path: '/library',
+    name: 'library',
+    component: () => import('@/pages/LibraryPage.vue'),
+  },
+  {
     path: '/:id?/:tab?',
     name: 'demoviewer',
     component: () => import('@/viewer/DemoAnalyzerView.vue'),

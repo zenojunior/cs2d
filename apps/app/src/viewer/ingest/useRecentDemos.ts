@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import type { Replay, ReplayComment, VoiceData } from '@/viewer/domain/schema'
+import { exportArchive } from '@/viewer/ingest/demoArchive'
 
 /**
  * Local history of already-analyzed demos. Since the raw demo never leaves the
@@ -17,6 +18,11 @@ import type { Replay, ReplayComment, VoiceData } from '@/viewer/domain/schema'
 export interface RecentDemo {
   id: string
   fileName: string
+  /**
+   * Bytes of the parsed `.cs2dv` archive (replay + voice), which is what we
+   * actually keep locally, NOT the raw `.dem` the user dropped in. Matches the
+   * size the extension shows. Older entries may still hold the raw `.dem` size.
+   */
   fileSize: number
   map: string
   rounds: number
@@ -202,10 +208,27 @@ export function useRecentDemos() {
     const fallback = tallyScore(input.replay)
     const ct = input.replay.finalScoreCt ?? fallback.ct
     const t = input.replay.finalScoreT ?? fallback.t
+
+    // What we keep on disk is the parsed `.cs2dv`, not the heavy raw `.dem`, so
+    // measure the archive and show that light size (same as the extension does).
+    // Falls back to the caller-provided size if the gzip pass fails.
+    let sizeBytes = input.fileSize
+    try {
+      const archive = await exportArchive({
+        fileName: input.fileName,
+        replay: input.replay,
+        voice: input.voice,
+        comments: [],
+      })
+      sizeBytes = archive.size
+    } catch {
+      // Keep the fallback size.
+    }
+
     const meta: RecentDemo = {
       id,
       fileName: input.fileName,
-      fileSize: input.fileSize,
+      fileSize: sizeBytes,
       map: input.replay.map,
       rounds: input.replay.rounds.length,
       scoreCt: ct,

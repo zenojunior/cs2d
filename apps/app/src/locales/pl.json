@@ -10,7 +10,13 @@
     "github": "Zobacz na GitHub",
     "language": "Język",
     "about": "O projekcie",
-    "major": "Major"
+    "major": "Major",
+    "upload": "Prześlij",
+    "library": "Biblioteka",
+    "info": "Info",
+    "toggleMenu": "Przełącz menu",
+    "back": "Wstecz",
+    "project": "Projekt"
   },
   "major": {
     "back": "Powrót do analizatora",
@@ -76,7 +82,14 @@
     "importError": "Nie udało się zaimportować tego pliku.",
     "extConnecting": "Łączenie z rozszerzeniem...",
     "extDownloading": "Pobieranie dema...",
-    "extDownloadError": "Nie udało się pobrać dema."
+    "extDownloadError": "Nie udało się pobrać dema.",
+    "menu": {
+      "open": "Otwórz replay",
+      "copyName": "Kopiuj nazwę pliku",
+      "remove": "Usuń z historii",
+      "rounds": "rundy",
+      "withVoice": "Z głosem graczy"
+    }
   },
   "viewer": {
     "round": "Runda",
@@ -177,7 +190,8 @@
       },
       "undo": "Cofnij",
       "redo": "Ponów"
-    }
+    },
+    "knifeRound": "Runda nożowa"
   },
   "grenadeKind": {
     "smoke": "Smoke",
@@ -286,5 +300,14 @@
     "bombDefused": "Bomba rozbrojona",
     "elimination": "Eliminacja",
     "timeExpired": "Koniec czasu"
+  },
+  "library": {
+    "title": "Biblioteka",
+    "count": "{n} dem",
+    "stored": "zapisane lokalnie",
+    "device": "{used} z {quota} użyte na urządzeniu",
+    "empty": "Nie przeanalizowano jeszcze żadnej demki.",
+    "uploadCta": "Przeanalizuj demo",
+    "allMaps": "Wszystkie mapy"
   }
 }

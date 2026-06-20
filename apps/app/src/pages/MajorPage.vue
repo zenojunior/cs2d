@@ -33,14 +33,6 @@ function onPlay(match: MajorMatch, map: MajorMapReplay) {
 <template>
   <div class="h-full overflow-y-auto bg-ink-950">
     <div class="mx-auto max-w-6xl px-5 py-10 sm:px-6 sm:py-14">
-      <RouterLink
-        to="/"
-        class="mb-8 inline-flex items-center gap-1.5 text-xs text-ink-400 transition-colors hover:text-ink-200"
-      >
-        <UiIcon name="arrow-left" class="h-3.5 w-3.5" />
-        <span class="font-medium">{{ t('major.back') }}</span>
-      </RouterLink>
-
       <!-- Heading -->
       <div class="flex items-center gap-2 text-surge-400">
         <UiIcon name="trophy" class="h-5 w-5" />

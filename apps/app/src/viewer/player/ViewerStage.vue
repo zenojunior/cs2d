@@ -725,12 +725,13 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
       <div class="relative flex items-center justify-between gap-4">
         <div v-if="!hudHidden" class="pointer-events-auto">
           <h2 class="font-display text-base text-ink-50">
-            {{ t('viewer.round') }} {{ r.currentRoundLabel.value }}
-            <span class="text-ink-400">{{ t('viewer.of') }} {{ r.totalRounds.value }}</span>
+            <template v-if="r.currentRoundLabel.value === '0'">{{ t('viewer.knifeRound') }}</template>
+            <template v-else>
+              {{ t('viewer.round') }} {{ r.currentRoundLabel.value }}
+              <span class="text-ink-400">{{ t('viewer.of') }} {{ r.totalRounds.value }}</span>
+            </template>
           </h2>
-          <p class="text-xs text-ink-300">
-            {{ r.replay.value.map }}<template v-if="sourceLabel"> · {{ sourceLabel }}</template>
-          </p>
+          <p class="text-xs text-ink-300">{{ r.replay.value.map }}</p>
         </div>
 
         <!-- Center: score around the tactical clock -->

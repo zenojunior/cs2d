@@ -10,7 +10,13 @@
     "github": "Auf GitHub ansehen",
     "language": "Sprache",
     "about": "Über",
-    "major": "Major"
+    "major": "Major",
+    "upload": "Hochladen",
+    "library": "Bibliothek",
+    "info": "Info",
+    "toggleMenu": "Menü umschalten",
+    "back": "Zurück",
+    "project": "Projekt"
   },
   "major": {
     "back": "Zurück zum Analyzer",
@@ -76,7 +82,14 @@
     "importError": "Diese Datei konnte nicht importiert werden.",
     "extConnecting": "Verbindung zur Erweiterung...",
     "extDownloading": "Demo wird heruntergeladen...",
-    "extDownloadError": "Demo konnte nicht heruntergeladen werden."
+    "extDownloadError": "Demo konnte nicht heruntergeladen werden.",
+    "menu": {
+      "open": "Replay öffnen",
+      "copyName": "Dateinamen kopieren",
+      "remove": "Aus Verlauf entfernen",
+      "rounds": "Runden",
+      "withVoice": "Mit Spielerstimmen"
+    }
   },
   "viewer": {
     "round": "Runde",
@@ -177,7 +190,8 @@
       },
       "undo": "Rückgängig",
       "redo": "Wiederholen"
-    }
+    },
+    "knifeRound": "Messerrunde"
   },
   "grenadeKind": {
     "smoke": "Smoke",
@@ -286,5 +300,14 @@
     "bombDefused": "Bombe entschärft",
     "elimination": "Eliminierung",
     "timeExpired": "Zeit abgelaufen"
+  },
+  "library": {
+    "title": "Bibliothek",
+    "count": "{n} Demos",
+    "stored": "lokal gespeichert",
+    "device": "{used} von {quota} auf dem Gerät belegt",
+    "empty": "Noch keine Demo analysiert.",
+    "uploadCta": "Demo analysieren",
+    "allMaps": "Alle Karten"
   }
 }

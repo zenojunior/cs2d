@@ -5,6 +5,11 @@
 - NEVER run `git commit` or `git push` without explicit permission. All code must
   be reviewed first.
 - Only commit, push, or open/post a review when the prompt explicitly asks for it.
+- NEVER run broad process-killing commands (`pkill -f vite`, `pkill -f node`,
+  `killall node`, `kill %1`, etc.). The user keeps their own `pnpm dev` running on
+  port 5174, and these patterns terminate it. If you need a dev server to test,
+  reuse the one already on 5174 (don't start a second); if you must launch your own,
+  capture its exact PID and kill ONLY that PID — never match by name/pattern.
 
 ## Project layout
 
