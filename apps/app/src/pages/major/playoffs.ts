@@ -149,9 +149,13 @@ export const MATCHES: MajorMatch[] = [
     teamB: 'falcons',
     sourceA: 'qf3',
     sourceB: 'qf4',
-    scoreA: null,
-    scoreB: null,
-    maps: [],
+    scoreA: 1,
+    scoreB: 2,
+    maps: [
+      { map: 'de_anubis', replay: `${REPLAY_DIR}/sf2-anubis.cs2dv` },
+      { map: 'de_mirage', replay: `${REPLAY_DIR}/sf2-mirage.cs2dv` },
+      { map: 'de_dust2', replay: `${REPLAY_DIR}/sf2-dust2.cs2dv` },
+    ],
   },
   {
     id: 'final',
