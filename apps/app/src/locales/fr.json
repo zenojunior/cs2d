@@ -156,6 +156,24 @@
         "warning": "Attention",
         "idea": "Idée"
       }
+    },
+    "coach": {
+      "enter": "Mode coach",
+      "exit": "Quitter le mode coach",
+      "modeHint": "Choisissez un outil et dessinez sur la carte",
+      "clear": "Effacer les dessins",
+      "color": "Couleur",
+      "thickness": "Épaisseur",
+      "tool": {
+        "select": "Sélectionner",
+        "rectangle": "Rectangle",
+        "circle": "Cercle",
+        "arrow": "Flèche",
+        "path": "Tracé",
+        "grenade": "Grenade"
+      },
+      "undo": "Annuler",
+      "redo": "Rétablir"
     }
   },
   "grenadeKind": {

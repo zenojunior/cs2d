@@ -65,16 +65,17 @@ export function useVoicePlayback(opts: VoicePlaybackOptions) {
   const supported =
     typeof window !== 'undefined' && typeof window.AudioDecoder !== 'undefined'
 
-  /** Comms audio enabled (off by default: requires a user gesture). */
-  const enabled = ref(false)
+  /** Comms audio enabled (on by default). The AudioContext is created suspended on
+   *  load and resumes on the first playback (a valid user gesture), so no sound
+   *  plays before the user interacts. */
+  const enabled = ref(true)
   /** CT<->T balance: -1 = CT only, 0 = both at 100%, +1 = T only. */
   const balance = ref(0)
-  /** Master comms volume (0 to 1), exposed in the player transport. Starts at 0
-   *  so the default state is consistently muted (comms are off until a gesture);
-   *  unmuting restores `lastVolume`. */
-  const masterVolume = ref(0)
+  /** Master comms volume (0 to 1), exposed in the player transport. Starts at 50%;
+   *  muting drops it to 0 and unmuting restores `lastVolume`. */
+  const masterVolume = ref(0.5)
   /** Volume restored when unmuting (the last non-zero level). */
-  const lastVolume = ref(1)
+  const lastVolume = ref(0.5)
   /** Muted = audio off or volume at zero (to the user, the two are the same). */
   const muted = computed(() => !enabled.value || masterVolume.value <= 0)
 

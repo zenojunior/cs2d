@@ -6,6 +6,16 @@ import { SIDE_COLOR } from '@/viewer/domain/colors'
 import { commentPositionAt, isCommentActive } from '@/viewer/comments/commentAnchor'
 import { commentKindMeta } from '@/viewer/comments/commentKinds'
 import { WEAPON_LABELS, weaponIconPath } from '@/viewer/domain/weaponIcons'
+import {
+  COACH_DEFAULT_COLOR,
+  COACH_DEFAULT_THICKNESS,
+  isShapeTool,
+  type CoachDrawing,
+  type CoachGrenade,
+  type CoachShapeTool,
+  type CoachTool,
+} from '@/viewer/player/coachTools'
+import type { GrenadeKind } from '@/viewer/domain/schema'
 import { useI18n } from '@/i18n'
 
 // `t` is used internally for time; i18n is aliased as `tr`.
@@ -46,6 +56,22 @@ const props = defineProps<{
   /** Anchor of the open popover (world coords + kind), to keep it pinned as the
    *  view or the anchored player moves. */
   popoverAnchor?: { anchor: CommentAnchor; wx: number; wy: number } | null
+  /** Coach mode: the tactical board. A drag with a shape tool marks the map up. */
+  coachMode?: boolean
+  /** Active drawing tool. `select` falls back to pan/zoom. */
+  coachTool?: CoachTool
+  /** Stroke color for new drawings. */
+  coachColor?: string
+  /** Stroke width (world-unit px at 1x zoom) for new drawings. */
+  coachThickness?: number
+  /** Committed drawings for the round in view (rendered as a board overlay). */
+  coachDrawings?: CoachDrawing[]
+  /** Per-player pose overrides (steamId -> world coords + facing yaw) from dragging. */
+  playerOverrides?: Record<string, { x: number; y: number; yaw: number }>
+  /** Grenades placed on the round's board. */
+  coachGrenades?: CoachGrenade[]
+  /** Grenade kind the grenade tool places. */
+  coachGrenadeKind?: GrenadeKind
 }>()
 
 const emit = defineEmits<{
@@ -67,6 +93,16 @@ const emit = defineEmits<{
   ]
   /** The open popover's anchor moved on screen (view/player change): its new rect. */
   popoverMoved: [{ vx: number; vy: number; vw: number; vh: number }]
+  /** A coach drawing was completed: tool + world points + stroke style + floor Z. */
+  addDrawing: [{ tool: CoachShapeTool; points: { x: number; y: number }[]; color: string; thickness: number; z?: number }]
+  /** A player was moved or rotated on the board (world coords + facing yaw). */
+  setPlayerPose: [{ steamId: string; x: number; y: number; yaw: number }]
+  /** A grenade was placed on the board (world coords + floor Z). */
+  addGrenade: [{ kind: GrenadeKind; x: number; y: number; z?: number }]
+  /** A placed grenade was dragged to a new spot (world coords). */
+  moveGrenade: [{ id: string; x: number; y: number }]
+  /** A placed grenade was removed (right-clicked) from the board. */
+  removeGrenade: [{ id: string }]
 }>()
 
 const KILL_FADE = 1.4
@@ -163,6 +199,21 @@ function playerRadius() {
   return clamp(unitsToScreen(PLAYER_RADIUS_UNITS), 7, 62)
 }
 
+/** Coach-board pose of a player: the live drag preview, a committed override, or
+ *  null (use the replay pose). Only applies in coach mode. */
+function coachPosOf(p: PlayerState): { x: number; y: number; yaw: number } | null {
+  if (!props.coachMode) return null
+  if (playerDrag && playerDrag.steamId === p.steamId) {
+    return { x: playerDrag.x, y: playerDrag.y, yaw: playerDrag.yaw }
+  }
+  return props.playerOverrides?.[p.steamId] ?? null
+}
+
+/** Resolved pose of a player (override-aware), falling back to the replay pose. */
+function playerPose(p: PlayerState): { x: number; y: number; yaw: number } {
+  return coachPosOf(p) ?? { x: p.x, y: p.y, yaw: p.yaw }
+}
+
 function drawKill(x: number, y: number, alpha: number) {
   if (!ctx) return
   const r = 7
@@ -179,6 +230,106 @@ function drawKill(x: number, y: number, alpha: number) {
   ctx.restore()
 }
 
+// Deterministic per-position noise, so an effect's shape is stable across frames.
+function effectRand(seed: number) {
+  return (n: number) => {
+    const v = Math.sin(n * 12.9898 + seed * 78.233) * 43758.5453
+    return v - Math.floor(v)
+  }
+}
+
+/** Paints a smoke cloud body (puffy irregular disc) centered at screen (x, y).
+ *  Shared by live detonations and the coach board so they look identical. */
+function paintSmoke(x: number, y: number, R: number, t: number, seed: number) {
+  if (!ctx) return
+  const rand = effectRand(seed)
+  const verts = 34
+  const ring: { x: number; y: number }[] = []
+  for (let i = 0; i < verts; i++) {
+    const ang = (i / verts) * Math.PI * 2
+    const wob = 0.86 + 0.12 * rand(i + 7) + 0.03 * Math.sin(t * 1.8 + i * 0.5 + seed)
+    ring.push({ x: x + Math.cos(ang) * R * wob, y: y + Math.sin(ang) * R * wob })
+  }
+  const tracePath = () => {
+    ctx!.beginPath()
+    ctx!.moveTo(ring[0].x, ring[0].y)
+    for (let i = 1; i < ring.length; i++) ctx!.lineTo(ring[i].x, ring[i].y)
+    ctx!.closePath()
+  }
+  ctx.save()
+  ctx.filter = `blur(${clamp(R * 0.06, 2, 7)}px)`
+  const grad = ctx.createRadialGradient(x, y, R * 0.1, x, y, R)
+  grad.addColorStop(0, 'rgba(220, 224, 232, 0.46)')
+  grad.addColorStop(0.7, 'rgba(208, 213, 224, 0.34)')
+  grad.addColorStop(1, 'rgba(206, 211, 222, 0.04)')
+  ctx.fillStyle = grad
+  tracePath()
+  ctx.fill()
+  const puffs = 7
+  for (let i = 0; i < puffs; i++) {
+    const ang = rand(i + 50) * Math.PI * 2 + t * 0.12
+    const dist = R * (0.1 + 0.42 * rand(i + 80))
+    const px = x + Math.cos(ang) * dist
+    const py = y + Math.sin(ang) * dist
+    const pr = R * (0.28 + 0.22 * rand(i + 90))
+    const pg = ctx.createRadialGradient(px, py, 0, px, py, pr)
+    pg.addColorStop(0, 'rgba(230, 234, 242, 0.2)')
+    pg.addColorStop(1, 'rgba(220, 224, 232, 0)')
+    ctx.fillStyle = pg
+    ctx.beginPath()
+    ctx.arc(px, py, pr, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.filter = 'blur(1.5px)'
+  ctx.strokeStyle = 'rgba(228, 232, 240, 0.4)'
+  ctx.lineWidth = 1.5
+  tracePath()
+  ctx.stroke()
+  ctx.restore()
+}
+
+/** Paints a fire area (base glow + flickering flame blobs) centered at (x, y). */
+function paintFire(x: number, y: number, R: number, t: number, seed: number) {
+  if (!ctx) return
+  const rand = effectRand(seed)
+  ctx.save()
+  const base = ctx.createRadialGradient(x, y, R * 0.1, x, y, R)
+  base.addColorStop(0, 'rgba(255, 120, 30, 0.28)')
+  base.addColorStop(0.7, 'rgba(220, 70, 20, 0.16)')
+  base.addColorStop(1, 'rgba(180, 40, 10, 0)')
+  ctx.fillStyle = base
+  ctx.beginPath()
+  ctx.arc(x, y, R, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.globalCompositeOperation = 'lighter'
+  const blobs = 12
+  for (let i = 0; i < blobs; i++) {
+    const ang = rand(i + 1) * Math.PI * 2
+    const dist = R * (0.12 + 0.62 * rand(i + 31))
+    const fx = x + Math.cos(ang) * dist
+    const fy = y + Math.sin(ang) * dist
+    const flick = 0.55 + 0.45 * Math.sin(t * 9 + i * 1.7 + seed)
+    const fr = R * (0.16 + 0.13 * flick)
+    const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr)
+    g.addColorStop(0, `rgba(255, 235, 130, ${0.5 * flick})`)
+    g.addColorStop(0.45, `rgba(255, 140, 40, ${0.38 * flick})`)
+    g.addColorStop(1, 'rgba(200, 50, 10, 0)')
+    ctx.fillStyle = g
+    ctx.beginPath()
+    ctx.arc(fx, fy, fr, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.restore()
+}
+
+/** Effect radius (screen px) of a smoke/fire grenade, for rendering and hit-test. */
+function smokeRadius() {
+  return unitsToScreen(144)
+}
+function fireRadius() {
+  return unitsToScreen(150)
+}
+
 function drawGrenade(
   ev: Extract<Round['events'][number], { type: 'grenade' }>,
   t: number,
@@ -191,98 +342,9 @@ function drawGrenade(
   const k = clamp((t - ev.t) / span, 0, 1)
   ctx.save()
   if (ev.kind === 'smoke') {
-    // Smoke: a puffy, irregular body (not a perfect circle) built from a seeded
-    // deformed outline plus a few inner puffs for volume, softened with a blur.
-    // It drifts very slowly so it reads as smoke without looking nervous.
-    const R = unitsToScreen(144)
-    const seed = ev.x * 0.011 + ev.y * 0.015
-    const rand = (n: number) => {
-      const v = Math.sin(n * 12.9898 + seed * 78.233) * 43758.5453
-      return v - Math.floor(v)
-    }
-    // irregular outline, computed once and reused for the fill and the border
-    const verts = 34
-    const ring: { x: number; y: number }[] = []
-    for (let i = 0; i < verts; i++) {
-      const ang = (i / verts) * Math.PI * 2
-      const wob = 0.86 + 0.12 * rand(i + 7) + 0.03 * Math.sin(t * 1.8 + i * 0.5 + seed)
-      ring.push({ x: x + Math.cos(ang) * R * wob, y: y + Math.sin(ang) * R * wob })
-    }
-    const tracePath = () => {
-      ctx!.beginPath()
-      ctx!.moveTo(ring[0].x, ring[0].y)
-      for (let i = 1; i < ring.length; i++) ctx!.lineTo(ring[i].x, ring[i].y)
-      ctx!.closePath()
-    }
-    // body
-    ctx.filter = `blur(${clamp(R * 0.06, 2, 7)}px)`
-    const grad = ctx.createRadialGradient(x, y, R * 0.1, x, y, R)
-    grad.addColorStop(0, 'rgba(220, 224, 232, 0.46)')
-    grad.addColorStop(0.7, 'rgba(208, 213, 224, 0.34)')
-    grad.addColorStop(1, 'rgba(206, 211, 222, 0.04)')
-    ctx.fillStyle = grad
-    tracePath()
-    ctx.fill()
-    // inner puffs drifting slowly for a volumetric look
-    const puffs = 7
-    for (let i = 0; i < puffs; i++) {
-      const ang = rand(i + 50) * Math.PI * 2 + t * 0.12
-      const dist = R * (0.1 + 0.42 * rand(i + 80))
-      const px = x + Math.cos(ang) * dist
-      const py = y + Math.sin(ang) * dist
-      const pr = R * (0.28 + 0.22 * rand(i + 90))
-      const pg = ctx.createRadialGradient(px, py, 0, px, py, pr)
-      pg.addColorStop(0, 'rgba(230, 234, 242, 0.2)')
-      pg.addColorStop(1, 'rgba(220, 224, 232, 0)')
-      ctx.fillStyle = pg
-      ctx.beginPath()
-      ctx.arc(px, py, pr, 0, Math.PI * 2)
-      ctx.fill()
-    }
-    // soft irregular border
-    ctx.filter = 'blur(1.5px)'
-    ctx.strokeStyle = 'rgba(228, 232, 240, 0.4)'
-    ctx.lineWidth = 1.5
-    tracePath()
-    ctx.stroke()
+    paintSmoke(x, y, smokeRadius(), t, ev.x * 0.011 + ev.y * 0.015)
   } else if (ev.kind === 'fire') {
-    // Fire: a soft base glow filled with flickering flame blobs, so it reads as
-    // burning rather than a flat orange disc. Blob layout is deterministic (seeded
-    // from the detonation position); only the intensity/size animate with `t`.
-    const R = unitsToScreen(150)
-    const seed = ev.x * 0.013 + ev.y * 0.017
-    const rand = (n: number) => {
-      const v = Math.sin(n * 12.9898 + seed * 78.233) * 43758.5453
-      return v - Math.floor(v)
-    }
-    // base glow
-    const base = ctx.createRadialGradient(x, y, R * 0.1, x, y, R)
-    base.addColorStop(0, 'rgba(255, 120, 30, 0.28)')
-    base.addColorStop(0.7, 'rgba(220, 70, 20, 0.16)')
-    base.addColorStop(1, 'rgba(180, 40, 10, 0)')
-    ctx.fillStyle = base
-    ctx.beginPath()
-    ctx.arc(x, y, R, 0, Math.PI * 2)
-    ctx.fill()
-    // flickering flame blobs (additive blending so overlaps glow brighter)
-    ctx.globalCompositeOperation = 'lighter'
-    const blobs = 12
-    for (let i = 0; i < blobs; i++) {
-      const ang = rand(i + 1) * Math.PI * 2
-      const dist = R * (0.12 + 0.62 * rand(i + 31))
-      const fx = x + Math.cos(ang) * dist
-      const fy = y + Math.sin(ang) * dist
-      const flick = 0.55 + 0.45 * Math.sin(t * 9 + i * 1.7 + seed)
-      const fr = R * (0.16 + 0.13 * flick)
-      const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr)
-      g.addColorStop(0, `rgba(255, 235, 130, ${0.5 * flick})`)
-      g.addColorStop(0.45, `rgba(255, 140, 40, ${0.38 * flick})`)
-      g.addColorStop(1, 'rgba(200, 50, 10, 0)')
-      ctx.fillStyle = g
-      ctx.beginPath()
-      ctx.arc(fx, fy, fr, 0, Math.PI * 2)
-      ctx.fill()
-    }
+    paintFire(x, y, fireRadius(), t, ev.x * 0.013 + ev.y * 0.017)
   } else if (ev.kind === 'he') {
     ctx.globalAlpha = 1 - k
     ctx.strokeStyle = '#ffb020'
@@ -786,6 +848,21 @@ function zOnActiveLevel(z: number | null | undefined) {
   return !lvl || z == null || (z >= lvl.minZ && z < lvl.maxZ)
 }
 
+/** Representative Z of the active floor, stamped on new board objects so they
+ *  belong to the floor they were drawn on. Undefined on single-level maps.
+ *  Floor ranges are often half-unbounded (e.g. Nuke's upper floor is
+ *  [-575, Infinity)), so the midpoint would be Infinity and fail the range test;
+ *  fall back to a finite value just inside whichever edge is bounded. */
+function activeLevelZ(): number | undefined {
+  const lvl = props.levelRange
+  if (!lvl) return undefined
+  const { minZ, maxZ } = lvl
+  if (Number.isFinite(minZ) && Number.isFinite(maxZ)) return (minZ + maxZ) / 2
+  if (Number.isFinite(minZ)) return minZ + 1
+  if (Number.isFinite(maxZ)) return maxZ - 1
+  return 0
+}
+
 /** Detonation Z of a flight path (its points carry none): the nearest grenade
  *  event of the same kind in the round. Null when there is no match, which the
  *  level filter then treats as visible. */
@@ -811,11 +888,14 @@ function drawPlayer(p: PlayerState, death: { x: number; y: number } | undefined)
   const color = SIDE_COLOR[p.side]
   const name = props.playersById.get(p.steamId)?.name ?? ''
   const r = playerRadius()
+  // Coach board: a dragged/overridden player draws at its board position.
+  const ov = coachPosOf(p)
+  const base = ov ?? p
 
   // On two-floor maps, anyone on the other level becomes a discreet marker
   // (faded disc, no name/aim), to avoid cluttering the focused floor.
   if (!onActiveLevel(p)) {
-    const pos = death && p.alive ? death : p
+    const pos = death && p.alive ? death : base
     const { x, y } = w2s(pos.x, pos.y)
     ctx.save()
     ctx.globalAlpha = 0.22
@@ -834,7 +914,7 @@ function drawPlayer(p: PlayerState, death: { x: number; y: number } | undefined)
   // the death lands after the last sampled frame). If the frame does not yet
   // reflect the death, use the exact kill position.
   if (!p.alive || death) {
-    const pos = death && p.alive ? death : p
+    const pos = death && p.alive ? death : base
     const { x, y } = w2s(pos.x, pos.y)
     ctx.save()
     ctx.globalAlpha = 0.5
@@ -875,8 +955,8 @@ function drawPlayer(p: PlayerState, death: { x: number; y: number } | undefined)
     return
   }
 
-  const { x, y } = w2s(p.x, p.y)
-  const ang = (-p.yaw * Math.PI) / 180 // screen has Y inverted
+  const { x, y } = w2s(base.x, base.y)
+  const ang = (-base.yaw * Math.PI) / 180 // screen has Y inverted
 
   // direction caret: a tip pointing where the player looks. The base goes under
   // the circle, but we clip the disc interior (clip "outside the circle") so only
@@ -1184,6 +1264,99 @@ function drawAreaRect(
   ctx.restore()
 }
 
+// --- coach mode: tactical-board shapes -------------------------------------
+// Strokes are solid (comments use dashes) and scale with zoom so a drawing stays
+// pinned to the map. Points come in screen coords (already world->screen mapped).
+
+/** Draws a coach shape from screen-space points. Two-point tools read [a, b];
+ *  freehand `path` reads every point. */
+function paintCoach(
+  tool: CoachShapeTool,
+  pts: { x: number; y: number }[],
+  color: string,
+  thickness: number,
+) {
+  if (!ctx || pts.length < 2) return
+  const lw = Math.max(0.75, thickness * zoom.value)
+  ctx.save()
+  ctx.strokeStyle = color
+  ctx.fillStyle = color
+  ctx.lineWidth = lw
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'
+  ctx.shadowBlur = 3
+  const a = pts[0]
+  const b = pts[pts.length - 1]
+  if (tool === 'rectangle') {
+    ctx.strokeRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y))
+  } else if (tool === 'circle') {
+    ctx.beginPath()
+    ctx.ellipse((a.x + b.x) / 2, (a.y + b.y) / 2, Math.abs(b.x - a.x) / 2, Math.abs(b.y - a.y) / 2, 0, 0, Math.PI * 2)
+    ctx.stroke()
+  } else if (tool === 'arrow') {
+    const ang = Math.atan2(b.y - a.y, b.x - a.x)
+    const head = Math.max(10, lw * 3.2)
+    ctx.beginPath()
+    ctx.moveTo(a.x, a.y)
+    ctx.lineTo(b.x, b.y)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(b.x, b.y)
+    ctx.lineTo(b.x - head * Math.cos(ang - Math.PI / 6), b.y - head * Math.sin(ang - Math.PI / 6))
+    ctx.moveTo(b.x, b.y)
+    ctx.lineTo(b.x - head * Math.cos(ang + Math.PI / 6), b.y - head * Math.sin(ang + Math.PI / 6))
+    ctx.stroke()
+  } else if (tool === 'path') {
+    ctx.beginPath()
+    ctx.moveTo(pts[0].x, pts[0].y)
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y)
+    ctx.stroke()
+  }
+  ctx.restore()
+}
+
+/** Draws a committed coach drawing, mapping its world points to the screen.
+ *  Skipped when it belongs to another floor (multi-level maps). */
+function drawCoachDrawing(d: CoachDrawing) {
+  if (!zOnActiveLevel(d.z)) return
+  paintCoach(d.tool, d.points.map((p) => w2s(p.x, p.y)), d.color, d.thickness)
+}
+
+/** Draws a placed board grenade. Smoke and fire render as their full detonation
+ *  effect (so the board matches what happens in-game); he/flash/decoy are point
+ *  grenades shown as a ringed disc with the kind icon. Follows the live drag. */
+function drawCoachGrenade(g: CoachGrenade) {
+  if (!ctx || !zOnActiveLevel(g.z)) return
+  const pos = grenadeDrag && grenadeDrag.id === g.id ? grenadeDrag : g
+  const { x, y } = w2s(pos.x, pos.y)
+  const t = props.currentT
+  if (g.kind === 'smoke') {
+    paintSmoke(x, y, smokeRadius(), t, pos.x * 0.011 + pos.y * 0.015)
+    return
+  }
+  if (g.kind === 'fire') {
+    paintFire(x, y, fireRadius(), t, pos.x * 0.013 + pos.y * 0.017)
+    return
+  }
+  const r = clamp(playerRadius() * 0.7, 9, 26)
+  const color = PATH_COLOR[g.kind] ?? 'rgba(220, 224, 232, 0.9)'
+  ctx.save()
+  ctx.beginPath()
+  ctx.arc(x, y, r, 0, Math.PI * 2)
+  ctx.fillStyle = 'rgba(8, 11, 18, 0.78)'
+  ctx.fill()
+  ctx.lineWidth = 2
+  ctx.strokeStyle = color
+  ctx.stroke()
+  const img = weaponImgs.get(KIND_ICON[g.kind])
+  if (img && img.complete && img.naturalWidth) {
+    const s = r * 1.15
+    ctx.drawImage(img, x - s / 2, y - s / 2, s, s)
+  }
+  ctx.restore()
+}
+
 /** Draws a comment's text + kind icon as a label hugging the rectangle's top edge
  *  (or below it, if there's no room above), for area comments during playback. */
 function drawAreaLabel(
@@ -1423,7 +1596,9 @@ function draw() {
   }
   for (const ev of props.round?.events ?? []) {
     if (ev.type !== 'grenade') continue
-    if (t >= ev.t && t <= ev.endT) drawGrenade(ev, t)
+    // Coach mode imports the active grenades into the board (movable/removable),
+    // so skip the replay's own draw to avoid drawing each one twice.
+    if (!props.coachMode && t >= ev.t && t <= ev.endT) drawGrenade(ev, t)
     // burnt mark left after a molotov/incendiary burns out or an HE detonates;
     // stays for the rest of the round (the round change clears it)
     else if ((ev.kind === 'fire' || ev.kind === 'he') && t > ev.endT) drawScorch(ev)
@@ -1596,6 +1771,26 @@ function draw() {
     drawAreaRect(p1.x, p1.y, p2.x, p2.y, commentKindMeta(props.pendingArea.kind).color, true)
   }
 
+  // Coach mode tactical board: placed grenades, committed drawings, then the shape
+  // being drawn live. Scoped to coach mode so the board never leaks into playback.
+  if (props.coachMode) {
+    for (const g of props.coachGrenades ?? []) drawCoachGrenade(g)
+    for (const d of props.coachDrawings ?? []) drawCoachDrawing(d)
+    // Rotate handle on the player being rotated, or the one under the cursor.
+    const isSelect = !props.coachTool || props.coachTool === 'select'
+    const handleId = playerDrag?.mode === 'rotate' ? playerDrag.steamId : isSelect ? coachHoverPlayerId.value : null
+    if (handleId) {
+      const pl = props.players.find((p) => p.steamId === handleId && p.alive)
+      if (pl) drawRotateHandle(pl)
+    }
+    const color = props.coachColor ?? COACH_DEFAULT_COLOR
+    const thickness = props.coachThickness ?? COACH_DEFAULT_THICKNESS
+    if (coachPath && coachPath.length > 1) paintCoach('path', coachPath, color, thickness)
+    else if (coachStart && coachCur && isShapeTool(props.coachTool)) {
+      paintCoach(props.coachTool, [coachStart, coachCur], color, thickness)
+    }
+  }
+
   // Hover highlight in comment mode: a dashed white ring around the target the
   // click would anchor to (a living player or an active grenade detonation).
   if (props.commentMode && hoverMouse) {
@@ -1723,6 +1918,101 @@ const HANDLE_R = 6
 let resizing: { id: string; fwx: number; fwy: number; sx: number; sy: number } | null = null
 // Resize cursor shown while hovering/holding a corner handle (null otherwise).
 const resizeCursor = ref<string | null>(null)
+// Coach mode: the shape being drawn (screen px). Two-point tools track start+cur;
+// freehand `path` accumulates samples. All null when idle.
+let coachStart: { x: number; y: number } | null = null
+let coachCur: { x: number; y: number } | null = null
+let coachPath: { x: number; y: number }[] | null = null
+// Coach mode (select tool): a player being moved or rotated, or a grenade being
+// dragged, in world coords. Null when idle.
+let playerDrag: { steamId: string; x: number; y: number; yaw: number; mode: 'move' | 'rotate' } | null = null
+let grenadeDrag: { id: string; x: number; y: number } | null = null
+// Player whose rotate handle is shown (cursor hovers it or its body), or null.
+const coachHoverPlayerId = ref<string | null>(null)
+// Cursor hint: over a draggable object (move), or over a rotate handle (rotate).
+const coachHoverObject = ref(false)
+const coachHoverHandle = ref(false)
+
+const ROTATE_HANDLE_R = 7
+function rotateHandleDist() {
+  return playerRadius() * 2.1
+}
+/** Screen position of a player's rotate handle (at the tip of its facing). */
+function rotateHandleScreen(p: PlayerState): { x: number; y: number } {
+  const pose = playerPose(p)
+  const c = w2s(pose.x, pose.y)
+  const ang = (-pose.yaw * Math.PI) / 180
+  const d = rotateHandleDist()
+  return { x: c.x + Math.cos(ang) * d, y: c.y + Math.sin(ang) * d }
+}
+/** The alive player whose rotate handle is under (sx, sy), or null. */
+function hitTestRotateHandle(sx: number, sy: number): PlayerState | null {
+  for (let i = props.players.length - 1; i >= 0; i--) {
+    const p = props.players[i]
+    if (!p.alive || !onActiveLevel(p)) continue
+    const h = rotateHandleScreen(p)
+    if (Math.hypot(sx - h.x, sy - h.y) <= ROTATE_HANDLE_R + 4) return p
+  }
+  return null
+}
+/** Draws the rotate handle (dashed stem + grab dot) for a player. */
+function drawRotateHandle(p: PlayerState) {
+  if (!ctx) return
+  const pose = playerPose(p)
+  const c = w2s(pose.x, pose.y)
+  const h = rotateHandleScreen(p)
+  ctx.save()
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'
+  ctx.lineWidth = 1.5
+  ctx.setLineDash([3, 3])
+  ctx.beginPath()
+  ctx.moveTo(c.x, c.y)
+  ctx.lineTo(h.x, h.y)
+  ctx.stroke()
+  ctx.setLineDash([])
+  ctx.beginPath()
+  ctx.arc(h.x, h.y, ROTATE_HANDLE_R, 0, Math.PI * 2)
+  ctx.fillStyle = '#fff'
+  ctx.fill()
+  ctx.lineWidth = 1.5
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)'
+  ctx.stroke()
+  ctx.restore()
+}
+
+/** The player under (sx, sy) on the coach board (override-aware), or null. */
+function hitTestPlayer(sx: number, sy: number): PlayerState | null {
+  const pr = playerRadius() + 4
+  for (let i = props.players.length - 1; i >= 0; i--) {
+    const p = props.players[i]
+    if (!onActiveLevel(p)) continue
+    const pos = coachPosOf(p) ?? p
+    const { x, y } = w2s(pos.x, pos.y)
+    if (Math.hypot(sx - x, sy - y) <= pr) return p
+  }
+  return null
+}
+
+/** Grab radius (screen px) of a placed grenade: the effect area for smoke/fire,
+ *  a small disc for point grenades. */
+function grenadeHitRadius(kind: GrenadeKind): number {
+  if (kind === 'smoke') return smokeRadius()
+  if (kind === 'fire') return fireRadius()
+  return clamp(playerRadius() * 0.7, 9, 26) + 4
+}
+
+/** The placed grenade under (sx, sy), or null (drag-preview aware). */
+function hitTestGrenade(sx: number, sy: number): CoachGrenade | null {
+  const list = props.coachGrenades ?? []
+  for (let i = list.length - 1; i >= 0; i--) {
+    const g = list[i]
+    if (!zOnActiveLevel(g.z)) continue
+    const pos = grenadeDrag && grenadeDrag.id === g.id ? grenadeDrag : g
+    const { x, y } = w2s(pos.x, pos.y)
+    if (Math.hypot(sx - x, sy - y) <= grenadeHitRadius(g.kind)) return g
+  }
+  return null
+}
 
 function localPoint(e: PointerEvent): { sx: number; sy: number } {
   const rect = canvas.value!.getBoundingClientRect()
@@ -1837,9 +2127,60 @@ function drawAreaHandles(sx1: number, sy1: number, sx2: number, sy2: number) {
 }
 
 function onPointerDown(e: PointerEvent) {
+  // Middle button (mouse wheel click) pans the map in any mode/tool, so the coach
+  // can reframe without leaving the active tool.
+  if (e.button === 1) {
+    dragging = true
+    lastX = e.clientX
+    lastY = e.clientY
+    downX = e.clientX
+    downY = e.clientY
+    canvas.value?.setPointerCapture(e.pointerId)
+    return
+  }
   if (e.button !== 0) return
   downX = e.clientX
   downY = e.clientY
+  // Coach mode: shape tools draw on drag; `grenade` places on click; `select`
+  // drags a grenade/player under the cursor, or falls through to pan on empty map.
+  if (props.coachMode) {
+    const p = localPoint(e)
+    if (isShapeTool(props.coachTool)) {
+      if (props.coachTool === 'path') coachPath = [{ x: p.sx, y: p.sy }]
+      else {
+        coachStart = { x: p.sx, y: p.sy }
+        coachCur = { x: p.sx, y: p.sy }
+      }
+      canvas.value?.setPointerCapture(e.pointerId)
+      return
+    }
+    if (props.coachTool === 'grenade') {
+      const w = s2w(p.sx, p.sy)
+      emit('addGrenade', { kind: props.coachGrenadeKind ?? 'smoke', x: w.x, y: w.y, z: activeLevelZ() })
+      return
+    }
+    const rot = hitTestRotateHandle(p.sx, p.sy)
+    if (rot) {
+      const pose = playerPose(rot)
+      playerDrag = { steamId: rot.steamId, x: pose.x, y: pose.y, yaw: pose.yaw, mode: 'rotate' }
+      canvas.value?.setPointerCapture(e.pointerId)
+      return
+    }
+    const g = hitTestGrenade(p.sx, p.sy)
+    if (g) {
+      grenadeDrag = { id: g.id, x: g.x, y: g.y }
+      canvas.value?.setPointerCapture(e.pointerId)
+      return
+    }
+    const hit = hitTestPlayer(p.sx, p.sy)
+    if (hit) {
+      const pose = playerPose(hit)
+      playerDrag = { steamId: hit.steamId, x: pose.x, y: pose.y, yaw: pose.yaw, mode: 'move' }
+      canvas.value?.setPointerCapture(e.pointerId)
+      return
+    }
+    // Nothing grabbed: fall through to pan.
+  }
   if (props.commentMode) {
     const p = localPoint(e)
     // Grabbing an area's corner handle resizes it; anywhere else starts a new area.
@@ -1881,6 +2222,55 @@ function onPointerMove(e: PointerEvent) {
     draw()
     return
   }
+  // Dragging a player on the coach board: move tracks the cursor; rotate spins the
+  // facing toward the cursor (screen Y is inverted, matching the render's -yaw).
+  if (playerDrag) {
+    const lp = localPoint(e)
+    if (playerDrag.mode === 'rotate') {
+      const c = w2s(playerDrag.x, playerDrag.y)
+      playerDrag.yaw = (-Math.atan2(lp.sy - c.y, lp.sx - c.x) * 180) / Math.PI
+    } else {
+      const w = s2w(lp.sx, lp.sy)
+      playerDrag.x = w.x
+      playerDrag.y = w.y
+    }
+    draw()
+    return
+  }
+  // Dragging a grenade on the coach board: track the cursor in world coords.
+  if (grenadeDrag) {
+    const lp = localPoint(e)
+    const w = s2w(lp.sx, lp.sy)
+    grenadeDrag.x = w.x
+    grenadeDrag.y = w.y
+    draw()
+    return
+  }
+  // Drawing a coach shape (button held): track the moving corner / sample the path.
+  if (props.coachMode && (coachStart || coachPath)) {
+    const p = localPoint(e)
+    if (coachPath) coachPath.push({ x: p.sx, y: p.sy })
+    else coachCur = { x: p.sx, y: p.sy }
+    draw()
+    return
+  }
+  // Coach select mode (no drag in progress): track the hovered player (to show its
+  // rotate handle) and the cursor hints; repaint when the hovered player changes.
+  if (props.coachMode) {
+    const { sx, sy } = localPoint(e)
+    const isSelect = !props.coachTool || props.coachTool === 'select'
+    const rot = isSelect ? hitTestRotateHandle(sx, sy) : null
+    const player = isSelect && !rot ? hitTestPlayer(sx, sy) : null
+    const grenade = isSelect && !rot && !player ? hitTestGrenade(sx, sy) : null
+    const hoverId = (rot ?? player)?.steamId ?? null
+    coachHoverHandle.value = !!rot
+    coachHoverObject.value = !!rot || !!player || !!grenade
+    if (hoverId !== coachHoverPlayerId.value) {
+      coachHoverPlayerId.value = hoverId
+      draw()
+    }
+    return
+  }
   // Drawing an area (comment mode, button held): track the moving corner.
   if (props.commentMode && areaStart) {
     areaCur = localPoint(e)
@@ -1913,6 +2303,49 @@ function onPointerMove(e: PointerEvent) {
 function onPointerUp(e: PointerEvent) {
   const moved = Math.hypot(e.clientX - downX, e.clientY - downY)
   dragging = false
+  // Finishing a player drag: commit the new pose (undoable). Rotation commits even
+  // on a tiny move; a move needs a real drag to avoid jitter on a plain click.
+  if (playerDrag) {
+    const d = playerDrag
+    playerDrag = null
+    canvas.value?.releasePointerCapture(e.pointerId)
+    if (e.button === 0 && (d.mode === 'rotate' || moved > 3)) {
+      emit('setPlayerPose', { steamId: d.steamId, x: d.x, y: d.y, yaw: d.yaw })
+    }
+    draw()
+    return
+  }
+  if (grenadeDrag) {
+    const d = grenadeDrag
+    grenadeDrag = null
+    canvas.value?.releasePointerCapture(e.pointerId)
+    if (e.button === 0 && moved > 3) emit('moveGrenade', { id: d.id, x: d.x, y: d.y })
+    draw()
+    return
+  }
+  // Finishing a coach shape: commit it in world coords (drawings track zoom/pan).
+  if (props.coachMode && (coachStart || coachPath)) {
+    const tool: CoachShapeTool = isShapeTool(props.coachTool) ? props.coachTool : 'rectangle'
+    const path = coachPath
+    const a = coachStart
+    const b = coachCur
+    coachStart = null
+    coachCur = null
+    coachPath = null
+    canvas.value?.releasePointerCapture(e.pointerId)
+    const color = props.coachColor ?? COACH_DEFAULT_COLOR
+    const thickness = props.coachThickness ?? COACH_DEFAULT_THICKNESS
+    const z = activeLevelZ()
+    if (e.button === 0) {
+      if (tool === 'path' && path && path.length > 1) {
+        emit('addDrawing', { tool, color, thickness, z, points: path.map((p) => s2w(p.x, p.y)) })
+      } else if (tool !== 'path' && a && b && moved > 6) {
+        emit('addDrawing', { tool, color, thickness, z, points: [s2w(a.x, a.y), s2w(b.x, b.y)] })
+      }
+    }
+    draw()
+    return
+  }
   // Finishing an area resize: commit the new world rect (fixed corner + dragged one).
   if (resizing) {
     const f = resizing
@@ -1970,12 +2403,30 @@ function onPointerUp(e: PointerEvent) {
   emit('dropComment', { ...target, vx: e.clientX, vy: e.clientY, vw: 0, vh: 0 })
 }
 function onPointerLeave() {
-  if (hoverMouse || hoverKey || areaStart || hoveredCommentId.value) {
+  coachHoverObject.value = false
+  coachHoverHandle.value = false
+  if (
+    hoverMouse ||
+    hoverKey ||
+    areaStart ||
+    hoveredCommentId.value ||
+    coachStart ||
+    coachPath ||
+    playerDrag ||
+    grenadeDrag ||
+    coachHoverPlayerId.value
+  ) {
     hoverMouse = null
     hoverKey = null
     hoveredCommentId.value = null
     areaStart = null
     areaCur = null
+    coachStart = null
+    coachCur = null
+    coachPath = null
+    playerDrag = null
+    grenadeDrag = null
+    coachHoverPlayerId.value = null
     draw()
   }
 }
@@ -1984,6 +2435,15 @@ function onContextMenu(e: MouseEvent) {
   const rect = canvas.value.getBoundingClientRect()
   const sx = e.clientX - rect.left
   const sy = e.clientY - rect.top
+  // Coach mode: right-click removes the grenade under the cursor. Suppress the
+  // replay context menu (stopPropagation keeps it from reaching the reka trigger).
+  if (props.coachMode) {
+    e.preventDefault()
+    e.stopPropagation()
+    const g = hitTestGrenade(sx, sy)
+    if (g) emit('removeGrenade', { id: g.id })
+    return
+  }
   // Right-click on an existing comment -> let the menu open with its actions.
   const hit = hitTestComment(sx, sy)
   if (hit) {
@@ -2046,6 +2506,12 @@ watch(() => props.commentMode, () => {
 })
 watch(() => props.pendingArea, draw)
 watch(() => props.popoverAnchor, draw)
+watch(() => props.coachDrawings, draw, { deep: true })
+watch(() => props.coachMode, draw)
+watch(() => props.coachTool, draw)
+watch(() => props.playerOverrides, draw, { deep: true })
+watch(() => props.coachGrenades, draw, { deep: true })
+watch(() => props.coachGrenadeKind, draw)
 watch(radarSource, (src) => {
   radarReady = false
   radar.src = src
@@ -2074,16 +2540,25 @@ onUnmounted(() => {
       data-viewer-canvas
       class="h-full w-full touch-none"
       :class="
-        commentMode
-          ? hoveredCommentId
-            ? 'cursor-pointer'
-            : 'cursor-crosshair'
-          : autoZoom
-            ? 'cursor-default'
-            : 'cursor-grab active:cursor-grabbing'
+        coachMode
+          ? coachTool && coachTool !== 'select'
+            ? 'cursor-crosshair'
+            : coachHoverHandle
+              ? 'cursor-crosshair'
+              : coachHoverObject
+                ? 'cursor-move'
+                : 'cursor-grab active:cursor-grabbing'
+          : commentMode
+            ? hoveredCommentId
+              ? 'cursor-pointer'
+              : 'cursor-crosshair'
+            : autoZoom
+              ? 'cursor-default'
+              : 'cursor-grab active:cursor-grabbing'
       "
       :style="resizeCursor ? { cursor: resizeCursor } : {}"
       @wheel="onWheel"
+      @mousedown.middle.prevent
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
       @pointerup="onPointerUp"

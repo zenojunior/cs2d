@@ -156,6 +156,24 @@
         "warning": "Achtung",
         "idea": "Idee"
       }
+    },
+    "coach": {
+      "enter": "Coach-Modus",
+      "exit": "Coach-Modus verlassen",
+      "modeHint": "Wähle ein Werkzeug und zeichne auf der Karte",
+      "clear": "Zeichnungen löschen",
+      "color": "Farbe",
+      "thickness": "Dicke",
+      "tool": {
+        "select": "Auswählen",
+        "rectangle": "Rechteck",
+        "circle": "Kreis",
+        "arrow": "Pfeil",
+        "path": "Pfad",
+        "grenade": "Granate"
+      },
+      "undo": "Rückgängig",
+      "redo": "Wiederholen"
     }
   },
   "grenadeKind": {

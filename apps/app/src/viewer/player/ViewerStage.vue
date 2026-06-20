@@ -2,9 +2,10 @@
 import { computed, inject, ref, watch } from 'vue'
 import { onKeyStroke, useEventListener, useLocalStorage } from '@vueuse/core'
 import { appFullscreenKey } from '@/shell/appFullscreen'
-import type { CommentAnchor, CommentKind, Replay, VoiceData } from '@/viewer/domain/schema'
+import type { CommentAnchor, CommentKind, GrenadeKind, Replay, VoiceData } from '@/viewer/domain/schema'
 import ViewerMap from '@/viewer/player/ViewerMap.vue'
 import ViewerControls from '@/viewer/player/ViewerControls.vue'
+import CoachToolbar from '@/viewer/player/CoachToolbar.vue'
 import ViewerRoster from '@/viewer/player/ViewerRoster.vue'
 import ViewerKillfeed from '@/viewer/player/ViewerKillfeed.vue'
 import ViewerChat from '@/viewer/player/ViewerChat.vue'
@@ -26,6 +27,14 @@ import {
 import { useReplay, SPEEDS } from '@/viewer/player/useReplay'
 import { useVoicePlayback } from '@/viewer/player/useVoicePlayback'
 import { useComments } from '@/viewer/comments/useComments'
+import {
+  type CoachTool,
+  type CoachShapeTool,
+  COACH_DEFAULT_TOOL,
+  COACH_DEFAULT_COLOR,
+  COACH_DEFAULT_THICKNESS,
+} from '@/viewer/player/coachTools'
+import { useCoachBoard } from '@/viewer/player/useCoachBoard'
 import { commentDuration } from '@/viewer/comments/commentAnchor'
 import { exportArchive, archiveFileName } from '@/viewer/ingest/demoArchive'
 import { MAP_CALIBRATION } from '@/viewer/domain/calibration'
@@ -93,6 +102,11 @@ function jumpToThrow({ roundIndex, t }: { roundIndex: number; t: number }) {
 
 // --- Comments ----------------------------------------------------------------
 const comments = useComments()
+// Tactical board (coach mode). Declared here (with the coach-mode flag) so the
+// demo-switch watch below, which resets them, runs after initialization (it would
+// otherwise hit a TDZ error).
+const board = useCoachBoard()
+const coachMode = ref(false)
 
 type Popover = {
   mode: 'create' | 'edit'
@@ -228,6 +242,8 @@ watch(
   (id) => {
     popover.value = null
     comments.clear()
+    board.reset()
+    coachMode.value = false
     if (id) void comments.loadFor(id)
   },
   { immediate: true },
@@ -250,6 +266,83 @@ function toggleCommentMode() {
   // Pause on entering so the map (and the bubbles) stays still while annotating.
   if (commentMode.value) r.pause()
   else popover.value = null
+}
+
+// --- Coach mode --------------------------------------------------------------
+// A tactical-board overlay: the game HUD (killfeed, chat, rosters, scoreboard)
+// is hidden and a Figma-style toolbar replaces the transport's extras so a coach
+// can mark the map up. Drawing onto the map lands in later phases; for now this
+// wires the mode, hides the HUD and selects tools.
+const coachTool = ref<CoachTool>(COACH_DEFAULT_TOOL)
+const coachColor = ref(COACH_DEFAULT_COLOR)
+const coachThickness = ref(COACH_DEFAULT_THICKNESS)
+const coachGrenadeKind = ref<GrenadeKind>('smoke')
+/** Hide the game HUD while coaching, so only the map (and the board) shows. */
+const hudHidden = computed(() => coachMode.value)
+function toggleCoachMode() {
+  coachMode.value = !coachMode.value
+  if (coachMode.value) {
+    // Entering: pause and leave comment mode (its popover would float over the board).
+    r.pause()
+    commentMode.value = false
+    popover.value = null
+    seedReplayGrenades()
+  }
+}
+
+/** Imports the grenades active at the current tick (the smokes/molotovs already on
+ *  the map) onto the board, so the coach can move or remove them like placed ones.
+ *  Once per round (the board keeps them after that). */
+function seedReplayGrenades() {
+  const round = r.round.value
+  if (!round) return
+  const t = r.currentT.value
+  const live = round.events.flatMap((ev) =>
+    ev.type === 'grenade' && t >= ev.t && t <= ev.endT
+      ? [{ id: newDrawingId(), kind: ev.kind, x: ev.x, y: ev.y, z: ev.z }]
+      : [],
+  )
+  board.seedGrenades(r.roundIndex.value, live)
+}
+
+// Tactical board: per-round, editable, with undo/redo (declared above). In-memory
+// for now; IndexedDB persistence (like comments) lands in a later phase.
+/** Drawings on the round in view. */
+const roundCoachDrawings = computed(() => board.boardFor(r.roundIndex.value).drawings)
+/** Player position overrides on the round in view. */
+const roundCoachOverrides = computed(() => board.boardFor(r.roundIndex.value).playerOverrides)
+/** Grenades placed on the round in view. */
+const roundCoachGrenades = computed(() => board.boardFor(r.roundIndex.value).grenades)
+function newDrawingId(): string {
+  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.round(Math.random() * 1e9)}`
+}
+function onAddDrawing(d: {
+  tool: CoachShapeTool
+  points: { x: number; y: number }[]
+  color: string
+  thickness: number
+  z?: number
+}) {
+  const round = r.roundIndex.value
+  board.addDrawing(round, { id: newDrawingId(), roundIndex: round, ...d })
+}
+function onSetPlayerPose(p: { steamId: string; x: number; y: number; yaw: number }) {
+  board.setPlayerPose(r.roundIndex.value, p.steamId, p.x, p.y, p.yaw)
+}
+function onAddGrenade(g: { kind: GrenadeKind; x: number; y: number; z?: number }) {
+  board.addGrenade(r.roundIndex.value, { id: newDrawingId(), ...g })
+}
+function onMoveGrenade(g: { id: string; x: number; y: number }) {
+  board.moveGrenade(r.roundIndex.value, g.id, g.x, g.y)
+}
+function onRemoveGrenade(g: { id: string }) {
+  board.removeGrenade(r.roundIndex.value, g.id)
+}
+/** Clears the board on the round in view (keeps other rounds untouched). */
+function clearCoachDrawings() {
+  board.clearRound(r.roundIndex.value)
 }
 
 /** Human label for what a comment is anchored to (player name / grenade / point). */
@@ -496,20 +589,36 @@ function isTyping(e: KeyboardEvent) {
   return el.tagName === 'INPUT' && TEXT_INPUT_TYPES.includes((el as HTMLInputElement).type)
 }
 
+// Playback shortcuts are disabled in coach mode: the board is frozen on the tick
+// the coach entered, so play/pause and seeking would break it.
 onKeyStroke(' ', (e) => {
-  if (isTyping(e)) return
+  if (isTyping(e) || coachMode.value) return
   e.preventDefault()
   r.toggle()
 })
 onKeyStroke('ArrowRight', (e) => {
-  if (isTyping(e)) return
+  if (isTyping(e) || coachMode.value) return
   e.preventDefault()
   r.seekBySeconds(5)
 })
 onKeyStroke('ArrowLeft', (e) => {
-  if (isTyping(e)) return
+  if (isTyping(e) || coachMode.value) return
   e.preventDefault()
   r.seekBySeconds(-5)
+})
+
+// Undo/redo on the tactical board (coach mode only). Ctrl/Cmd+Z undoes,
+// Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y redoes.
+onKeyStroke(['z', 'Z'], (e) => {
+  if (!coachMode.value || isTyping(e) || !(e.ctrlKey || e.metaKey)) return
+  e.preventDefault()
+  if (e.shiftKey) board.redo()
+  else board.undo()
+})
+onKeyStroke(['y', 'Y'], (e) => {
+  if (!coachMode.value || isTyping(e) || !(e.ctrlKey || e.metaKey)) return
+  e.preventDefault()
+  board.redo()
 })
 
 // Scoreboard (TAB style): shown while the key is held.
@@ -572,6 +681,19 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
       :comment-mode="commentMode"
       :active-comment-id="popover?.id ?? null"
       :pending-area="pendingArea"
+      :coach-mode="coachMode"
+      :coach-tool="coachTool"
+      :coach-color="coachColor"
+      :coach-thickness="coachThickness"
+      :coach-drawings="roundCoachDrawings"
+      :player-overrides="roundCoachOverrides"
+      :coach-grenades="roundCoachGrenades"
+      :coach-grenade-kind="coachGrenadeKind"
+      @add-drawing="onAddDrawing"
+      @set-player-pose="onSetPlayerPose"
+      @add-grenade="onAddGrenade"
+      @move-grenade="onMoveGrenade"
+      @remove-grenade="onRemoveGrenade"
       @drop-comment="onDropComment"
       @select-comment="onSelectComment"
       :popover-anchor="popoverAnchor"
@@ -601,7 +723,7 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
       class="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-ink-950/90 to-transparent p-4"
     >
       <div class="relative flex items-center justify-between gap-4">
-        <div class="pointer-events-auto">
+        <div v-if="!hudHidden" class="pointer-events-auto">
           <h2 class="font-display text-base text-ink-50">
             {{ t('viewer.round') }} {{ r.currentRoundLabel.value }}
             <span class="text-ink-400">{{ t('viewer.of') }} {{ r.totalRounds.value }}</span>
@@ -684,8 +806,15 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
           </span>
         </div>
 
-        <!-- Right: comments panel, export -->
-        <div class="pointer-events-auto flex items-center gap-1.5">
+        <!-- Right: coach mode, comments panel, export -->
+        <div v-if="!hudHidden" class="pointer-events-auto flex items-center gap-1.5">
+          <button
+            v-tooltip="t('viewer.coach.enter')"
+            class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-ink-200 transition-colors duration-150 hover:bg-white/10 hover:text-white"
+            @click="toggleCoachMode"
+          >
+            <UiIcon name="pencil" class="h-5 w-5" />
+          </button>
           <button
             v-tooltip="t('viewer.comment.panelTitle')"
             class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-colors duration-150"
@@ -720,6 +849,16 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
       </span>
     </div>
 
+    <!-- Coach mode hint -->
+    <div
+      v-if="coachMode && !exportError"
+      class="pointer-events-none absolute inset-x-0 top-20 z-10 flex justify-center"
+    >
+      <span class="rounded-full bg-surge-500/90 px-3 py-1 text-xs font-medium text-white shadow-lg backdrop-blur">
+        {{ t('viewer.coach.modeHint') }}
+      </span>
+    </div>
+
     <!-- Export error: dismissible banner -->
     <div
       v-if="exportError"
@@ -738,7 +877,7 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
     </div>
 
     <!-- Killfeed: round kills up to the current moment (top-right, below the top bar) -->
-    <div class="pointer-events-none absolute right-4 top-16 z-10">
+    <div v-if="!hudHidden" class="pointer-events-none absolute right-4 top-16 z-10">
       <ViewerKillfeed
         :round="r.round.value"
         :current-t="r.currentT.value"
@@ -748,7 +887,7 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
     </div>
 
     <!-- Match chat (top-left, below the action buttons) -->
-    <div class="pointer-events-none absolute left-4 top-32 z-10">
+    <div v-if="!hudHidden" class="pointer-events-none absolute left-4 top-32 z-10">
       <ViewerChat
         :round="r.round.value"
         :current-t="r.currentT.value"
@@ -758,7 +897,7 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
 
     <!-- Scoreboard (TAB): above everything while the key is held -->
     <ViewerScoreboard
-      v-if="scoreboardOpen"
+      v-if="scoreboardOpen && !hudHidden"
       :rounds="r.replay.value.rounds"
       :round-index="r.roundIndex.value"
       :current-t="r.currentT.value"
@@ -774,6 +913,7 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
 
     <!-- CT team: bottom-left corner -->
     <aside
+      v-if="!hudHidden"
       class="pointer-events-auto absolute bottom-4 left-4 z-10 w-52 rounded-lg border border-ink-700 bg-ink-900/80 p-3 backdrop-blur"
     >
       <ViewerRoster
@@ -788,6 +928,7 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
 
     <!-- T team: bottom-right corner -->
     <aside
+      v-if="!hudHidden"
       class="pointer-events-auto absolute bottom-4 right-4 z-10 w-52 rounded-lg border border-ink-700 bg-ink-900/80 p-3 backdrop-blur"
     >
       <ViewerRoster
@@ -821,7 +962,29 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
         </button>
       </div>
 
+      <!-- Coach mode: the tactical toolbar replaces the transport bar (no timeline:
+           the board is frozen on the tick the coach entered). -->
+      <div v-if="coachMode" class="pointer-events-auto flex justify-center">
+        <CoachToolbar
+          :tool="coachTool"
+          :color="coachColor"
+          :thickness="coachThickness"
+          :grenade-kind="coachGrenadeKind"
+          :can-undo="board.canUndo.value"
+          :can-redo="board.canRedo.value"
+          @set-tool="(tl) => (coachTool = tl)"
+          @set-color="(c) => (coachColor = c)"
+          @set-thickness="(w) => (coachThickness = w)"
+          @set-grenade-kind="(k) => (coachGrenadeKind = k)"
+          @undo="board.undo"
+          @redo="board.redo"
+          @clear="clearCoachDrawings"
+          @exit="toggleCoachMode"
+        />
+      </div>
+
       <div
+        v-else
         class="pointer-events-auto mx-auto max-w-3xl rounded-lg border border-ink-700 bg-ink-900/80 p-3 backdrop-blur"
       >
         <ViewerControls

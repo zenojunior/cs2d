@@ -372,7 +372,7 @@ onMounted(() => centerCurrent('auto'))
     </div>
 
     <!-- Transport -->
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-1.5">
       <div class="flex shrink-0 items-center gap-1">
         <!-- Play/pause only: ±5s skip stays on the keyboard (←/→) and the
              context menu, to keep the transport compact. -->
@@ -406,6 +406,84 @@ onMounted(() => centerCurrent('auto'))
         @seek="onSeek"
       />
 
+      <!-- Comms: mute toggle; hover reveals the master volume and CT/T balance
+           sliders side by side. -->
+      <div
+        v-if="showVoice"
+        class="relative shrink-0"
+        @mouseenter="volHover = true"
+        @mouseleave="volHover = false"
+      >
+        <button
+          v-tooltip="muted ? t('viewer.enableComms') : t('viewer.muteComms')"
+          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors duration-150 hover:bg-white/10"
+          :class="muted ? 'text-ink-500 hover:text-white' : 'text-ink-200 hover:text-white'"
+          @click="emit('toggleMute')"
+        >
+          <UiIcon :name="muted ? 'volume-x' : 'volume-2'" class="h-4 w-4" />
+        </button>
+
+        <!-- Hover panel: volume (left) and CT/T balance (right). The outer pb-2
+             bridges the gap so the panel stays open while the cursor moves to it. -->
+        <div v-show="volHover" class="absolute bottom-full left-1/2 -translate-x-1/2 pb-2">
+          <div
+            class="flex items-center gap-3 rounded-lg border border-ink-700 bg-ink-900/95 px-3 py-2.5 backdrop-blur"
+          >
+            <!-- Master volume -->
+            <div class="flex flex-col items-center gap-1.5">
+              <span class="font-mono text-[10px] tabular-nums text-ink-400">
+                {{ Math.round((masterVolume ?? 1) * 100) }}
+              </span>
+              <div class="flex h-24 w-5 items-center justify-center">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  :value="Math.round((masterVolume ?? 1) * 100)"
+                  class="h-1 w-24 -rotate-90 cursor-pointer appearance-none rounded-full bg-white/15"
+                  :style="{ accentColor: 'var(--color-surge-500)' }"
+                  :aria-label="t('viewer.volumeAria')"
+                  @input="emit('setMasterVolume', Number(($event.target as HTMLInputElement).value) / 100)"
+                />
+              </div>
+              <UiIcon name="volume-2" class="h-3.5 w-3.5 text-ink-400" />
+            </div>
+
+            <!-- CT/T balance: center = both 100%, ends = only one team. Disabled
+                 (not hidden) while muted. -->
+            <div class="flex flex-col items-center gap-1.5" :class="{ 'opacity-40': muted }">
+              <span class="font-mono text-[10px] leading-none" :style="{ color: SIDE_COLOR.CT }">CT</span>
+              <div class="flex h-24 w-5 items-center justify-center">
+                <input
+                  v-tooltip="t('viewer.balance')"
+                  type="range"
+                  min="-100"
+                  max="100"
+                  :value="Math.round((balance ?? 0) * 100)"
+                  :disabled="muted"
+                  class="balance-slider h-1.5 w-24 rotate-90 appearance-none rounded-full"
+                  :class="muted ? 'cursor-not-allowed' : 'cursor-pointer'"
+                  :style="{ background: `linear-gradient(to right, ${SIDE_COLOR.CT}, ${SIDE_COLOR.T})` }"
+                  :aria-label="t('viewer.balanceAria')"
+                  @input="emit('setBalance', Number(($event.target as HTMLInputElement).value) / 100)"
+                />
+              </div>
+              <span class="font-mono text-[10px] leading-none" :style="{ color: SIDE_COLOR.T }">T</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comment mode: drop and edit comments on the map -->
+      <button
+        v-tooltip="t('viewer.comment.mode')"
+        class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-150"
+        :class="commentMode ? 'bg-surge-500 text-white' : 'text-ink-200 hover:bg-white/10 hover:text-white'"
+        @click="emit('toggleCommentMode')"
+      >
+        <UiIcon name="map-pin" class="h-4 w-4" />
+      </button>
+
       <!-- Speed: dropdown that shows only the selected one -->
       <div ref="speedMenu" class="relative shrink-0">
         <button
@@ -415,7 +493,6 @@ onMounted(() => centerCurrent('auto'))
           @click="speedOpen = !speedOpen"
         >
           {{ speed }}x
-          <UiIcon name="chevron-down" class="h-3 w-3 text-ink-400" />
         </button>
         <div
           v-if="speedOpen"
@@ -437,90 +514,6 @@ onMounted(() => centerCurrent('auto'))
           </button>
         </div>
       </div>
-
-      <!-- Comms: mute all (hover opens master volume) and balance between teams -->
-      <div v-if="showVoice" class="flex shrink-0 items-center gap-2">
-        <div
-          class="relative"
-          @mouseenter="volHover = true"
-          @mouseleave="volHover = false"
-        >
-          <button
-            v-tooltip="muted ? t('viewer.enableComms') : t('viewer.muteComms')"
-            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors duration-150 hover:bg-white/10"
-            :class="muted ? 'text-ink-500 hover:text-white' : 'text-ink-200 hover:text-white'"
-            @click="emit('toggleMute')"
-          >
-            <UiIcon :name="muted ? 'volume-x' : 'volume-2'" class="h-4 w-4" />
-          </button>
-
-          <!-- Master volume: vertical slider (the outer area bridges the hover) -->
-          <div
-            v-show="volHover"
-            class="absolute bottom-full left-1/2 -translate-x-1/2 pb-2"
-          >
-            <div
-              class="flex flex-col items-center gap-1.5 rounded-lg border border-ink-700 bg-ink-900/95 px-2 py-2.5 backdrop-blur"
-            >
-              <span class="font-mono text-[10px] tabular-nums text-ink-400">
-                {{ Math.round((masterVolume ?? 1) * 100) }}
-              </span>
-              <div class="flex h-24 w-5 items-center justify-center">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  :value="Math.round((masterVolume ?? 1) * 100)"
-                  class="h-1 w-24 -rotate-90 cursor-pointer appearance-none rounded-full bg-white/15"
-                  :style="{ accentColor: 'var(--color-surge-500)' }"
-                  :aria-label="t('viewer.volumeAria')"
-                  @input="emit('setMasterVolume', Number(($event.target as HTMLInputElement).value) / 100)"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Balance: center = both 100%, ends = only one team. Disabled (not
-             hidden) while muted; the whole block only shows when the demo has
-             comms (see v-if="showVoice" above). -->
-        <div class="flex items-center gap-1.5" :class="{ 'opacity-40': muted }">
-          <span class="font-mono text-[10px] leading-none" :style="{ color: SIDE_COLOR.CT }">CT</span>
-          <input
-            v-tooltip="t('viewer.balance')"
-            type="range"
-            min="-100"
-            max="100"
-            :value="Math.round((balance ?? 0) * 100)"
-            :disabled="muted"
-            class="balance-slider h-1.5 w-20 appearance-none rounded-full"
-            :class="muted ? 'cursor-not-allowed' : 'cursor-pointer'"
-            :style="{ background: `linear-gradient(to right, ${SIDE_COLOR.CT}, ${SIDE_COLOR.T})` }"
-            :aria-label="t('viewer.balanceAria')"
-            @input="emit('setBalance', Number(($event.target as HTMLInputElement).value) / 100)"
-          />
-          <span class="font-mono text-[10px] leading-none" :style="{ color: SIDE_COLOR.T }">T</span>
-        </div>
-      </div>
-
-      <!-- Comment mode: drop and edit comments on the map -->
-      <button
-        v-tooltip="t('viewer.comment.mode')"
-        class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-150"
-        :class="commentMode ? 'bg-surge-500 text-white' : 'text-ink-200 hover:bg-white/10 hover:text-white'"
-        @click="emit('toggleCommentMode')"
-      >
-        <UiIcon name="map-pin" class="h-4 w-4" />
-      </button>
-
-      <!-- Fullscreen: let the player fill the screen (hides the top bar) -->
-      <button
-        v-tooltip="fullscreen ? t('viewer.exitFullscreen') : t('viewer.fullscreen')"
-        class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink-200 transition-colors duration-150 hover:bg-white/10 hover:text-white"
-        @click="emit('toggleFullscreen')"
-      >
-        <UiIcon :name="fullscreen ? 'minimize' : 'maximize'" class="h-4 w-4" />
-      </button>
 
       <!-- Advanced: menu of viewer behavior toggles -->
       <div v-if="advancedOptions?.length" ref="advancedMenu" class="relative shrink-0">
@@ -555,6 +548,15 @@ onMounted(() => centerCurrent('auto'))
           </button>
         </div>
       </div>
+
+      <!-- Fullscreen: let the player fill the screen (hides the top bar) -->
+      <button
+        v-tooltip="fullscreen ? t('viewer.exitFullscreen') : t('viewer.fullscreen')"
+        class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink-200 transition-colors duration-150 hover:bg-white/10 hover:text-white"
+        @click="emit('toggleFullscreen')"
+      >
+        <UiIcon :name="fullscreen ? 'minimize' : 'maximize'" class="h-4 w-4" />
+      </button>
     </div>
   </div>
 </template>

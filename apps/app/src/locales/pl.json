@@ -156,6 +156,24 @@
         "warning": "Uwaga",
         "idea": "Pomysł"
       }
+    },
+    "coach": {
+      "enter": "Tryb trenera",
+      "exit": "Wyjdź z trybu trenera",
+      "modeHint": "Wybierz narzędzie i rysuj na mapie",
+      "clear": "Wyczyść rysunki",
+      "color": "Kolor",
+      "thickness": "Grubość",
+      "tool": {
+        "select": "Zaznacz",
+        "rectangle": "Prostokąt",
+        "circle": "Okrąg",
+        "arrow": "Strzałka",
+        "path": "Ścieżka",
+        "grenade": "Granat"
+      },
+      "undo": "Cofnij",
+      "redo": "Ponów"
     }
   },
   "grenadeKind": {

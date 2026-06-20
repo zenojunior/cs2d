@@ -156,6 +156,24 @@
         "warning": "Atenção",
         "idea": "Ideia"
       }
+    },
+    "coach": {
+      "enter": "Modo treinador",
+      "exit": "Sair do modo treinador",
+      "modeHint": "Escolha uma ferramenta e desenhe no mapa",
+      "clear": "Limpar desenhos",
+      "color": "Cor",
+      "thickness": "Espessura",
+      "tool": {
+        "select": "Selecionar",
+        "rectangle": "Retângulo",
+        "circle": "Círculo",
+        "arrow": "Flecha",
+        "path": "Caminho",
+        "grenade": "Granada"
+      },
+      "undo": "Desfazer",
+      "redo": "Refazer"
     }
   },
   "grenadeKind": {

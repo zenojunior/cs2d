@@ -156,6 +156,24 @@
         "warning": "Dikkat",
         "idea": "Fikir"
       }
+    },
+    "coach": {
+      "enter": "Koç modu",
+      "exit": "Koç modundan çık",
+      "modeHint": "Bir araç seçin ve haritaya çizin",
+      "clear": "Çizimleri temizle",
+      "color": "Renk",
+      "thickness": "Kalınlık",
+      "tool": {
+        "select": "Seç",
+        "rectangle": "Dikdörtgen",
+        "circle": "Daire",
+        "arrow": "Ok",
+        "path": "Yol",
+        "grenade": "El bombası"
+      },
+      "undo": "Geri al",
+      "redo": "Yinele"
     }
   },
   "grenadeKind": {

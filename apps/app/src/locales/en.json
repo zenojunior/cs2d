@@ -156,6 +156,24 @@
         "warning": "Caution",
         "idea": "Idea"
       }
+    },
+    "coach": {
+      "enter": "Coach mode",
+      "exit": "Exit coach mode",
+      "modeHint": "Pick a tool and draw on the map",
+      "clear": "Clear drawings",
+      "color": "Color",
+      "thickness": "Thickness",
+      "tool": {
+        "select": "Select",
+        "rectangle": "Rectangle",
+        "circle": "Circle",
+        "arrow": "Arrow",
+        "path": "Path",
+        "grenade": "Grenade"
+      },
+      "undo": "Undo",
+      "redo": "Redo"
     }
   },
   "grenadeKind": {
