@@ -40,11 +40,7 @@ function onPlay(match: MajorMatch, map: MajorMapReplay) {
   <div class="h-full overflow-y-auto bg-ink-950">
     <div class="mx-auto max-w-6xl px-5 py-10 sm:px-6 sm:py-14">
       <!-- Heading -->
-      <div class="flex items-center gap-2 text-surge-400">
-        <UiIcon name="trophy" class="h-5 w-5" />
-        <span class="text-sm font-semibold uppercase tracking-wide">{{ t('major.kicker') }}</span>
-      </div>
-      <h1 class="mt-2 text-2xl font-semibold text-ink-50 sm:text-3xl">{{ MAJOR.name }}</h1>
+      <h1 class="text-2xl font-semibold text-ink-50 sm:text-3xl">{{ MAJOR.name }}</h1>
       <p class="mt-3 max-w-2xl text-sm leading-relaxed text-ink-300">{{ t('major.intro') }}</p>
 
       <!-- Bracket -->

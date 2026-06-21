@@ -277,9 +277,15 @@ const commentedRounds = computed(() => {
 
 function toggleCommentMode() {
   commentMode.value = !commentMode.value
-  // Pause on entering so the map (and the bubbles) stays still while annotating.
-  if (commentMode.value) r.pause()
-  else popover.value = null
+  if (commentMode.value) {
+    // Pause on entering so the map (and the bubbles) stays still while annotating,
+    // and open the comments sidebar (the side rosters are hidden to make room).
+    r.pause()
+    panelOpen.value = true
+  } else {
+    popover.value = null
+    panelOpen.value = false
+  }
 }
 
 // --- Coach mode --------------------------------------------------------------
@@ -821,7 +827,7 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
           </span>
         </div>
 
-        <!-- Right: coach mode, comments panel, export -->
+        <!-- Right: coach mode, export (the comments panel opens via comment mode) -->
         <div v-if="!hudHidden" class="pointer-events-auto flex items-center gap-1.5">
           <button
             v-tooltip="t('viewer.coach.enter')"
@@ -829,14 +835,6 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
             @click="toggleCoachMode"
           >
             <UiIcon name="pencil" class="h-5 w-5" />
-          </button>
-          <button
-            v-tooltip="t('viewer.comment.panelTitle')"
-            class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-colors duration-150"
-            :class="panelOpen ? 'bg-surge-500 text-white' : 'text-ink-200 hover:bg-white/10 hover:text-white'"
-            @click="panelOpen = !panelOpen"
-          >
-            <UiIcon name="message" class="h-5 w-5" />
           </button>
           <button
             v-tooltip="t('viewer.exportTitle')"
@@ -926,9 +924,9 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
       :total-rounds="r.totalRounds.value"
     />
 
-    <!-- CT team: bottom-left corner -->
+    <!-- CT team: bottom-left corner (hidden in comment mode to make room for the panel) -->
     <aside
-      v-if="!hudHidden"
+      v-if="!hudHidden && !commentMode"
       class="pointer-events-auto absolute bottom-4 left-4 z-10 w-52 rounded-lg border border-ink-700 bg-ink-900/80 p-3 backdrop-blur"
     >
       <ViewerRoster
@@ -941,9 +939,9 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
       />
     </aside>
 
-    <!-- T team: bottom-right corner -->
+    <!-- T team: bottom-right corner (hidden in comment mode to make room for the panel) -->
     <aside
-      v-if="!hudHidden"
+      v-if="!hudHidden && !commentMode"
       class="pointer-events-auto absolute bottom-4 right-4 z-10 w-52 rounded-lg border border-ink-700 bg-ink-900/80 p-3 backdrop-blur"
     >
       <ViewerRoster

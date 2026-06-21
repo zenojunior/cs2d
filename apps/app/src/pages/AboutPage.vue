@@ -72,7 +72,20 @@ const RELATED: { name: string; url: string; desc: string }[] = [
         <h2 class="text-sm font-semibold uppercase tracking-wide text-surge-400">
           {{ t('about.motivationTitle') }}
         </h2>
-        <p class="mt-3 text-sm leading-relaxed text-ink-300">{{ t('about.motivationBody') }}</p>
+        <ul class="mt-3 flex flex-col gap-2 text-sm leading-relaxed text-ink-300">
+          <li class="flex gap-2">
+            <span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-surge-400" />
+            <span>{{ t('about.motivationPoint1') }}</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-surge-400" />
+            <span>{{ t('about.motivationPoint2') }}</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-surge-400" />
+            <span>{{ t('about.motivationPoint3') }}</span>
+          </li>
+        </ul>
       </section>
 
       <!-- Author -->

@@ -481,7 +481,7 @@ onMounted(() => centerCurrent('auto'))
         :class="commentMode ? 'bg-surge-500 text-white' : 'text-ink-200 hover:bg-white/10 hover:text-white'"
         @click="emit('toggleCommentMode')"
       >
-        <UiIcon name="map-pin" class="h-4 w-4" />
+        <UiIcon name="message" class="h-4 w-4" />
       </button>
 
       <!-- Speed: dropdown that shows only the selected one -->
