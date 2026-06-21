@@ -10,6 +10,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/AboutPage.vue'),
   },
   {
+    path: '/privacy',
+    name: 'privacy',
+    component: () => import('@/pages/PrivacyPage.vue'),
+  },
+  {
     path: '/cologne-major-2026',
     name: 'major',
     component: () => import('@/pages/MajorPage.vue'),

@@ -16,7 +16,8 @@
     "info": "Info",
     "toggleMenu": "Menü umschalten",
     "back": "Zurück",
-    "project": "Projekt"
+    "project": "Projekt",
+    "privacy": "Datenschutz"
   },
   "major": {
     "back": "Zurück zum Analyzer",
@@ -51,6 +52,21 @@
     "creditsBody": "Dieses Projekt steht auf den Schultern großartiger Open-Source-Arbeit:",
     "relatedTitle": "Verwandte Projekte",
     "relatedBody": "Projekte, die dieses inspiriert haben und einen Blick wert sind:"
+  },
+  "privacy": {
+    "title": "Datenschutzerklärung",
+    "tagline": "Kurz gesagt: Diese App läuft vollständig in Ihrem Browser und erhebt keine personenbezogenen Daten.",
+    "lastUpdated": "Zuletzt aktualisiert",
+    "localTitle": "Alles läuft in Ihrem Browser",
+    "localBody": "Wenn Sie eine Demo öffnen, wird sie lokal in Ihrem Browser verarbeitet (über WebAssembly). Die Datei wird nie an einen Server gesendet: Sie verlässt Ihr Gerät nicht.",
+    "storageTitle": "Speicherung auf Ihrem Gerät",
+    "storageBody": "Damit die Liste der zuletzt geöffneten Demos funktioniert und Ihre Einstellungen (wie die Sprache) gespeichert werden, legen wir einige Daten nur im lokalen Speicher Ihres Browsers ab. Sie verbleiben auf Ihrem Gerät und können jederzeit durch Löschen der Websitedaten entfernt werden.",
+    "analyticsTitle": "Analyse",
+    "analyticsBody": "Derzeit verwendet die App keine Analyse-Tools und keine Tracking-Cookies. Künftig könnten wir ein datenschutzfreundliches Analyse-Tool einsetzen, nur um zu verstehen, wie viele Zugriffe die Seite erhält: aggregiert und anonym, ohne personenbezogene Daten zu erheben oder Profile zu erstellen. Sollte sich das ändern, wird diese Seite aktualisiert.",
+    "thirdPartyTitle": "Dienste von Drittanbietern",
+    "thirdPartyBody": "Die App wird als statische Website gehostet. Einige Bilder (wie die Karten-Radare) und die Major-Replays werden von öffentlichen Quellen wie GitHub geladen. Um diese Dateien auszuliefern, können diese Dienste Anfragen protokollieren (zum Beispiel Ihre IP-Adresse), gemäß ihren eigenen Datenschutzrichtlinien.",
+    "contactTitle": "Kontakt",
+    "contactBody": "Fragen zum Datenschutz? Schreiben Sie mir an {email}."
   },
   "tabs": {
     "replay": "2D-Replay",

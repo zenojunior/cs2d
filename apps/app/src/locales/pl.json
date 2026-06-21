@@ -16,7 +16,8 @@
     "info": "Info",
     "toggleMenu": "Przełącz menu",
     "back": "Wstecz",
-    "project": "Projekt"
+    "project": "Projekt",
+    "privacy": "Prywatność"
   },
   "major": {
     "back": "Powrót do analizatora",
@@ -51,6 +52,21 @@
     "creditsBody": "Ten projekt opiera się na świetnej pracy open-source:",
     "relatedTitle": "Powiązane projekty",
     "relatedBody": "Projekty, które były inspiracją i które warto poznać:"
+  },
+  "privacy": {
+    "title": "Polityka prywatności",
+    "tagline": "W skrócie: ta aplikacja działa w całości w Twojej przeglądarce i nie zbiera danych osobowych.",
+    "lastUpdated": "Ostatnia aktualizacja",
+    "localTitle": "Wszystko działa w Twojej przeglądarce",
+    "localBody": "Gdy otwierasz demo, jest ono przetwarzane lokalnie w Twojej przeglądarce (przez WebAssembly). Plik nigdy nie jest wysyłany na żaden serwer: nie opuszcza Twojego urządzenia.",
+    "storageTitle": "Przechowywanie na Twoim urządzeniu",
+    "storageBody": "Aby lista ostatnich dem działała, a Twoje preferencje (takie jak język) były zapamiętywane, przechowujemy część danych wyłącznie w lokalnej pamięci Twojej przeglądarki. Pozostają one na Twoim urządzeniu i możesz je w każdej chwili usunąć, czyszcząc dane witryny.",
+    "analyticsTitle": "Analityka",
+    "analyticsBody": "Obecnie aplikacja nie używa żadnej analityki ani plików cookie śledzących. W przyszłości możemy dodać narzędzie analityczne szanujące prywatność, wyłącznie po to, by wiedzieć, ile odwiedzin ma strona: w sposób zagregowany i anonimowy, bez zbierania danych osobowych i tworzenia profili. Jeśli to się zmieni, ta strona zostanie zaktualizowana.",
+    "thirdPartyTitle": "Usługi zewnętrzne",
+    "thirdPartyBody": "Aplikacja jest hostowana jako strona statyczna. Niektóre obrazy (takie jak radary map) oraz powtórki z Majorów są ładowane z publicznych źródeł, takich jak GitHub. Aby dostarczyć te pliki, usługi te mogą rejestrować żądania (na przykład Twój adres IP) zgodnie z własnymi politykami prywatności.",
+    "contactTitle": "Kontakt",
+    "contactBody": "Masz pytania dotyczące prywatności? Napisz do mnie na {email}."
   },
   "tabs": {
     "replay": "Powtórka 2D",

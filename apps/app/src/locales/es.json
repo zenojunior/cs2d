@@ -16,7 +16,8 @@
     "info": "Info",
     "toggleMenu": "Alternar menú",
     "back": "Volver",
-    "project": "Proyecto"
+    "project": "Proyecto",
+    "privacy": "Privacidad"
   },
   "major": {
     "back": "Volver al analizador",
@@ -51,6 +52,21 @@
     "creditsBody": "Este proyecto se apoya en grandes trabajos open-source:",
     "relatedTitle": "Proyectos relacionados",
     "relatedBody": "Proyectos que sirvieron de inspiración y que vale la pena conocer:"
+  },
+  "privacy": {
+    "title": "Política de Privacidad",
+    "tagline": "La versión corta: esta app funciona por completo en tu navegador y no recopila datos personales.",
+    "lastUpdated": "Última actualización",
+    "localTitle": "Todo funciona en tu navegador",
+    "localBody": "Cuando abres una demo, se procesa localmente en tu navegador (mediante WebAssembly). El archivo nunca se envía a ningún servidor: nunca sale de tu dispositivo.",
+    "storageTitle": "Almacenamiento en tu dispositivo",
+    "storageBody": "Para que funcione la lista de demos recientes y se recuerden tus preferencias (como el idioma), guardamos algunos datos solo en el almacenamiento local de tu navegador. Permanecen en tu dispositivo y puedes borrarlos cuando quieras eliminando los datos del sitio.",
+    "analyticsTitle": "Analítica",
+    "analyticsBody": "Hoy la app no usa ninguna herramienta de analítica ni cookies de seguimiento. En el futuro, podríamos añadir una herramienta de analítica respetuosa con la privacidad, solo para saber cuántas visitas recibe la página: de forma agregada y anónima, sin recopilar datos personales ni crear perfiles. Si esto cambia, esta página se actualizará.",
+    "thirdPartyTitle": "Servicios de terceros",
+    "thirdPartyBody": "La app se aloja como un sitio estático. Algunas imágenes (como los radares de los mapas) y las repeticiones de los Majors se cargan desde fuentes públicas como GitHub. Para entregar esos archivos, esos servicios pueden registrar solicitudes (por ejemplo, tu dirección IP) según sus propias políticas de privacidad.",
+    "contactTitle": "Contacto",
+    "contactBody": "¿Dudas sobre privacidad? Escríbeme a {email}."
   },
   "tabs": {
     "replay": "Replay 2D",

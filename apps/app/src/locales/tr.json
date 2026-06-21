@@ -16,7 +16,8 @@
     "info": "Bilgi",
     "toggleMenu": "Menüyü aç/kapat",
     "back": "Geri",
-    "project": "Proje"
+    "project": "Proje",
+    "privacy": "Gizlilik"
   },
   "major": {
     "back": "Analiz aracına dön",
@@ -51,6 +52,21 @@
     "creditsBody": "Bu proje, harika açık kaynak çalışmaların üzerinde yükseliyor:",
     "relatedTitle": "İlgili projeler",
     "relatedBody": "Bu projeye ilham veren ve göz atmaya değer projeler:"
+  },
+  "privacy": {
+    "title": "Gizlilik Politikası",
+    "tagline": "Kısacası: bu uygulama tamamen tarayıcınızda çalışır ve hiçbir kişisel veri toplamaz.",
+    "lastUpdated": "Son güncelleme",
+    "localTitle": "Her şey tarayıcınızda çalışır",
+    "localBody": "Bir demo açtığınızda, tarayıcınızda yerel olarak (WebAssembly ile) işlenir. Dosya hiçbir sunucuya gönderilmez: cihazınızdan asla çıkmaz.",
+    "storageTitle": "Cihazınızda depolama",
+    "storageBody": "Son demolar listesinin çalışması ve tercihlerinizin (dil gibi) hatırlanması için bazı verileri yalnızca tarayıcınızın yerel depolamasında saklarız. Bu veriler cihazınızda kalır ve site verilerini temizleyerek istediğiniz zaman silebilirsiniz.",
+    "analyticsTitle": "Analitik",
+    "analyticsBody": "Şu anda uygulama hiçbir analitik aracı veya takip çerezi kullanmıyor. Gelecekte, yalnızca sitenin kaç ziyaret aldığını anlamak için gizliliğe saygılı bir analitik aracı ekleyebiliriz: kişisel veri toplamadan ya da profil oluşturmadan, toplu ve anonim biçimde. Bu değişirse, bu sayfa güncellenecektir.",
+    "thirdPartyTitle": "Üçüncü taraf hizmetleri",
+    "thirdPartyBody": "Uygulama statik bir site olarak barındırılır. Bazı görseller (harita radarları gibi) ve Major tekrarları GitHub gibi herkese açık kaynaklardan yüklenir. Bu dosyaları sunmak için bu hizmetler, kendi gizlilik politikaları kapsamında istekleri (örneğin IP adresinizi) kaydedebilir.",
+    "contactTitle": "İletişim",
+    "contactBody": "Gizlilikle ilgili sorularınız mı var? Bana {email} adresinden ulaşın."
   },
   "tabs": {
     "replay": "2D Replay",

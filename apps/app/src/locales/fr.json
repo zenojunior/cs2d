@@ -16,7 +16,8 @@
     "info": "Info",
     "toggleMenu": "Basculer le menu",
     "back": "Retour",
-    "project": "Projet"
+    "project": "Projet",
+    "privacy": "Confidentialité"
   },
   "major": {
     "back": "Retour à l'analyseur",
@@ -51,6 +52,21 @@
     "creditsBody": "Ce projet repose sur d'excellents travaux open-source :",
     "relatedTitle": "Projets liés",
     "relatedBody": "Des projets qui ont inspiré celui-ci et qui valent le détour :"
+  },
+  "privacy": {
+    "title": "Politique de confidentialité",
+    "tagline": "En bref : cette application fonctionne entièrement dans votre navigateur et ne collecte aucune donnée personnelle.",
+    "lastUpdated": "Dernière mise à jour",
+    "localTitle": "Tout fonctionne dans votre navigateur",
+    "localBody": "Lorsque vous ouvrez une démo, elle est traitée localement dans votre navigateur (via WebAssembly). Le fichier n'est jamais envoyé à un serveur : il ne quitte jamais votre appareil.",
+    "storageTitle": "Stockage sur votre appareil",
+    "storageBody": "Pour que la liste des démos récentes fonctionne et que vos préférences (comme la langue) soient mémorisées, nous conservons certaines données uniquement dans le stockage local de votre navigateur. Elles restent sur votre appareil et peuvent être effacées à tout moment en supprimant les données du site.",
+    "analyticsTitle": "Analytique",
+    "analyticsBody": "Aujourd'hui, l'application n'utilise aucun outil d'analytique ni cookie de suivi. À l'avenir, nous pourrions ajouter un outil d'analytique respectueux de la vie privée, uniquement pour savoir combien de visites le site reçoit : de façon agrégée et anonyme, sans collecter de données personnelles ni créer de profils. Si cela change, cette page sera mise à jour.",
+    "thirdPartyTitle": "Services tiers",
+    "thirdPartyBody": "L'application est hébergée comme un site statique. Certaines images (comme les radars des cartes) et les replays des Majors sont chargés depuis des sources publiques comme GitHub. Pour livrer ces fichiers, ces services peuvent enregistrer des requêtes (par exemple votre adresse IP) selon leurs propres politiques de confidentialité.",
+    "contactTitle": "Contact",
+    "contactBody": "Des questions sur la confidentialité ? Contactez-moi à {email}."
   },
   "tabs": {
     "replay": "Replay 2D",

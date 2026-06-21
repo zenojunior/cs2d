@@ -16,7 +16,8 @@
     "info": "Info",
     "toggleMenu": "Toggle menu",
     "back": "Back",
-    "project": "Project"
+    "project": "Project",
+    "privacy": "Privacy"
   },
   "major": {
     "back": "Back to the analyzer",
@@ -51,6 +52,21 @@
     "creditsBody": "This project stands on the shoulders of great open-source work:",
     "relatedTitle": "Related projects",
     "relatedBody": "Projects that inspired this one and are worth checking out:"
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "tagline": "The short version: this app runs entirely in your browser and collects no personal data.",
+    "lastUpdated": "Last updated",
+    "localTitle": "Everything runs in your browser",
+    "localBody": "When you open a demo, it is processed locally in your browser (via WebAssembly). The file is never sent to any server: it never leaves your device.",
+    "storageTitle": "Storage on your device",
+    "storageBody": "So the recent demos list works and your preferences (like the language) are remembered, we keep some data only in your browser's local storage. It stays on your device and can be cleared anytime by clearing the site data.",
+    "analyticsTitle": "Analytics",
+    "analyticsBody": "Today the app uses no analytics and no tracking cookies. In the future, we may add a privacy-friendly analytics tool, only to understand how many visits the site gets: aggregated and anonymous, without collecting personal data or building user profiles. If that changes, this page will be updated.",
+    "thirdPartyTitle": "Third-party services",
+    "thirdPartyBody": "The app is hosted as a static site. Some images (like the map radars) and the Major replays are loaded from public sources such as GitHub. To deliver those files, those services may log requests (for example, your IP address) under their own privacy policies.",
+    "contactTitle": "Contact",
+    "contactBody": "Questions about privacy? Reach me at {email}."
   },
   "tabs": {
     "replay": "2D Replay",
