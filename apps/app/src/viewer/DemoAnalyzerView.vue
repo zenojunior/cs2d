@@ -59,6 +59,10 @@ const routeLoading = ref(false)
 const currentId = ref<string | null>(null)
 // URL of the currently open external replay (Major demo), if any (same purpose).
 const currentSrc = ref<string | null>(null)
+// `?skipFreeze=1` opens the replay past the freeze time (Major clips set it).
+const skipFreeze = computed(() => route.query.skipFreeze === '1' || route.query.skipFreeze === 'true')
+// `?autoplay=1` starts playback as soon as the replay loads (Major clips set it).
+const autoplay = computed(() => route.query.autoplay === '1' || route.query.autoplay === 'true')
 type Tab = 'viewer' | 'heatmap' | 'utilities' | 'economy'
 // The active tab is driven by the URL: `/:id` is the 2D stage, `/:id/heatmaps`
 // the heatmap, `/:id/utilities` the utilities page, `/:id/economy` the economy page.
@@ -345,6 +349,8 @@ function onImportInput(e: Event) {
           :source-label="parser.fileName.value"
           :id="currentId ?? undefined"
           :file-name="parser.fileName.value"
+          :skip-freeze="skipFreeze"
+          :autoplay="autoplay"
         />
       </div>
       <HeatmapView v-if="activeTab === 'heatmap'" :replay="parser.replay.value" />

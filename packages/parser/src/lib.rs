@@ -1392,13 +1392,6 @@ fn build_replay(c: &Collector) -> Replay {
             .unwrap_or(r.end_tick);
         prev_end = r.end_tick;
     }
-    for i in 0..rounds.len() {
-        rounds[i].post_end_tick = if i + 1 < rounds.len() {
-            rounds[i + 1].freeze_start_tick
-        } else {
-            last_tick.max(rounds[i].end_tick) + 1
-        };
-    }
 
     // Carve a standalone knife round out of round 1's freeze window. FACEIT/scrim
     // openers run the knife round in warmup, so it never becomes a round of its
@@ -1469,6 +1462,55 @@ fn build_replay(c: &Collector) -> Replay {
                 ground_weapons: Vec::new(),
             },
         );
+    }
+
+    // Advance each freeze_start to the actual respawn moment. The CS2
+    // `round_start` event (used as freeze_start above) does not coincide with the
+    // respawn: the engine teleports everyone to spawn at 100 HP a few seconds off
+    // it (after it when a round ends in a fight, before it when a round ends on
+    // the bomb/time with survivors still up). Either way the in-between frames
+    // belong to the previous round's post-round (its casualties still lying
+    // dead, or its survivors damaged), not to this round. Anchor freeze_start at
+    // the first frame where every sampled player is alive at full health, the
+    // unambiguous respawn signature, searching from the previous round's
+    // decision so a respawn landing before this round's `round_start` is caught.
+    // Runs after the knife split so it does not trim a FACEIT knife round (which
+    // lives inside round 1's original freeze window) out of view.
+    for i in 0..rounds.len() {
+        let hi = rounds[i].start_tick;
+        // Collapsed (knife) round: nothing to trim.
+        if rounds[i].freeze_start_tick >= hi {
+            continue;
+        }
+        let lo = if i > 0 {
+            rounds[i - 1].decided_tick
+        } else {
+            rounds[i].freeze_start_tick
+        };
+        let respawn = c
+            .frames
+            .iter()
+            .find(|f| {
+                f.tick >= lo
+                    && f.tick <= hi
+                    && !f.players.is_empty()
+                    && f.players.iter().all(|p| p.alive && p.health == 100)
+            })
+            .map(|f| f.tick);
+        if let Some(tick) = respawn {
+            rounds[i].freeze_start_tick = tick;
+        }
+    }
+
+    // post_end = the next round's (now respawn-aligned) freeze_start, so the gap
+    // after the round ends — the post-round, including the restart delay — belongs
+    // to this round. The last round runs to the last sampled tick.
+    for i in 0..rounds.len() {
+        rounds[i].post_end_tick = if i + 1 < rounds.len() {
+            rounds[i + 1].freeze_start_tick
+        } else {
+            last_tick.max(rounds[i].end_tick) + 1
+        };
     }
 
     // A tick belongs to the round whose [freeze_start, post_end) window contains

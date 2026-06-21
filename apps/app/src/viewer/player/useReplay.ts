@@ -39,11 +39,30 @@ export function useReplay() {
   /** When set, reaching the end of a round rolls straight into the next one. */
   const autoAdvance = useLocalStorage('viewer.advanced.autoAdvance', false)
   /**
-   * When set, switching rounds starts right after the freeze time instead of
-   * playing it. Handy for matches without comms (e.g. majors), where the buy
-   * period has nothing to watch. The freeze still stays scrubbable to the left.
+   * When set, switching rounds (and the initial load) starts right after the
+   * freeze time instead of playing it. Handy for matches without comms (e.g.
+   * majors), where the buy period has nothing to watch. The freeze still stays
+   * scrubbable to the left.
+   *
+   * Two layers: a persistent user preference (toggled in the UI) and a transient
+   * per-view force (set via `forceSkipFreeze`, e.g. opening a Major clip with
+   * `?skipFreeze=1`). `skipFreeze` reads as `forced || preference`; toggling it
+   * off in the UI clears the force and writes the preference, so the toggle
+   * always wins and the Major default never leaks into the saved preference.
    */
-  const skipFreeze = useLocalStorage('viewer.advanced.skipFreeze', false)
+  const skipFreezePref = useLocalStorage('viewer.advanced.skipFreeze', false)
+  const skipFreezeForced = ref(false)
+  const skipFreeze = computed<boolean>({
+    get: () => skipFreezeForced.value || skipFreezePref.value,
+    set: (v) => {
+      skipFreezeForced.value = false
+      skipFreezePref.value = v
+    },
+  })
+  /** Transient per-view override (does not touch the saved preference). */
+  function forceSkipFreeze(v: boolean) {
+    skipFreezeForced.value = v
+  }
 
   const round = computed<Round | null>(() => replay.value?.rounds[roundIndex.value] ?? null)
   const frameCount = computed(() => round.value?.frames.length ?? 0)
@@ -221,7 +240,10 @@ export function useReplay() {
     pause()
     replay.value = r
     roundIndex.value = 0
-    frameIndex.value = 0
+    // With skipFreeze on, open past the first round's freeze (the freeze stays
+    // scrubbable to the left); otherwise start at frame 0 so it plays too.
+    const first = r.rounds[0]
+    frameIndex.value = first && skipFreeze.value ? liveFrame(first) : 0
     frac.value = 0
   }
 
@@ -339,6 +361,7 @@ export function useReplay() {
     speed,
     autoAdvance,
     skipFreeze,
+    forceSkipFreeze,
     round,
     players,
     currentT,

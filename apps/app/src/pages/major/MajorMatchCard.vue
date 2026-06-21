@@ -152,9 +152,35 @@ function play(map: MajorMapReplay) {
               :class="m.replay ? '' : 'opacity-30 grayscale'"
               loading="lazy"
             />
-            <!-- Map name on a bottom gradient -->
-            <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink-950/90 to-transparent px-2 pb-1.5 pt-5">
+            <!-- Map name and per-map score on a bottom gradient -->
+            <div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-gradient-to-t from-ink-950/95 to-transparent px-2 pb-1.5 pt-6">
               <span class="font-mono text-xs font-medium text-ink-50">{{ prettyMap(m.map) }}</span>
+              <span
+                v-if="m.scoreA != null && m.scoreB != null"
+                class="flex items-center gap-1 font-mono text-xs tabular-nums"
+              >
+                <img
+                  v-if="slotA.team"
+                  :src="slotA.team.logo"
+                  :alt="slotA.team.short"
+                  class="h-4 w-4 shrink-0 object-contain"
+                  loading="lazy"
+                />
+                <span :class="m.scoreA > m.scoreB ? 'font-bold text-surge-400' : 'text-ink-300'">{{
+                  m.scoreA
+                }}</span>
+                <span class="text-ink-500">:</span>
+                <span :class="m.scoreB > m.scoreA ? 'font-bold text-surge-400' : 'text-ink-300'">{{
+                  m.scoreB
+                }}</span>
+                <img
+                  v-if="slotB.team"
+                  :src="slotB.team.logo"
+                  :alt="slotB.team.short"
+                  class="h-4 w-4 shrink-0 object-contain"
+                  loading="lazy"
+                />
+              </span>
             </div>
             <!-- Play affordance (or "soon" when the replay isn't ready) -->
             <div

@@ -67,12 +67,26 @@ const props = defineProps<{
   id?: string
   /** Original demo file name, used to name the exported archive. */
   fileName?: string
+  /**
+   * Start past the freeze time (e.g. Major clips opened with `?skipFreeze=1`).
+   * A transient override that does not change the saved user preference.
+   */
+  skipFreeze?: boolean
+  /** Start playing as soon as the replay loads (e.g. Major clips). */
+  autoplay?: boolean
 }>()
 
 const r = useReplay()
+// Apply the per-view skip-freeze override before the replay loads, so the first
+// round opens past the freeze. Declared first so its immediate run precedes
+// setReplay's.
+watch(() => props.skipFreeze, (v) => r.forceSkipFreeze(!!v), { immediate: true })
 watch(
   () => props.replay,
-  (rep) => r.setReplay(rep),
+  (rep) => {
+    r.setReplay(rep)
+    if (props.autoplay) r.play()
+  },
   { immediate: true },
 )
 

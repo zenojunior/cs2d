@@ -15,6 +15,10 @@ export interface MajorMapReplay {
   // (repo `replays/` dir in dev, raw.githubusercontent in prod); null until the
   // demo has been parsed and committed.
   replay: string | null
+  // Final round score on this map, from teamA's / teamB's perspective; null
+  // until the map has been played. Sourced from the parsed replay's final score.
+  scoreA: number | null
+  scoreB: number | null
 }
 
 // Replays live in the repo `replays/` dir, outside the app bundle and PWA
@@ -70,8 +74,8 @@ export const MATCHES: MajorMatch[] = [
     scoreA: 2,
     scoreB: 0,
     maps: [
-      { map: 'de_nuke', replay: `${REPLAY_DIR}/qf1-nuke.cs2dv` },
-      { map: 'de_anubis', replay: `${REPLAY_DIR}/qf1-anubis.cs2dv` },
+      { map: 'de_nuke', replay: `${REPLAY_DIR}/qf1-nuke.cs2dv`, scoreA: 13, scoreB: 6 },
+      { map: 'de_anubis', replay: `${REPLAY_DIR}/qf1-anubis.cs2dv`, scoreA: 13, scoreB: 9 },
     ],
   },
   {
@@ -85,9 +89,9 @@ export const MATCHES: MajorMatch[] = [
     scoreA: 1,
     scoreB: 2,
     maps: [
-      { map: 'de_dust2', replay: `${REPLAY_DIR}/qf2-dust2.cs2dv` },
-      { map: 'de_mirage', replay: `${REPLAY_DIR}/qf2-mirage.cs2dv` },
-      { map: 'de_overpass', replay: `${REPLAY_DIR}/qf2-overpass.cs2dv` },
+      { map: 'de_dust2', replay: `${REPLAY_DIR}/qf2-dust2.cs2dv`, scoreA: 13, scoreB: 8 },
+      { map: 'de_mirage', replay: `${REPLAY_DIR}/qf2-mirage.cs2dv`, scoreA: 9, scoreB: 13 },
+      { map: 'de_overpass', replay: `${REPLAY_DIR}/qf2-overpass.cs2dv`, scoreA: 6, scoreB: 13 },
     ],
   },
   {
@@ -101,9 +105,9 @@ export const MATCHES: MajorMatch[] = [
     scoreA: 2,
     scoreB: 1,
     maps: [
-      { map: 'de_overpass', replay: `${REPLAY_DIR}/qf3-overpass.cs2dv` },
-      { map: 'de_dust2', replay: `${REPLAY_DIR}/qf3-dust2.cs2dv` },
-      { map: 'de_mirage', replay: `${REPLAY_DIR}/qf3-mirage.cs2dv` },
+      { map: 'de_overpass', replay: `${REPLAY_DIR}/qf3-overpass.cs2dv`, scoreA: 9, scoreB: 13 },
+      { map: 'de_dust2', replay: `${REPLAY_DIR}/qf3-dust2.cs2dv`, scoreA: 16, scoreB: 14 },
+      { map: 'de_mirage', replay: `${REPLAY_DIR}/qf3-mirage.cs2dv`, scoreA: 25, scoreB: 22 },
     ],
   },
   {
@@ -117,9 +121,9 @@ export const MATCHES: MajorMatch[] = [
     scoreA: 2,
     scoreB: 1,
     maps: [
-      { map: 'de_anubis', replay: `${REPLAY_DIR}/qf4-anubis.cs2dv` },
-      { map: 'de_inferno', replay: `${REPLAY_DIR}/qf4-inferno.cs2dv` },
-      { map: 'de_dust2', replay: `${REPLAY_DIR}/qf4-dust2.cs2dv` },
+      { map: 'de_anubis', replay: `${REPLAY_DIR}/qf4-anubis.cs2dv`, scoreA: 13, scoreB: 11 },
+      { map: 'de_inferno', replay: `${REPLAY_DIR}/qf4-inferno.cs2dv`, scoreA: 11, scoreB: 13 },
+      { map: 'de_dust2', replay: `${REPLAY_DIR}/qf4-dust2.cs2dv`, scoreA: 13, scoreB: 11 },
     ],
   },
   {
@@ -135,8 +139,8 @@ export const MATCHES: MajorMatch[] = [
     scoreA: 0,
     scoreB: 2,
     maps: [
-      { map: 'de_dust2', replay: `${REPLAY_DIR}/sf1-dust2.cs2dv` },
-      { map: 'de_nuke', replay: `${REPLAY_DIR}/sf1-nuke.cs2dv` },
+      { map: 'de_dust2', replay: `${REPLAY_DIR}/sf1-dust2.cs2dv`, scoreA: 9, scoreB: 13 },
+      { map: 'de_nuke', replay: `${REPLAY_DIR}/sf1-nuke.cs2dv`, scoreA: 4, scoreB: 13 },
     ],
   },
   {

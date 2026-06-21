@@ -26,7 +26,13 @@ function onPlay(match: MajorMatch, map: MajorMapReplay) {
   const b = match.teamB ? TEAMS[match.teamB]?.name : ''
   const matchup = a && b ? `${a} vs ${b}` : MAJOR.name
   const mapName = map.map.replace(/^de_/, '')
-  router.push({ path: '/', query: { replay: map.replay, name: `${matchup} · ${mapName}` } })
+  // Major GOTV demos carry no comms, so the buy period has nothing to watch:
+  // open straight past the freeze (`skipFreeze`) and start playing (`autoplay`).
+  // The freeze stays scrubbable to the left.
+  router.push({
+    path: '/',
+    query: { replay: map.replay, name: `${matchup} · ${mapName}`, skipFreeze: '1', autoplay: '1' },
+  })
 }
 </script>
 
