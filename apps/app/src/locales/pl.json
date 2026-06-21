@@ -325,7 +325,6 @@
   "library": {
     "title": "Biblioteka",
     "count": "{n} dem",
-    "stored": "zapisane lokalnie",
     "device": "{used} z {quota} użyte na urządzeniu",
     "empty": "Nie przeanalizowano jeszcze żadnej demki.",
     "uploadCta": "Przeanalizuj demo",

@@ -325,7 +325,6 @@
   "library": {
     "title": "Biblioteca",
     "count": "{n} demos",
-    "stored": "armazenados localmente",
     "device": "{used} de {quota} usados no dispositivo",
     "empty": "Nenhuma demo analisada ainda.",
     "uploadCta": "Analisar uma demo",

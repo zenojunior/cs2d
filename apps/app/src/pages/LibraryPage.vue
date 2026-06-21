@@ -30,9 +30,6 @@ const filtered = computed(() =>
     : recent.list.value.filter((d) => d.map === mapFilter.value),
 )
 
-// Footprint we actually keep (sum of the stored parsed archives).
-const totalBytes = computed(() => recent.list.value.reduce((s, d) => s + (d.fileSize || 0), 0))
-
 // Real device storage usage/quota (best-effort; not every browser exposes it).
 const storage = ref<{ usage: number; quota: number } | null>(null)
 onMounted(async () => {
@@ -72,11 +69,9 @@ function removeMaybeResetFilter(id: string) {
         <h1 class="text-2xl font-semibold text-ink-50">{{ t('library.title') }}</h1>
       </div>
 
-      <!-- Storage summary: what we keep locally + real device usage when known -->
+      <!-- Demo count + real device storage usage when the browser exposes it -->
       <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-ink-400">
         <span>{{ t('library.count', { n: recent.list.value.length }) }}</span>
-        <span class="text-ink-700">·</span>
-        <span>{{ fmtSize(totalBytes) }} {{ t('library.stored') }}</span>
         <span v-if="storage && storage.quota" class="text-ink-700">·</span>
         <span v-if="storage && storage.quota">
           {{ t('library.device', { used: fmtSize(storage.usage), quota: fmtSize(storage.quota) }) }}

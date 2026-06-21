@@ -325,7 +325,6 @@
   "library": {
     "title": "Kütüphane",
     "count": "{n} demo",
-    "stored": "yerel olarak saklanıyor",
     "device": "cihazda {quota} alanın {used} kullanılıyor",
     "empty": "Henüz demo analiz edilmedi.",
     "uploadCta": "Demo analiz et",
