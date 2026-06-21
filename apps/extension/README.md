@@ -76,4 +76,9 @@ and **offscreen.html** consoles.
 - Only `.dem.gz` and raw `.dem` are handled; `.zst` is not wired up yet.
 - Viewing a stored `.cs2dv` isn't built yet (Phase 2: a viewer inside the
   extension, reusing the app's components, so demos play without the site).
-- `host_permissions` is `<all_urls>`; tighten to the CDN hosts once known.
+- `host_permissions` is scoped to the shipping/next sources (`*.faceit.com`,
+  `*.faceit-cdn.net`, `*.hltv.org`, `*.gamersclub.com.br`); later sources
+  (`valve.net`, `5eplay.com`, `renown.gg`) are `optional_host_permissions`
+  requested at runtime (see `utils/permissions.ts`). A demo served from an
+  unlisted CDN host (e.g. HLTV's 302 redirect target) fails with a CORS error
+  until that host is added.

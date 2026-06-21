@@ -1,6 +1,6 @@
 {
   "name": "cs2-demo-viewer-extension",
-  "version": "0.0.0",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "description": "CS Demo Analyzer: open any Faceit CS2 match as a 2D replay in one click, parsed locally and 100% offline.",

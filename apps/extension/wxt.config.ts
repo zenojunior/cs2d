@@ -14,7 +14,15 @@ export default defineConfig({
     name: 'CS Demo Analyzer',
     description: 'Open any Faceit CS2 match as a 2D replay in one click. Demos are downloaded and parsed locally, 100% offline.',
     permissions: ['storage', 'offscreen'],
-    host_permissions: ['<all_urls>'],
+    // Required hosts: the shipping/next sources. Avoids <all_urls> and its review.
+    host_permissions: [
+      '*://*.faceit.com/*',
+      '*://*.faceit-cdn.net/*',
+      '*://*.hltv.org/*',
+      '*://*.gamersclub.com.br/*',
+    ],
+    // Later sources, granted at runtime via chrome.permissions.request.
+    optional_host_permissions: ['*://*.valve.net/*', '*://*.5eplay.com/*', '*://*.renown.gg/*'],
     // The offscreen document runs the WASM parser; allow wasm in extension pages.
     content_security_policy: {
       extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
