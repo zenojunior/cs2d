@@ -167,13 +167,17 @@ export const MATCHES: MajorMatch[] = [
     label: 'Final',
     bestOf: 5,
     date: 'Jun 21',
-    teamA: null,
-    teamB: null,
+    teamA: 'furia',
+    teamB: 'falcons',
     sourceA: 'sf1',
     sourceB: 'sf2',
-    scoreA: null,
-    scoreB: null,
-    maps: [],
+    scoreA: 0,
+    scoreB: 3,
+    maps: [
+      { map: 'de_mirage', replay: `${REPLAY_DIR}/final-mirage.cs2dv`, scoreA: 8, scoreB: 13 },
+      { map: 'de_anubis', replay: `${REPLAY_DIR}/final-anubis.cs2dv`, scoreA: 8, scoreB: 13 },
+      { map: 'de_inferno', replay: `${REPLAY_DIR}/final-inferno.cs2dv`, scoreA: 8, scoreB: 13 },
+    ],
   },
 ]
 
