@@ -25,6 +25,14 @@ export default defineContentScript({
             .then((data) => {
               const signed = data?.payload?.download_url
               if (signed) {
+                // MAIN world has no chrome.storage, so log to the console only.
+                // The host is what matters: it must be in host_permissions for
+                // the offscreen fetch to be exempt from CORS.
+                try {
+                  console.log('[CS2DV] [intercept] captured signed demo url', { host: new URL(signed).host })
+                } catch {
+                  /* ignore an unparseable URL */
+                }
                 window.postMessage({ source: 'cs2dv-extension', kind: 'capturedDemoUrl', url: signed }, '*')
               }
             })

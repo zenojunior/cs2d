@@ -22,6 +22,20 @@ function ensureZstd(): Promise<void> {
 }
 import { fileNameFromUrl, type ArchiveMetaRow, type Job, type ToOffscreen } from '../../utils/protocol'
 import { putArchive } from '../../utils/db'
+import { exportLogs, makeLog } from '../../utils/log'
+
+const log = makeLog('offscreen')
+// Grab the full log from the offscreen.html console with `await cs2dvLogs()`.
+;(globalThis as { cs2dvLogs?: () => Promise<string> }).cs2dvLogs = exportLogs
+
+/** Best-effort host of a URL, for logging (never throws). */
+function hostOf(url: string): string {
+  try {
+    return new URL(url).host
+  } catch {
+    return '(unparseable url)'
+  }
+}
 
 // Cancellation: the user can abort a job from the overlay. We abort the
 // in-flight fetch (the only externally-interruptible step) and also gate the
@@ -57,11 +71,30 @@ async function process(job: Job) {
   const ensureLive = () => {
     if (cancelled.has(matchId)) throw new CancelledError()
   }
+  const host = hostOf(url)
   try {
     // --- download (streamed, with progress) ---
+    log.info('download start', { matchId, host })
     report({ type: 'JOB_PROGRESS', matchId, patch: { phase: 'downloading', loaded: 0, total: 0 } })
-    const res = await fetch(url, { signal: abort.signal })
-    if (!res.ok) throw new Error(`HTTP ${res.status} downloading demo`)
+    let res: Response
+    try {
+      res = await fetch(url, { signal: abort.signal })
+    } catch (fetchErr) {
+      // A CORS block (host not in host_permissions) surfaces as a TypeError
+      // "Failed to fetch" with no response, indistinguishable from a network
+      // drop. Aborts are real cancels, not fetch failures: let those rethrow.
+      if ((fetchErr as Error)?.name === 'AbortError') throw fetchErr
+      log.error('fetch failed (CORS or network) — is the host in host_permissions?', {
+        matchId,
+        host,
+        error: (fetchErr as Error)?.message ?? String(fetchErr),
+      })
+      throw fetchErr
+    }
+    if (!res.ok) {
+      log.error('download HTTP error', { matchId, host, status: res.status })
+      throw new Error(`HTTP ${res.status} downloading demo`)
+    }
     const total = Number(res.headers.get('content-length')) || 0
     const reader = res.body!.getReader()
     const parts: Uint8Array[] = []
@@ -81,16 +114,19 @@ async function process(job: Job) {
     }
     ensureLive()
     const compressed = concat(parts, loaded)
+    log.info('downloaded', { matchId, bytes: loaded })
 
     // --- decompress to raw .dem ---
     report({ type: 'JOB_PROGRESS', matchId, patch: { phase: 'decompressing' } })
     const raw = await toRawDemo(compressed)
+    log.info('decompressed', { matchId, rawBytes: raw.byteLength })
 
     // --- parse (in the reused app worker) ---
     ensureLive()
     const { replay, voice } = await parse(raw, (patch) =>
       report({ type: 'JOB_PROGRESS', matchId, patch }),
     )
+    log.info('parsed', { matchId, map: replay.map })
 
     // --- pack to .cs2dv and store (discard raw) ---
     ensureLive()
@@ -118,12 +154,15 @@ async function process(job: Job) {
     }
     ensureLive()
     await putArchive(meta, blob)
+    log.info('stored', { matchId, fileName, sizeBytes: blob.size })
     report({ type: 'JOB_DONE', matchId, meta })
   } catch (err) {
     // A cancel (abort or gate trip) is not a real failure: the background has
     // already dropped the card, so this JOB_ERROR is ignored and just pumps the
     // queue. Report it anyway to keep the single error path.
     const aborted = err instanceof CancelledError || (err as Error)?.name === 'AbortError'
+    if (aborted) log.info('cancelled', { matchId })
+    else log.error('pipeline failed', { matchId, host, error: err instanceof Error ? err.message : String(err) })
     report({ type: 'JOB_ERROR', matchId, message: aborted ? 'cancelled' : err instanceof Error ? err.message : String(err) })
   } finally {
     cancelled.delete(matchId)

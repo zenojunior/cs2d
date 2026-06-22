@@ -6,6 +6,7 @@ import { Flag } from '@blade-flags/vue'
 import { circleFlags } from '@blade-flags/core/flags/circle'
 import UiIcon from '@/ui/UiIcon.vue'
 import AppSidebar from '@/shell/AppSidebar.vue'
+import ExtensionDialog from '@/shell/ExtensionDialog.vue'
 import {
   Menubar,
   MenubarContent,
@@ -28,6 +29,10 @@ const { t, locale, setLocale, LOCALES } = useI18n()
 useSeoHead()
 
 const GITHUB_URL = 'https://github.com/zenojunior/cs-demo-analyzer'
+
+// The Chrome extension isn't publicly installable yet, so its entry point shows
+// only in development; the production build hides it.
+const showExtension = import.meta.env.DEV
 
 const current = computed(() => LOCALES.find((l) => l.code === locale.value) ?? LOCALES[0])
 
@@ -87,8 +92,9 @@ provide(appFullscreenKey, { isFullscreen, toggle })
           <UiIcon :name="collapsed ? 'panel-left-open' : 'panel-left-close'" class="h-4 w-4" />
         </button>
 
-        <!-- End: GitHub link + language menu -->
+        <!-- End: extension dialog + GitHub link + language menu -->
         <div class="ml-auto flex items-center gap-2">
+          <ExtensionDialog v-if="showExtension" />
           <a
             :href="GITHUB_URL"
             target="_blank"

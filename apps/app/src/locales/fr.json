@@ -17,7 +17,8 @@
     "toggleMenu": "Basculer le menu",
     "back": "Retour",
     "project": "Projet",
-    "privacy": "Confidentialité"
+    "privacy": "Confidentialité",
+    "extension": "Extension"
   },
   "major": {
     "back": "Retour à l'analyseur",
@@ -35,6 +36,19 @@
     "watch": "Regarder",
     "pickMap": "Choisissez une map",
     "soon": "Bientôt"
+  },
+  "extension": {
+    "title": "Téléchargez les démos Faceit",
+    "tagline": "Une extension pour Chrome qui télécharge les démos de vos matchs Faceit directement depuis le navigateur. Ouvrez la page du match et le replay 2D est prêt ici, sans quitter le site.",
+    "featureDownloadTitle": "Téléchargement en un clic",
+    "featureDownloadBody": "Ouvrez la page d'un match sur Faceit et téléchargez la démo directement, sans chercher de lien ni clé d'API.",
+    "featureLocalTitle": "Traité sur votre PC",
+    "featureLocalBody": "La démo est parsée localement, dans votre navigateur. Rien n'est envoyé à un serveur : les fichiers ne quittent jamais votre appareil.",
+    "featureLibraryTitle": "Bibliothèque locale",
+    "featureLibraryBody": "Les démos téléchargées sont conservées dans votre navigateur, prêtes à rouvrir et analyser quand vous voulez.",
+    "installChrome": "Ajouter à Chrome",
+    "free": "Gratuit et open-source",
+    "close": "Fermer"
   },
   "about": {
     "title": "À propos du projet",

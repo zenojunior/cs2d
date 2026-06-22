@@ -17,7 +17,8 @@
     "toggleMenu": "Menü umschalten",
     "back": "Zurück",
     "project": "Projekt",
-    "privacy": "Datenschutz"
+    "privacy": "Datenschutz",
+    "extension": "Erweiterung"
   },
   "major": {
     "back": "Zurück zum Analyzer",
@@ -35,6 +36,19 @@
     "watch": "Ansehen",
     "pickMap": "Map auswählen",
     "soon": "Bald"
+  },
+  "extension": {
+    "title": "Faceit-Demos herunterladen",
+    "tagline": "Eine Chrome-Erweiterung, die die Demos deiner Faceit-Matches direkt aus dem Browser herunterlädt. Öffne einfach die Match-Seite und der 2D-Replay ist hier bereit, ohne die Seite zu verlassen.",
+    "featureDownloadTitle": "Download mit einem Klick",
+    "featureDownloadBody": "Öffne eine Match-Seite auf Faceit und lade die Demo direkt dort herunter, ohne Links zu suchen und ohne API-Schlüssel.",
+    "featureLocalTitle": "Auf deinem PC verarbeitet",
+    "featureLocalBody": "Die Demo wird lokal in deinem Browser geparst. Nichts wird auf einen Server hochgeladen: Die Dateien verlassen dein Gerät nie.",
+    "featureLibraryTitle": "Lokale Bibliothek",
+    "featureLibraryBody": "Heruntergeladene Demos werden in deinem Browser gespeichert, bereit, jederzeit wieder geöffnet und analysiert zu werden.",
+    "installChrome": "Zu Chrome hinzufügen",
+    "free": "Kostenlos und Open Source",
+    "close": "Schließen"
   },
   "about": {
     "title": "Über das Projekt",

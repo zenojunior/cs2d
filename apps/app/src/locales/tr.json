@@ -17,7 +17,8 @@
     "toggleMenu": "Menüyü aç/kapat",
     "back": "Geri",
     "project": "Proje",
-    "privacy": "Gizlilik"
+    "privacy": "Gizlilik",
+    "extension": "Uzantı"
   },
   "major": {
     "back": "Analiz aracına dön",
@@ -35,6 +36,19 @@
     "watch": "İzle",
     "pickMap": "Bir harita seçin",
     "soon": "Yakında"
+  },
+  "extension": {
+    "title": "Faceit demo'larını indir",
+    "tagline": "Faceit maçlarının demo'larını doğrudan tarayıcıdan indiren bir Chrome uzantısı. Maç sayfasını aç, 2D replay siteden çıkmadan burada hazır olsun.",
+    "featureDownloadTitle": "Tek tıkla indirme",
+    "featureDownloadBody": "Faceit'te bir maç sayfasını aç ve demo'yu doğrudan oradan indir; link aramaya ve API anahtarına gerek yok.",
+    "featureLocalTitle": "Bilgisayarında işlenir",
+    "featureLocalBody": "Demo, tarayıcında yerel olarak işlenir. Hiçbir şey bir sunucuya yüklenmez: dosyalar cihazından asla çıkmaz.",
+    "featureLibraryTitle": "Yerel kütüphane",
+    "featureLibraryBody": "İndirilen demo'lar tarayıcında saklanır ve istediğin zaman yeniden açıp analiz etmeye hazırdır.",
+    "installChrome": "Chrome'a ekle",
+    "free": "Ücretsiz ve açık kaynak",
+    "close": "Kapat"
   },
   "about": {
     "title": "Proje hakkında",

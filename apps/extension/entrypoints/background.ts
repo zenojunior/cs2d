@@ -10,9 +10,14 @@ import {
 } from '../utils/protocol'
 import { deleteArchive, getArchiveBlob, listArchives, putArchive, totalBytes } from '../utils/db'
 import { importArchive } from '@cs2/replay-core/demoArchive'
+import { exportLogs, makeLog } from '../utils/log'
 
 // Where stored replays open for playback (the public 2D viewer).
 const WEB_APP = 'https://cs2.zenojunior.com'
+
+const log = makeLog('background')
+// Grab the full log from the service-worker console with `await cs2dvLogs()`.
+;(globalThis as { cs2dvLogs?: () => Promise<string> }).cs2dvLogs = exportLogs
 
 // Orchestrator. Owns the job queue and the overlay-facing state, and keeps the
 // offscreen document (which does the heavy fetch+parse) alive while there's
@@ -68,12 +73,16 @@ export default defineBackground(() => {
           return false
         }
         case 'JOB_DONE':
+          log.info('job done', { matchId: msg.matchId })
           active.delete(msg.matchId)
           finishAndPump()
           return false
         case 'JOB_ERROR': {
           const j = active.get(msg.matchId)
           if (j) j.error = msg.message
+          // 'cancelled' is an expected outcome (user aborted), not a failure.
+          if (msg.message === 'cancelled') log.info('job cancelled', { matchId: msg.matchId })
+          else log.error('job failed', { matchId: msg.matchId, message: msg.message })
           // Drop from active after a moment so the overlay can show the error.
           setTimeout(() => active.delete(msg.matchId), 8000)
           finishAndPump()
@@ -85,7 +94,11 @@ export default defineBackground(() => {
   })
 
   function enqueue(job: Job) {
-    if (active.has(job.matchId) || queue.some((q) => q.matchId === job.matchId)) return
+    if (active.has(job.matchId) || queue.some((q) => q.matchId === job.matchId)) {
+      log.info('enqueue ignored (already active/queued)', { matchId: job.matchId })
+      return
+    }
+    log.info('enqueue', { matchId: job.matchId, label: job.label })
     active.set(job.matchId, { matchId: job.matchId, label: job.label, phase: 'queued', loaded: 0, total: 0 })
     queue.push(job)
     void pump()
@@ -102,12 +115,15 @@ export default defineBackground(() => {
     const job = queue.shift()
     if (!job) return
     running = true
+    log.info('processing', { matchId: job.matchId })
     try {
       await ensureOffscreen()
       await browser_sendMessage({ target: 'offscreen', type: 'PROCESS', job })
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      log.error('dispatch to offscreen failed', { matchId: job.matchId, message })
       const j = active.get(job.matchId)
-      if (j) j.error = err instanceof Error ? err.message : String(err)
+      if (j) j.error = message
       running = false
       void pump()
     }

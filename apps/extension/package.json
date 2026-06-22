@@ -1,6 +1,6 @@
 {
   "name": "cs2-demo-viewer-extension",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "type": "module",
   "description": "CS Demo Analyzer: open any Faceit CS2 match as a 2D replay in one click, parsed locally and 100% offline.",
@@ -12,6 +12,7 @@
     "prebuild": "node scripts/sync-zstd-wasm.mjs",
     "build": "wxt build",
     "build:firefox": "wxt build -b firefox",
+    "prezip": "node scripts/check-version.mjs",
     "zip": "wxt zip",
     "type-check": "wxt prepare && vue-tsc --noEmit"
   },

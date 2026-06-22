@@ -17,7 +17,8 @@
     "toggleMenu": "Alternar menú",
     "back": "Volver",
     "project": "Proyecto",
-    "privacy": "Privacidad"
+    "privacy": "Privacidad",
+    "extension": "Extensión"
   },
   "major": {
     "back": "Volver al analizador",
@@ -35,6 +36,19 @@
     "watch": "Ver",
     "pickMap": "Elige el mapa",
     "soon": "Pronto"
+  },
+  "extension": {
+    "title": "Descarga demos de Faceit",
+    "tagline": "Una extensión para Chrome que descarga las demos de tus partidas de Faceit directamente desde el navegador. Solo abre la página de la partida y el replay 2D queda listo aquí, sin salir del sitio.",
+    "featureDownloadTitle": "Descarga con un clic",
+    "featureDownloadBody": "Abre la página de una partida en Faceit y descarga la demo desde ahí, sin buscar enlaces ni usar una clave de API.",
+    "featureLocalTitle": "Procesado en tu PC",
+    "featureLocalBody": "La demo se procesa localmente, en tu navegador. Nada se sube a ningún servidor: los archivos no salen de tu dispositivo.",
+    "featureLibraryTitle": "Biblioteca local",
+    "featureLibraryBody": "Las demos descargadas se guardan en tu navegador, listas para reabrir y analizar cuando quieras.",
+    "installChrome": "Añadir a Chrome",
+    "free": "Gratis y open-source",
+    "close": "Cerrar"
   },
   "about": {
     "title": "Acerca del proyecto",

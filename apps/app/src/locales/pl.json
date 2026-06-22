@@ -17,7 +17,8 @@
     "toggleMenu": "Przełącz menu",
     "back": "Wstecz",
     "project": "Projekt",
-    "privacy": "Prywatność"
+    "privacy": "Prywatność",
+    "extension": "Rozszerzenie"
   },
   "major": {
     "back": "Powrót do analizatora",
@@ -35,6 +36,19 @@
     "watch": "Oglądaj",
     "pickMap": "Wybierz mapę",
     "soon": "Wkrótce"
+  },
+  "extension": {
+    "title": "Pobieraj dema z Faceit",
+    "tagline": "Rozszerzenie do Chrome, które pobiera dema Twoich meczów z Faceit prosto z przeglądarki. Wystarczy otworzyć stronę meczu, a powtórka 2D jest gotowa tutaj, bez opuszczania strony.",
+    "featureDownloadTitle": "Pobieranie jednym kliknięciem",
+    "featureDownloadBody": "Otwórz stronę meczu na Faceit i pobierz demo prosto stamtąd, bez szukania linków i bez klucza API.",
+    "featureLocalTitle": "Przetwarzane na Twoim PC",
+    "featureLocalBody": "Demo jest parsowane lokalnie, w Twojej przeglądarce. Nic nie jest wysyłane na żaden serwer: pliki nigdy nie opuszczają Twojego urządzenia.",
+    "featureLibraryTitle": "Lokalna biblioteka",
+    "featureLibraryBody": "Pobrane dema są przechowywane w Twojej przeglądarce, gotowe do ponownego otwarcia i analizy, kiedy zechcesz.",
+    "installChrome": "Dodaj do Chrome",
+    "free": "Darmowe i open-source",
+    "close": "Zamknij"
   },
   "about": {
     "title": "O projekcie",

@@ -15,9 +15,13 @@ export default defineConfig({
     description: 'Open any Faceit CS2 match as a 2D replay in one click. Demos are downloaded and parsed locally, 100% offline.',
     permissions: ['storage', 'offscreen'],
     // Required hosts: the shipping/next sources. Avoids <all_urls> and its review.
+    // Faceit hands out signed demo URLs served from Backblaze B2 (S3-compatible),
+    // so that host must be listed too, otherwise the offscreen fetch is treated
+    // as a plain cross-origin request and blocked by CORS.
     host_permissions: [
       '*://*.faceit.com/*',
       '*://*.faceit-cdn.net/*',
+      '*://*.backblazeb2.com/*',
       '*://*.hltv.org/*',
       '*://*.gamersclub.com.br/*',
     ],
