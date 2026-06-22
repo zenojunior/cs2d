@@ -4,7 +4,7 @@ import { Check, Download, ExternalLink, Github, Globe, HardDrive, Library, Loade
 import Button from '@/components/ui/button/Button.vue'
 import Progress from '@/components/ui/progress/Progress.vue'
 import Select from '@/components/ui/select/Select.vue'
-import type { ActiveJob, ArchiveMetaRow, MatchMeta, StateReply } from '@/utils/protocol'
+import type { ActiveJob, ArchiveMetaRow, StateReply } from '@/utils/protocol'
 import { LOCALES, currentLocale, initLocale, setLocale, t, type LocaleCode } from './i18n'
 
 const WEB_APP = 'https://cs2.zenojunior.com'
@@ -20,97 +20,21 @@ const KNOWN_THUMBS = new Set([
   'de_inferno', 'de_mirage', 'de_nuke', 'de_overpass',
 ])
 
-type Tab = 'match' | 'library' | 'settings'
-const tab = ref<Tab>('match')
+type Tab = 'library' | 'settings'
+const tab = ref<Tab>('library')
 
 const state = ref<StateReply>({ active: [], stored: [], totalBytes: 0 })
-const currentMatch = ref<string | null>(null)
-let capturedUrl: string | null = null
-
-// Match preview, fetched once per room (powers the hero card before download).
-const currentMeta = ref<MatchMeta | null>(null)
-const currentDemoUrl = ref<string | null>(null)
-const loadingMeta = ref(false)
 
 // --- live state polling -----------------------------------------------------
 async function refresh() {
   try {
     state.value = (await chrome.runtime.sendMessage({ target: 'background', type: 'GET_STATE' })) as StateReply
-    currentMatch.value = matchIdFromUrl()
   } catch {
     /* background asleep between sends; next tick retries */
   }
 }
-function matchIdFromUrl(): string | null {
-  return location.pathname.match(/\/room\/([\w-]+)/)?.[1] ?? null
-}
-/** The current room URL, trimmed to `.../room/<id>` (drops sub-tabs like
- *  /scoreboard) so the library link lands on the room itself. */
-function roomUrlFromLocation(): string {
-  const base = location.pathname.match(/^(.*\/room\/[\w-]+)/)?.[1] ?? location.pathname
-  return location.origin + base
-}
-
-// Refetch the preview only when the room actually changes (not every poll).
-watch(currentMatch, (id) => void loadMeta(id))
-async function loadMeta(id: string | null) {
-  currentMeta.value = null
-  currentDemoUrl.value = null
-  capturedUrl = null
-  if (!id) return
-  loadingMeta.value = true
-  try {
-    const p = await fetchPayload(id)
-    currentMeta.value = extractMeta(p)
-    currentDemoUrl.value = p?.demoURLs?.[0] ?? null
-    // Diagnostic: if we couldn't read a score, dump the score-bearing parts so
-    // an unhandled payload shape can be added to factionScores().
-    if (currentMeta.value.scoreA == null && currentMeta.value.scoreB == null) {
-      console.debug('[cs2dv] no score parsed; results:', p?.results, 'detailedResults:', p?.detailedResults)
-    }
-  } catch (err) {
-    console.error('[cs2dv]', err)
-  } finally {
-    loadingMeta.value = false
-  }
-}
-
-// --- derived ----------------------------------------------------------------
-const currentJob = computed(() => state.value.active.find((a) => a.matchId === currentMatch.value) ?? null)
-const currentStored = computed(() => state.value.stored.find((s) => s.matchId === currentMatch.value) ?? null)
-const heroMap = computed(() => currentStored.value?.map ?? currentMeta.value?.map)
-const heroMeta = computed<MatchMeta>(() => {
-  const s = currentStored.value
-  if (s) {
-    return { teamA: s.teamA, teamB: s.teamB, scoreA: s.scoreCt, scoreB: s.scoreT, map: s.map, competition: s.competition, region: s.region }
-  }
-  return currentMeta.value ?? {}
-})
-const canDownload = computed(() => !!currentMatch.value && !currentJob.value && !currentStored.value)
 
 // --- actions ----------------------------------------------------------------
-const resolving = ref(false)
-async function onDownload() {
-  const matchId = currentMatch.value
-  if (!matchId || resolving.value || !canDownload.value) return
-  resolving.value = true
-  try {
-    let signed = capturedUrl
-    if (!signed && currentDemoUrl.value) signed = await signDemoUrl(currentDemoUrl.value)
-    if (!signed) throw new Error('no demo URL')
-    const meta = { ...(currentMeta.value ?? {}), roomUrl: roomUrlFromLocation(), source: 'faceit' }
-    await chrome.runtime.sendMessage({
-      target: 'background',
-      type: 'ENQUEUE',
-      job: { matchId, url: signed, label: meta.teamA ? `${meta.teamA} vs ${meta.teamB}` : matchLabel(), meta },
-    })
-    await refresh()
-  } catch (err) {
-    console.error('[cs2dv]', err)
-  } finally {
-    resolving.value = false
-  }
-}
 function onCancel(matchId: string) {
   void chrome.runtime.sendMessage({ target: 'background', type: 'CANCEL', matchId })
   void refresh()
@@ -126,14 +50,6 @@ function onDelete(matchId: string) {
 function onWatch(matchId: string) {
   void chrome.runtime.sendMessage({ target: 'background', type: 'OPEN_VIEWER', matchId })
 }
-// Hero click is contextual: download when new, watch once it's in the library.
-const heroClickable = computed(() => canDownload.value || (!!currentStored.value && !currentJob.value))
-function onHeroClick() {
-  if (currentJob.value) return
-  if (currentStored.value) onWatch(currentStored.value.matchId)
-  else if (canDownload.value) void onDownload()
-}
-
 /** Export a stored replay: pull the .cs2dv (base64) and save it to disk. The
  *  blob lives in the extension origin, so the content script builds the object
  *  URL and clicks an anchor (no downloads permission needed). */
@@ -234,68 +150,6 @@ const hasMore = computed(() => filteredStored.value.length > visibleCount.value)
 watch([search, mapFilter, sourceFilter], () => {
   visibleCount.value = PAGE
 })
-function matchLabel(): string {
-  const title = document.title.replace(/\s*\|\s*FACEIT.*$/i, '').trim()
-  return title || matchIdFromUrl() || 'match'
-}
-
-/** Faceit internal API: fetch the raw match payload (meta + demo URLs). */
-async function fetchPayload(matchId: string): Promise<Record<string, any>> {
-  const match = await fetch(`https://www.faceit.com/api/match/v2/match/${matchId}`, {
-    credentials: 'include',
-  }).then((r) => r.json())
-  return match?.payload ?? {}
-}
-/** Exchange a stored demo URL for a short-lived signed CDN download URL. */
-async function signDemoUrl(demoUrl: string): Promise<string | null> {
-  const signed = await fetch('https://www.faceit.com/api/download/v2/demos/download-url', {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ resource_url: demoUrl }),
-  }).then((r) => r.json())
-  return signed?.payload?.download_url ?? null
-}
-function num(v: unknown): number | undefined {
-  const n = Number(v)
-  return Number.isFinite(n) ? n : undefined
-}
-/** The round score lives in different places across Faceit match payloads
- *  (matchmaking vs leagues, single result vs per-map detailedResults). Probe the
- *  known shapes in order and take the first that yields a faction score. */
-function factionScores(p: Record<string, any>): { a?: number; b?: number } {
-  const results = Array.isArray(p?.results) ? p.results[0] : p?.results
-  const factionSources = [p?.detailedResults?.[0]?.factions, results?.factions]
-  for (const f of factionSources) {
-    const a = num(f?.faction1?.score)
-    const b = num(f?.faction2?.score)
-    if (a != null || b != null) return { a, b }
-  }
-  const scoreSources = [results?.score, p?.detailedResults?.[0]?.score]
-  for (const s of scoreSources) {
-    const a = num(s?.faction1)
-    const b = num(s?.faction2)
-    if (a != null || b != null) return { a, b }
-  }
-  return {}
-}
-
-function extractMeta(p: Record<string, any>): MatchMeta {
-  const teams = p?.teams ?? {}
-  const rawDate = p?.finishedAt ?? p?.startedAt ?? p?.configuredAt
-  const date = rawDate ? (typeof rawDate === 'number' ? rawDate : Date.parse(rawDate) || undefined) : undefined
-  const { a, b } = factionScores(p)
-  return {
-    teamA: teams.faction1?.name,
-    teamB: teams.faction2?.name,
-    scoreA: a,
-    scoreB: b,
-    map: p?.voting?.map?.pick?.[0],
-    competition: p?.competitionName ?? p?.competition_name,
-    region: p?.region,
-    date,
-  }
-}
 
 // --- presentation helpers ---------------------------------------------------
 function radarUrl(map?: string) {
@@ -345,7 +199,7 @@ const version = chrome.runtime.getManifest?.().version ?? ''
 // sits). That makes minimize collapse *into* that corner and restore grow back
 // out to the left — and keeps the corner pinned on-screen as size/window change.
 const MARGIN = 10 // minimum gap kept from every screen edge
-const PANEL_W = 430
+const PANEL_W = 500
 const BUBBLE_W = 44
 const corner = reactive({ x: 0, y: 0 }) // top-right corner, viewport px
 const minimized = ref(false)
@@ -421,11 +275,6 @@ function onDragEnd() {
 
 // --- lifecycle --------------------------------------------------------------
 let timer: number | undefined
-function onCapture(e: MessageEvent) {
-  if (e.source !== window) return
-  const d = e.data
-  if (d?.source === 'cs2dv-extension' && d?.kind === 'capturedDemoUrl' && d?.url) capturedUrl = d.url
-}
 onMounted(async () => {
   await initLocale()
   const { corner: saved, panelPos, minimized: savedMin } = await chrome.storage.local.get(['corner', 'panelPos', 'minimized'])
@@ -440,15 +289,12 @@ onMounted(async () => {
     corner.x = window.innerWidth - 24
     corner.y = Math.round(window.innerHeight * 0.16)
   }
-  window.addEventListener('message', onCapture)
   window.addEventListener('resize', clampCorner)
   await refresh()
-  await loadMeta(currentMatch.value)
   timer = window.setInterval(refresh, 1000)
   void nextTick(clampCorner) // first clamp once the real size is laid out
 })
 onUnmounted(() => {
-  window.removeEventListener('message', onCapture)
   window.removeEventListener('resize', clampCorner)
   ro?.disconnect()
   if (timer) clearInterval(timer)
@@ -485,12 +331,12 @@ onUnmounted(() => {
   <div
     v-if="!minimized"
     :ref="setPanelEl"
-    class="fixed z-[999999] flex max-h-[80vh] w-[430px] origin-top-right flex-col overflow-hidden rounded-xl border border-border bg-background text-foreground shadow-2xl"
+    class="fixed z-[999999] flex h-[450px] max-h-[88vh] w-[500px] origin-top-right flex-col overflow-hidden rounded-xl border border-border bg-background text-foreground shadow-2xl"
     :style="panelStyle"
   >
     <!-- Header / drag handle -->
     <div
-      class="flex cursor-grab touch-none items-center justify-between border-b border-border px-3 py-2.5 active:cursor-grabbing"
+      class="flex cursor-grab touch-none items-center justify-between border-b border-border bg-[#0a0c12] px-3 py-2.5 active:cursor-grabbing"
       @pointerdown.prevent="onDragStart"
     >
       <div class="flex items-center gap-1.5 font-semibold">
@@ -527,14 +373,13 @@ onUnmounted(() => {
       <!-- Sidebar -->
       <nav class="flex w-[140px] shrink-0 flex-col gap-1 border-r border-border p-2">
         <button
-          v-for="item in (['match', 'library', 'settings'] as Tab[])"
+          v-for="item in (['library', 'settings'] as Tab[])"
           :key="item"
           class="flex items-center gap-2 rounded-md px-2 py-2 text-xs font-medium transition-colors"
           :class="tab === item ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
           @click="tab = item"
         >
-          <Play v-if="item === 'match'" class="size-4 shrink-0" />
-          <Library v-else-if="item === 'library'" class="size-4 shrink-0" />
+          <Library v-if="item === 'library'" class="size-4 shrink-0" />
           <Settings v-else class="size-4 shrink-0" />
           <span class="min-w-0 truncate">{{ t(`tabs.${item}`) }}</span>
           <span
@@ -562,83 +407,8 @@ onUnmounted(() => {
 
       <!-- Content -->
       <div class="flex min-w-0 flex-1 flex-col gap-2 overflow-y-auto p-2.5">
-      <!-- ===== MATCH TAB ===== -->
-      <template v-if="tab === 'match'">
-        <div v-if="!currentMatch" class="px-1 py-6 text-center text-sm text-muted-foreground">
-          {{ t('hero.openRoom') }}
-        </div>
-
-        <!-- Hero card for the current room -->
-        <div
-          v-else
-          class="relative aspect-[16/10] overflow-hidden rounded-lg border border-border bg-[#0a0c12]"
-          :class="heroClickable ? 'group cursor-pointer' : ''"
-          @click="onHeroClick"
-        >
-          <img
-            v-if="radarUrl(heroMap)"
-            :src="radarUrl(heroMap)!"
-            class="absolute inset-0 size-full object-contain p-2 opacity-80"
-            alt=""
-          />
-          <div v-else class="absolute inset-0 flex items-center justify-center text-xs uppercase tracking-wide text-muted-foreground">
-            {{ heroMap ? prettyMap(heroMap) : '—' }}
-          </div>
-
-          <!-- Match info, bottom -->
-          <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-2.5">
-            <div class="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-              <svg viewBox="0 0 24 24" class="size-3 shrink-0" fill="#ff5500" xmlns="http://www.w3.org/2000/svg">
-                <path d="M23.999 2.705a.167.167 0 00-.312-.1 1141.27 1141.27 0 00-6.053 9.375H.218c-.221 0-.301.282-.11.352 7.227 2.73 17.667 6.836 23.5 9.134.15.06.39-.08.39-.18z" />
-              </svg>
-              <span class="truncate">{{ topLine([heroMeta.competition, heroMap && prettyMap(heroMap)]) || matchLabel() }}</span>
-            </div>
-            <div v-if="heroMeta.teamA || heroMeta.teamB" class="mt-0.5 flex items-center justify-center gap-2.5 text-sm">
-              <span class="flex-1 truncate text-right">{{ heroMeta.teamA }}</span>
-              <span class="font-bold">{{ heroMeta.scoreA ?? '–' }}<span class="text-muted-foreground"> : </span>{{ heroMeta.scoreB ?? '–' }}</span>
-              <span class="flex-1 truncate">{{ heroMeta.teamB }}</span>
-            </div>
-          </div>
-
-          <!-- Active download overlay -->
-          <div v-if="currentJob" class="absolute inset-0 flex flex-col justify-center gap-2 bg-black/70 p-4">
-            <div class="flex items-center justify-between text-xs" :class="currentJob.error ? 'text-destructive' : 'text-foreground'">
-              <span class="flex items-center gap-1.5">
-                <Loader2 v-if="!currentJob.error" class="size-3.5 animate-spin" />
-                {{ jobStatus(currentJob) }}
-              </span>
-              <button class="rounded p-0.5 text-muted-foreground hover:bg-white/10 hover:text-foreground" :title="t('hero.cancel')" @click.stop="onCancel(currentJob.matchId)">
-                <X class="size-4" />
-              </button>
-            </div>
-            <Progress :model-value="jobProgress(currentJob)" />
-          </div>
-
-          <!-- Stored: ready badge + hover "watch" CTA -->
-          <template v-else-if="currentStored">
-            <div class="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-medium text-white">
-              <Check class="size-3" /> {{ t('hero.ready') }}
-            </div>
-            <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/55 opacity-0 transition-opacity group-hover:opacity-100">
-              <Play class="size-7 fill-primary text-primary" />
-              <span class="px-4 text-center text-sm font-semibold">{{ t('hero.watch') }}</span>
-            </div>
-          </template>
-
-          <!-- Hover CTA (downloadable) -->
-          <div
-            v-else
-            class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/55 opacity-0 transition-opacity group-hover:opacity-100"
-          >
-            <Loader2 v-if="resolving || loadingMeta" class="size-7 animate-spin text-primary" />
-            <Download v-else class="size-7 text-primary" />
-            <span class="px-4 text-center text-sm font-semibold">{{ t('hero.cta') }}</span>
-          </div>
-        </div>
-      </template>
-
       <!-- ===== LIBRARY TAB ===== -->
-      <template v-else-if="tab === 'library'">
+      <template v-if="tab === 'library'">
         <!-- Filters + import -->
         <div class="flex items-center gap-1.5">
           <input
