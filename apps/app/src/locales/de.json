@@ -156,6 +156,8 @@
     "showElapsed": "Vergangene Zeit anzeigen",
     "autoZoom": "Auto-Zoom",
     "autoZoomDesc": "Fasst alle Spieler auf der Map ein",
+    "lowQualityEffects": "Leistungsmodus",
+    "lowQualityEffectsDesc": "Zeichnet Rauch und Molotows als einfache Kreise, für schwächere Geräte",
     "autoAdvance": "Automatisch weiter",
     "autoAdvanceDesc": "Wenn eine Runde endet, startet die nächste von selbst",
     "skipFreeze": "Freeze time überspringen",

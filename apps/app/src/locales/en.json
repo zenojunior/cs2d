@@ -156,6 +156,8 @@
     "showElapsed": "Show elapsed time",
     "autoZoom": "Auto zoom",
     "autoZoomDesc": "Frames all players on the map",
+    "lowQualityEffects": "Performance mode",
+    "lowQualityEffectsDesc": "Draws smokes and molotovs as plain circles, for weaker devices",
     "autoAdvance": "Auto advance",
     "autoAdvanceDesc": "When a round ends, the next one starts on its own",
     "skipFreeze": "Skip freeze time",

@@ -156,6 +156,8 @@
     "showElapsed": "Pokaż upływający czas",
     "autoZoom": "Automatyczny zoom",
     "autoZoomDesc": "Obejmuje wszystkich graczy na mapie",
+    "lowQualityEffects": "Tryb wydajności",
+    "lowQualityEffectsDesc": "Rysuje dymy i koktajle jako proste koła, dla słabszych urządzeń",
     "autoAdvance": "Automatyczne przejście",
     "autoAdvanceDesc": "Gdy runda się kończy, następna zaczyna się sama",
     "skipFreeze": "Pomiń freeze time",

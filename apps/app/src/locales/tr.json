@@ -156,6 +156,8 @@
     "showElapsed": "Geçen süreyi göster",
     "autoZoom": "Otomatik yakınlaştırma",
     "autoZoomDesc": "Haritadaki tüm oyuncuları çerçeveler",
+    "lowQualityEffects": "Performans modu",
+    "lowQualityEffectsDesc": "Sis ve molotofları basit daireler olarak çizer, daha zayıf cihazlar için",
     "autoAdvance": "Otomatik ilerleme",
     "autoAdvanceDesc": "Bir raunt bittiğinde, sonraki kendiliğinden başlar",
     "skipFreeze": "Freeze time'ı atla",

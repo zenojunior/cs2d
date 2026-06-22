@@ -156,6 +156,8 @@
     "showElapsed": "Afficher le temps écoulé",
     "autoZoom": "Zoom automatique",
     "autoZoomDesc": "Cadre tous les joueurs sur la map",
+    "lowQualityEffects": "Mode performance",
+    "lowQualityEffectsDesc": "Affiche fumigènes et cocktails comme de simples cercles, pour les machines plus faibles",
     "autoAdvance": "Avance automatique",
     "autoAdvanceDesc": "À la fin d'un round, le suivant démarre tout seul",
     "skipFreeze": "Passer le freeze time",

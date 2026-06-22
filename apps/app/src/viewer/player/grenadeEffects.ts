@@ -117,6 +117,44 @@ export function createGrenadeEffects(): GrenadeEffects {
   }
 }
 
+// --- Low-quality painters ----------------------------------------------------
+// A flat filled circle, no gradients/blur/sprite. For the "performance mode"
+// toggle: keeps the tactical info (where the smoke/fire is and how big) at a
+// cost low-end machines can afford even with many grenades on screen at once.
+export function paintSimpleSmoke(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  R: number,
+) {
+  ctx.save()
+  ctx.fillStyle = 'rgba(210, 215, 226, 0.4)'
+  ctx.strokeStyle = 'rgba(228, 232, 240, 0.6)'
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.arc(x, y, R, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.restore()
+}
+
+export function paintSimpleFire(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  R: number,
+) {
+  ctx.save()
+  ctx.fillStyle = 'rgba(230, 90, 25, 0.32)'
+  ctx.strokeStyle = 'rgba(255, 140, 40, 0.7)'
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.arc(x, y, R, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.restore()
+}
+
 // --- Raw effect painters (draw into the offscreen sprite canvas) -------------
 function paintSmokeRaw(
   c: CanvasRenderingContext2D,
