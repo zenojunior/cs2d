@@ -15,7 +15,7 @@ import {
   type CoachTool,
 } from '@/viewer/player/coachTools'
 import type { GrenadeKind } from '@/viewer/domain/schema'
-import { createGrenadeEffects } from '@/viewer/player/grenadeEffects'
+import { createGrenadeEffects, paintSimpleSmoke, paintSimpleFire } from '@/viewer/player/grenadeEffects'
 import { clamp, drawKill, roundRect, wrapText } from '@/viewer/player/canvasUtils'
 import { useViewerAssets } from '@/viewer/player/useViewerAssets'
 import { useI18n } from '@/i18n'
@@ -36,6 +36,8 @@ const props = defineProps<{
   muted?: Record<Side, boolean>
   /** Auto zoom: frames all living players, easing in/out. */
   autoZoom?: boolean
+  /** Performance mode: draw smoke/fire as flat circles (no gradients/blur). */
+  lowQualityEffects?: boolean
   /** Arc to highlight in full (grenades hover): when set, only this one shows. */
   previewPath?: GrenadePath | null
   /** Arcs drawn together (grenades page): the whole filtered set at once. */
@@ -215,9 +217,11 @@ function drawGrenade(
   const k = clamp((t - ev.t) / span, 0, 1)
   ctx.save()
   if (ev.kind === 'smoke') {
-    effects.paintSmoke(ctx, x, y, smokeRadius(), t, ev.x * 0.011 + ev.y * 0.015)
+    if (props.lowQualityEffects) paintSimpleSmoke(ctx, x, y, smokeRadius())
+    else effects.paintSmoke(ctx, x, y, smokeRadius(), t, ev.x * 0.011 + ev.y * 0.015)
   } else if (ev.kind === 'fire') {
-    effects.paintFire(ctx, x, y, fireRadius(), t, ev.x * 0.013 + ev.y * 0.017)
+    if (props.lowQualityEffects) paintSimpleFire(ctx, x, y, fireRadius())
+    else effects.paintFire(ctx, x, y, fireRadius(), t, ev.x * 0.013 + ev.y * 0.017)
   } else if (ev.kind === 'he') {
     ctx.globalAlpha = 1 - k
     ctx.strokeStyle = '#ffb020'
@@ -1136,11 +1140,13 @@ function drawCoachGrenade(g: CoachGrenade) {
   const { x, y } = w2s(pos.x, pos.y)
   const t = props.currentT
   if (g.kind === 'smoke') {
-    effects.paintSmoke(ctx, x, y, smokeRadius(), t, pos.x * 0.011 + pos.y * 0.015)
+    if (props.lowQualityEffects) paintSimpleSmoke(ctx, x, y, smokeRadius())
+    else effects.paintSmoke(ctx, x, y, smokeRadius(), t, pos.x * 0.011 + pos.y * 0.015)
     return
   }
   if (g.kind === 'fire') {
-    effects.paintFire(ctx, x, y, fireRadius(), t, pos.x * 0.013 + pos.y * 0.017)
+    if (props.lowQualityEffects) paintSimpleFire(ctx, x, y, fireRadius())
+    else effects.paintFire(ctx, x, y, fireRadius(), t, pos.x * 0.013 + pos.y * 0.017)
     return
   }
   const r = clamp(playerRadius() * 0.7, 9, 26)
@@ -2299,6 +2305,7 @@ watch(() => props.round, () => {
   effects.clear()
   draw()
 })
+watch(() => props.lowQualityEffects, draw)
 watch(() => props.players, draw)
 watch(() => props.bombBlink, draw)
 watch(() => props.previewPath, draw)

@@ -156,6 +156,8 @@
     "showElapsed": "Mostrar tempo decorrido",
     "autoZoom": "Zoom automático",
     "autoZoomDesc": "Enquadra todos os jogadores no mapa",
+    "lowQualityEffects": "Modo de desempenho",
+    "lowQualityEffectsDesc": "Desenha smokes e molotovs como círculos simples, para PCs mais fracos",
     "autoAdvance": "Avanço automático",
     "autoAdvanceDesc": "Ao terminar um round, o próximo começa sozinho",
     "skipFreeze": "Pular freeze time",

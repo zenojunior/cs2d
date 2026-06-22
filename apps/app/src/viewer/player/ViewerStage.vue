@@ -538,12 +538,19 @@ async function exportReplay() {
 // behavior. For now: auto zoom that frames the players.
 // Advanced options persist across sessions (localStorage).
 const autoZoom = useLocalStorage('viewer.advanced.autoZoom', false)
+const lowQualityEffects = useLocalStorage('viewer.advanced.lowQualityEffects', false)
 const advancedOptions = computed(() => [
   {
     key: 'autoZoom',
     label: t('viewer.autoZoom'),
     description: t('viewer.autoZoomDesc'),
     enabled: autoZoom.value,
+  },
+  {
+    key: 'lowQualityEffects',
+    label: t('viewer.lowQualityEffects'),
+    description: t('viewer.lowQualityEffectsDesc'),
+    enabled: lowQualityEffects.value,
   },
   {
     key: 'autoAdvance',
@@ -560,6 +567,7 @@ const advancedOptions = computed(() => [
 ])
 function toggleAdvanced(key: string) {
   if (key === 'autoZoom') autoZoom.value = !autoZoom.value
+  else if (key === 'lowQualityEffects') lowQualityEffects.value = !lowQualityEffects.value
   else if (key === 'autoAdvance') r.autoAdvance.value = !r.autoAdvance.value
   else if (key === 'skipFreeze') r.skipFreeze.value = !r.skipFreeze.value
 }
@@ -695,6 +703,7 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
       :talking="audio.talking.value"
       :muted="audio.mutedSides.value"
       :auto-zoom="autoZoom"
+      :low-quality-effects="lowQualityEffects"
       :radar-src="activeLevelRadar"
       :level-range="activeLevelRange"
       :comments="roundComments"
