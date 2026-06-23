@@ -228,7 +228,13 @@
       "undo": "Cofnij",
       "redo": "Ponów"
     },
-    "knifeRound": "Runda nożowa"
+    "knifeRound": "Runda nożowa",
+    "follow": {
+      "following": "Śledzenie {name}",
+      "exit": "Przestań śledzić (Esc)",
+      "start": "Śledź",
+      "stop": "Przestań śledzić"
+    }
   },
   "grenadeKind": {
     "smoke": "Smoke",

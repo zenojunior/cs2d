@@ -228,7 +228,13 @@
       "undo": "Desfazer",
       "redo": "Refazer"
     },
-    "knifeRound": "Round da faca"
+    "knifeRound": "Round da faca",
+    "follow": {
+      "following": "Seguindo {name}",
+      "exit": "Parar de seguir (Esc)",
+      "start": "Seguir",
+      "stop": "Parar de seguir"
+    }
   },
   "grenadeKind": {
     "smoke": "Smoke",

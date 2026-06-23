@@ -228,7 +228,13 @@
       "undo": "Geri al",
       "redo": "Yinele"
     },
-    "knifeRound": "Bıçak raundu"
+    "knifeRound": "Bıçak raundu",
+    "follow": {
+      "following": "{name} takip ediliyor",
+      "exit": "Takibi bırak (Esc)",
+      "start": "Takip et",
+      "stop": "Takibi bırak"
+    }
   },
   "grenadeKind": {
     "smoke": "Smoke",

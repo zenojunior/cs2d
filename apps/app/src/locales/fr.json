@@ -228,7 +228,13 @@
       "undo": "Annuler",
       "redo": "Rétablir"
     },
-    "knifeRound": "Round au couteau"
+    "knifeRound": "Round au couteau",
+    "follow": {
+      "following": "Suivi de {name}",
+      "exit": "Arrêter de suivre (Échap)",
+      "start": "Suivre",
+      "stop": "Arrêter de suivre"
+    }
   },
   "grenadeKind": {
     "smoke": "Smoke",

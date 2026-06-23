@@ -228,7 +228,13 @@
       "undo": "Rückgängig",
       "redo": "Wiederholen"
     },
-    "knifeRound": "Messerrunde"
+    "knifeRound": "Messerrunde",
+    "follow": {
+      "following": "Folgt {name}",
+      "exit": "Folgen beenden (Esc)",
+      "start": "Folgen",
+      "stop": "Folgen beenden"
+    }
   },
   "grenadeKind": {
     "smoke": "Smoke",
