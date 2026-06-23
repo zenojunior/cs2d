@@ -234,10 +234,14 @@ export function useReplay() {
   function setReplay(r: Replay) {
     pause()
     replay.value = r
-    roundIndex.value = 0
-    // With skipFreeze on, open past the first round's freeze (the freeze stays
+    // Open on the first round that actually has frames. Some platforms (Gamers
+    // Club) emit a leading frameless "result" round for the knife; starting
+    // there would show an empty map.
+    const startIdx = r.rounds.findIndex((rd) => rd.frames.length > 0)
+    roundIndex.value = startIdx < 0 ? 0 : startIdx
+    // With skipFreeze on, open past that round's freeze (the freeze stays
     // scrubbable to the left); otherwise start at frame 0 so it plays too.
-    const first = r.rounds[0]
+    const first = r.rounds[roundIndex.value]
     frameIndex.value = first && skipFreeze.value ? liveFrame(first) : 0
     frac.value = 0
   }
