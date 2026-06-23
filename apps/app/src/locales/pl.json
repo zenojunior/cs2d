@@ -300,6 +300,7 @@
     "all": "Wszyscy",
     "round": "Runda",
     "allRounds": "Wszystkie rundy",
+    "jumpHint": "kliknij, aby zobaczyć",
     "time": "Czas rundy",
     "multiLevelNote": "{map} ma dwa piętra: każdy wykres pokazuje jeden poziom.",
     "team": "Drużyna"

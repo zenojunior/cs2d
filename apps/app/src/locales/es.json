@@ -300,6 +300,7 @@
     "all": "Todos",
     "round": "Ronda",
     "allRounds": "Todas las rondas",
+    "jumpHint": "clic para ver",
     "time": "Tiempo de ronda",
     "multiLevelNote": "{map} tiene dos pisos: cada plot muestra un nivel.",
     "team": "Equipo"

@@ -33,7 +33,7 @@ const SUBS: Sub[] = ['throws', 'flashes', 'damage', 'heatmap']
 <template>
   <div class="flex h-full w-full flex-col">
     <!-- Sub-navigation: Throws / Flashes / Damage -->
-    <div class="flex shrink-0 items-center gap-0.5 border-b border-ink-800 px-3 py-2">
+    <div class="flex shrink-0 items-center justify-center gap-0.5 border-b border-ink-800 px-3 py-2">
       <button
         v-for="s in SUBS"
         :key="s"

@@ -1,25 +1,35 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { type MapCalibration, worldToFraction } from '@/viewer/domain/calibration'
+import type { Side } from '@/viewer/domain/schema'
+import { SIDE_COLOR } from '@/viewer/domain/colors'
+import type { KillInfo } from '@/viewer/analysis/heatmapTypes'
 import UiIcon from '@/ui/UiIcon.vue'
 import { useI18n } from '@/i18n'
 
 const { t } = useI18n()
 
 /**
- * A single heatmap plot: one map floor's radar with the heat layer on top.
- * Receives already-filtered points (side/player/round/level) and only handles
- * drawing. Heat is computed in a buffer in map-fraction space (zoom independent);
- * zoom/pan just redraws that buffer with a transform.
+ * A single map plot: one floor's radar with either a heat layer (`mode: 'heat'`)
+ * or one colored dot per point (`mode: 'dots'`, for discrete events like kills /
+ * deaths). Receives already-filtered points (side/player/round/level) and only
+ * handles drawing. Heat is computed in a buffer in map-fraction space (zoom
+ * independent); zoom/pan just redraws that buffer with a transform.
  */
 const props = defineProps<{
-  points: { x: number; y: number }[]
+  points: { x: number; y: number; side?: Side | null; kill?: KillInfo }[]
   calibration: MapCalibration
   /** Radar image of this floor. */
   radar: string
   /** Floor label (e.g. "Upper"); omitted on single-level maps. */
   label?: string
+  /** 'heat' (density blobs) or 'dots' (one marker per point). Defaults to heat. */
+  mode?: 'heat' | 'dots'
+  /** Marker shape in dots mode: a filled circle or a skull (e.g. for deaths). */
+  marker?: 'dot' | 'skull'
 }>()
+
+const emit = defineEmits<{ jump: [payload: { roundIndex: number; t: number }] }>()
 
 const wrap = ref<HTMLDivElement | null>(null)
 const canvas = ref<HTMLCanvasElement | null>(null)
@@ -99,7 +109,8 @@ function buildHeat() {
   const hctx = heatCanvas.getContext('2d')!
   hctx.clearRect(0, 0, HEAT, HEAT)
   heatHasData = false
-  if (!pts.length) {
+  // Dots mode draws straight from the points in render(); no heat buffer needed.
+  if (props.mode === 'dots' || !pts.length) {
     render()
     return
   }
@@ -149,10 +160,79 @@ function render() {
     ctx.fillStyle = '#0b0e14'
     ctx.fillRect(0, 0, cw, ch)
   }
-  if (heatHasData) {
+  if (props.mode === 'dots') {
+    drawDots(w)
+  } else if (heatHasData) {
     ctx.imageSmoothingEnabled = true
     ctx.drawImage(heatCanvas, panX, panY, w, w)
   }
+}
+
+// Skull marker: cache one rendered (and side-tinted) image per color, so we draw
+// it as an image instead of re-rasterizing an SVG per point. Redraw on load.
+const skullCache = new Map<string, HTMLImageElement>()
+function skullImage(color: string): HTMLImageElement {
+  const cached = skullCache.get(color)
+  if (cached) return cached
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${color}"` +
+    ` stroke-width="2" stroke-linecap="round" stroke-linejoin="round">` +
+    `<circle cx="9" cy="12" r="1.2" fill="${color}" stroke="none"/>` +
+    `<circle cx="15" cy="12" r="1.2" fill="${color}" stroke="none"/>` +
+    `<path d="m12.5 17-.5-1-.5 1h1z"/>` +
+    `<path d="M8 20v2h8v-2"/>` +
+    `<path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>`
+  const img = new Image()
+  img.onload = () => render()
+  img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg)
+  skullCache.set(color, img)
+  return img
+}
+
+/** One marker per point, colored by side (CT blue, T gold, gray when unknown):
+ *  a translucent circle, or a skull when `marker === 'skull'`. `w` is the
+ *  on-screen radar size; positions come from map fractions. */
+function drawDots(w: number) {
+  if (!ctx) return
+  const r = Math.max(3, L * 0.007)
+  const skull = props.marker === 'skull'
+  ctx.lineWidth = 1
+  ctx.save()
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.65)'
+  ctx.shadowBlur = 2
+  for (const p of props.points) {
+    const { fx, fy } = worldToFraction(props.calibration, p.x, p.y)
+    if (fx < 0 || fx >= 1 || fy < 0 || fy >= 1) continue
+    const sx = panX + fx * w
+    const sy = panY + fy * w
+    const color = p.side ? SIDE_COLOR[p.side] : '#cbd5e1'
+    const hot = p === hovered.value
+    // Hovered marker: a white halo ring behind it, and a slightly larger size.
+    if (hot) {
+      ctx.beginPath()
+      ctx.arc(sx, sy, r * (skull ? 2.4 : 1.9), 0, Math.PI * 2)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.22)'
+      ctx.fill()
+      ctx.lineWidth = 1.5
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'
+      ctx.stroke()
+      ctx.lineWidth = 1
+    }
+    if (skull) {
+      const img = skullImage(color)
+      if (!img.complete || !img.naturalWidth) continue
+      const s = r * 3.6 * (hot ? 1.3 : 1)
+      ctx.drawImage(img, sx - s / 2, sy - s / 2, s, s)
+    } else {
+      ctx.beginPath()
+      ctx.arc(sx, sy, r * (hot ? 1.3 : 1), 0, Math.PI * 2)
+      ctx.fillStyle = hot ? color + 'dd' : color + '99'
+      ctx.fill()
+      ctx.strokeStyle = color
+      ctx.stroke()
+    }
+  }
+  ctx.restore()
 }
 
 function fit() {
@@ -184,30 +264,94 @@ function onWheel(e: WheelEvent) {
   panX = mx - (mx - panX) * real
   panY = my - (my - panY) * real
   zoom.value = next
+  selected.value = null
   render()
+}
+
+type Point = (typeof props.points)[number]
+// Popover for a clicked kill/death marker, positioned in CSS px over the canvas.
+const selected = ref<{ sx: number; sy: number; kill: KillInfo } | null>(null)
+// Kill point currently under the cursor, drawn emphasized (hover effect).
+const hovered = ref<Point | null>(null)
+
+/** Nearest kill point to a canvas-space (mx, my), within the marker hit radius. */
+function hitTest(mx: number, my: number): { point: Point; sx: number; sy: number } | null {
+  const w = L * zoom.value
+  const reach = Math.max(11, L * 0.014)
+  let best: { point: Point; sx: number; sy: number } | null = null
+  let bestDist = reach * reach
+  for (const p of props.points) {
+    if (!p.kill) continue
+    const { fx, fy } = worldToFraction(props.calibration, p.x, p.y)
+    if (fx < 0 || fx >= 1 || fy < 0 || fy >= 1) continue
+    const sx = panX + fx * w
+    const sy = panY + fy * w
+    const d = (sx - mx) ** 2 + (sy - my) ** 2
+    if (d <= bestDist) {
+      bestDist = d
+      best = { point: p, sx, sy }
+    }
+  }
+  return best
 }
 
 let dragging = ref(false)
 let lastX = 0
 let lastY = 0
+let downX = 0
+let downY = 0
+let moved = 0
 function onPointerDown(e: PointerEvent) {
   if (e.button !== 0) return
   dragging.value = true
   lastX = e.clientX
   lastY = e.clientY
+  downX = e.clientX
+  downY = e.clientY
+  moved = 0
   canvas.value?.setPointerCapture(e.pointerId)
 }
 function onPointerMove(e: PointerEvent) {
-  if (!dragging.value) return
-  panX += e.clientX - lastX
-  panY += e.clientY - lastY
-  lastX = e.clientX
-  lastY = e.clientY
-  render()
+  if (dragging.value) {
+    panX += e.clientX - lastX
+    panY += e.clientY - lastY
+    moved += Math.abs(e.clientX - lastX) + Math.abs(e.clientY - lastY)
+    lastX = e.clientX
+    lastY = e.clientY
+    if (moved > 4) selected.value = null
+    render()
+    return
+  }
+  // Idle hover: highlight the kill marker under the cursor.
+  const rect = canvas.value!.getBoundingClientRect()
+  const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top)
+  if ((hit?.point ?? null) !== hovered.value) {
+    hovered.value = hit?.point ?? null
+    render()
+  }
+}
+function onPointerLeave() {
+  if (hovered.value) {
+    hovered.value = null
+    render()
+  }
 }
 function onPointerUp(e: PointerEvent) {
   dragging.value = false
   canvas.value?.releasePointerCapture(e.pointerId)
+  // A click (no real drag): open the kill popover under the cursor, or dismiss.
+  if (Math.abs(e.clientX - downX) + Math.abs(e.clientY - downY) <= 4) {
+    const rect = canvas.value!.getBoundingClientRect()
+    const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top)
+    selected.value = hit ? { sx: hit.sx, sy: hit.sy, kill: hit.point.kill! } : null
+  }
+}
+
+function jumpToSelected() {
+  const k = selected.value?.kill
+  if (!k) return
+  emit('jump', { roundIndex: k.roundIndex, t: k.t })
+  selected.value = null
 }
 
 function zoomBy(factor: number) {
@@ -218,12 +362,14 @@ function zoomBy(factor: number) {
   panX = cx - (cx - panX) * real
   panY = cy - (cy - panY) * real
   zoom.value = next
+  selected.value = null
   render()
 }
 function resetView() {
   zoom.value = 1
   panX = (cw - L) / 2
   panY = (ch - L) / 2
+  selected.value = null
   render()
 }
 
@@ -248,7 +394,11 @@ watch(
     radarImg.src = src
   },
 )
-watch(() => props.points, buildHeat)
+watch([() => props.points, () => props.mode, () => props.marker], () => {
+  selected.value = null
+  hovered.value = null
+  buildHeat()
+})
 
 const canReset = computed(() => zoom.value > 1.0001)
 </script>
@@ -258,11 +408,12 @@ const canReset = computed(() => zoom.value > 1.0001)
     <canvas
       ref="canvas"
       class="block touch-none"
-      :class="dragging ? 'cursor-grabbing' : 'cursor-grab'"
+      :class="dragging ? 'cursor-grabbing' : hovered ? 'cursor-pointer' : 'cursor-grab'"
       @wheel.prevent="onWheel"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
       @pointerup="onPointerUp"
+      @pointerleave="onPointerLeave"
     />
 
     <!-- Rótulo do andar -->
@@ -272,6 +423,47 @@ const canReset = computed(() => zoom.value > 1.0001)
     >
       {{ label }}
     </div>
+
+    <!-- Kill popover: who killed whom at this spot; click to seek the replay. -->
+    <button
+      v-if="selected"
+      type="button"
+      class="absolute z-10 flex -translate-x-1/2 -translate-y-full cursor-pointer flex-col gap-0.5 rounded-lg border border-ink-700 bg-ink-900/95 px-2.5 py-1.5 text-xs shadow-lg backdrop-blur transition-colors hover:border-surge-500/60"
+      :style="{ left: `${selected.sx}px`, top: `${selected.sy - 10}px` }"
+      @click="jumpToSelected"
+    >
+      <div class="flex items-center gap-1.5 whitespace-nowrap">
+        <span
+          v-if="selected.kill.attackerName"
+          class="font-medium"
+          :style="{ color: selected.kill.attackerColor }"
+          >{{ selected.kill.attackerName }}</span
+        >
+        <template v-if="selected.kill.assistedFlash">
+          <span class="font-medium" :style="{ color: selected.kill.attackerColor }">+</span>
+          <img src="/weapons/flash.svg" alt="flash" class="h-3.5 w-3.5 object-contain" />
+        </template>
+        <img
+          v-if="selected.kill.weaponIcon"
+          :src="selected.kill.weaponIcon"
+          :alt="selected.kill.weapon"
+          class="h-3 w-7 object-contain"
+        />
+        <span v-else class="text-ink-400">{{ selected.kill.weapon }}</span>
+        <img
+          v-if="selected.kill.headshot"
+          src="/weapons/headshot.svg"
+          :alt="t('viewer.headshot')"
+          class="h-3.5 w-3.5 object-contain"
+        />
+        <span class="font-medium" :style="{ color: selected.kill.victimColor }">{{
+          selected.kill.victimName
+        }}</span>
+      </div>
+      <div class="text-[0.65rem] text-ink-400">
+        {{ t('viewer.round') }} {{ selected.kill.roundNumber }} · {{ t('heatmap.jumpHint') }}
+      </div>
+    </button>
 
     <!-- Controles de zoom -->
     <div class="absolute bottom-4 right-4 flex flex-col gap-1">

@@ -353,7 +353,11 @@ function onImportInput(e: Event) {
           :autoplay="autoplay"
         />
       </div>
-      <HeatmapView v-if="activeTab === 'heatmap'" :replay="parser.replay.value" />
+      <HeatmapView
+        v-if="activeTab === 'heatmap'"
+        :replay="parser.replay.value"
+        @jump="onGrenadeJump"
+      />
       <UtilitiesView
         v-if="activeTab === 'utilities'"
         :replay="parser.replay.value"

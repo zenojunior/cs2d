@@ -300,6 +300,7 @@
     "all": "All",
     "round": "Round",
     "allRounds": "All rounds",
+    "jumpHint": "click to watch",
     "time": "Round time",
     "multiLevelNote": "{map} has two floors: each plot shows one level.",
     "team": "Team"

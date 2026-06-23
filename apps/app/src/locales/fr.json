@@ -300,6 +300,7 @@
     "all": "Tous",
     "round": "Round",
     "allRounds": "Tous les rounds",
+    "jumpHint": "cliquer pour voir",
     "time": "Temps de manche",
     "multiLevelNote": "{map} a deux étages : chaque graphique montre un niveau.",
     "team": "Équipe"
