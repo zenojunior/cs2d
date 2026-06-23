@@ -55,9 +55,9 @@ export const COACH_COLORS = ['#ff4d4f', '#ffd400', '#36d399', '#3b9dff', '#fffff
 export const COACH_THICKNESSES = [1, 2, 4, 6] as const
 
 /** Default tool/color/thickness when entering coach mode. */
-export const COACH_DEFAULT_TOOL: CoachTool = 'rectangle'
+export const COACH_DEFAULT_TOOL: CoachTool = 'path'
 export const COACH_DEFAULT_COLOR: string = COACH_COLORS[0]
-export const COACH_DEFAULT_THICKNESS: number = COACH_THICKNESSES[0]
+export const COACH_DEFAULT_THICKNESS: number = COACH_THICKNESSES[2]
 
 /** Lucide-style icon name for each tool (registered in UiIcon). */
 export const COACH_TOOL_ICON: Record<CoachTool, string> = {

@@ -78,7 +78,6 @@ function pickSpeed(s: number) {
 const advancedOpen = ref(false)
 const advancedMenu = ref<HTMLElement | null>(null)
 onClickOutside(advancedMenu, () => (advancedOpen.value = false))
-const advancedActive = computed(() => (props.advancedOptions ?? []).some((o) => o.enabled))
 
 const totalT = computed(() => {
   const f = props.round?.frames
@@ -398,6 +397,7 @@ onMounted(() => centerCurrent('auto'))
         :duration="totalT"
         :markers="markers"
         :waveform="waveform"
+        :balance="balance"
         :live-start-t="liveStartT"
         :post-start-t="postStartT"
         :freeze-label="`${t('viewer.freeze')} · ${Math.round(freezeSeconds)}s`"
@@ -520,8 +520,7 @@ onMounted(() => centerCurrent('auto'))
         <button
           type="button"
           v-tooltip="t('viewer.advanced')"
-          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors duration-150 hover:bg-white/10"
-          :class="advancedActive ? 'text-surge-300' : 'text-ink-200 hover:text-white'"
+          class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-ink-200 transition-colors duration-150 hover:bg-white/10 hover:text-white"
           @click="advancedOpen = !advancedOpen"
         >
           <UiIcon name="settings" class="h-4 w-4" />

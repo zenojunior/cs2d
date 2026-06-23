@@ -36,6 +36,8 @@ const props = defineProps<{
   muted?: Record<Side, boolean>
   /** Auto zoom: frames all living players, easing in/out. */
   autoZoom?: boolean
+  /** Follow a player: zoom in and keep this steamId centered (overrides auto zoom). */
+  followSteamId?: string | null
   /** Performance mode: draw smoke/fire as flat circles (no gradients/blur). */
   lowQualityEffects?: boolean
   /** Arc to highlight in full (grenades hover): when set, only this one shows. */
@@ -1688,14 +1690,71 @@ function stopAuto() {
 watch(
   () => props.autoZoom,
   (on) => {
+    if (props.followSteamId) return // follow takes precedence over auto zoom
     if (on && !autoRaf) autoRaf = requestAnimationFrame(autoStep)
     else if (!on) stopAuto()
+  },
+)
+
+// --- follow player: keep one player centered, zoomed in, easing in/out ---
+const FOLLOW_ZOOM = 2.6 // default closeness; the user can still wheel-zoom
+const FOLLOW_EASE = 0.16 // smoothing per frame
+// Follow zoom level, adjustable with the wheel while following (pan stays locked).
+const followZoom = ref(FOLLOW_ZOOM)
+
+/** Zoom/pan that centers the followed player; null if they aren't in view. */
+function followTarget(): { zoom: number; panX: number; panY: number } | null {
+  const id = props.followSteamId
+  if (!id || L === 0) return null
+  const p = props.players.find((pl) => pl.steamId === id)
+  if (!p) return null
+  const { fx, fy } = worldToFraction(props.calibration, p.x, p.y)
+  const z = followZoom.value
+  return { zoom: z, panX: cw / 2 - fx * L * z, panY: ch / 2 - fy * L * z }
+}
+
+let followRaf = 0
+function followStep() {
+  const tgt = followTarget()
+  if (tgt) {
+    zoom.value += (tgt.zoom - zoom.value) * FOLLOW_EASE
+    panX += (tgt.panX - panX) * FOLLOW_EASE
+    panY += (tgt.panY - panY) * FOLLOW_EASE
+  }
+  draw()
+  followRaf = requestAnimationFrame(followStep)
+}
+function stopFollow() {
+  cancelAnimationFrame(followRaf)
+  followRaf = 0
+}
+watch(
+  () => props.followSteamId,
+  (id, prevId) => {
+    if (id) {
+      stopAuto() // follow overrides auto zoom while active
+      // Starting a fresh follow keeps the current view's zoom; switching between
+      // players preserves whatever follow zoom the user had dialed in.
+      if (!prevId) followZoom.value = clamp(zoom.value, 0.6, 8)
+      if (!followRaf) followRaf = requestAnimationFrame(followStep)
+    } else {
+      stopFollow()
+      // Hand back to auto zoom if it's still enabled.
+      if (props.autoZoom && !autoRaf) autoRaf = requestAnimationFrame(autoStep)
+    }
   },
 )
 
 // --- manual interaction: wheel zoom, drag pan (inactive in auto zoom) ---
 function onWheel(e: WheelEvent) {
   e.preventDefault()
+  // While following, the wheel only changes how close the camera sits; pan stays
+  // locked on the player (handled by the follow loop).
+  if (props.followSteamId) {
+    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12
+    followZoom.value = clamp(followZoom.value * factor, 0.6, 8)
+    return
+  }
   if (props.autoZoom) return
   const rect = canvas.value!.getBoundingClientRect()
   const mx = e.clientX - rect.left
@@ -2007,8 +2066,8 @@ function onPointerDown(e: PointerEvent) {
     canvas.value?.setPointerCapture(e.pointerId)
     return
   }
-  // Normal mode: left button pans (disabled in auto zoom).
-  if (!props.autoZoom) {
+  // Normal mode: left button pans (disabled in auto zoom / follow).
+  if (!props.autoZoom && !props.followSteamId) {
     dragging = true
     lastX = e.clientX
     lastY = e.clientY
@@ -2345,6 +2404,7 @@ onMounted(() => {
 onUnmounted(() => {
   ro?.disconnect()
   stopAuto()
+  stopFollow()
 })
 </script>
 

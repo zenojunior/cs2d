@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import type { PlayerMeta, Replay } from '@/viewer/domain/schema'
 import UtilityThrowsView from '@/viewer/analysis/UtilityThrowsView.vue'
 import UtilityFlashesView from '@/viewer/analysis/UtilityFlashesView.vue'
@@ -15,32 +14,36 @@ const { t } = useI18n()
  * "Flashes" (flashbang metrics + a flasher x victim blind matrix), "Damage"
  * (HE / molotov damage per player) and "Heatmap" (grenade detonation density).
  */
+type Sub = 'throws' | 'flashes' | 'damage' | 'heatmap'
+
 const props = defineProps<{
   replay: Replay
   playersById: Map<string, PlayerMeta>
+  /** Active utilities page (throws/flashes/damage/heatmap), driven by the URL. */
+  sub: Sub
 }>()
 
 const emit = defineEmits<{
+  /** Switch utilities page (the parent maps it to a URL). */
+  (e: 'update:sub', value: Sub): void
   /** Forwarded from the throws view: seek the replay to a throw. */
   (e: 'jump', payload: { roundIndex: number; t: number }): void
 }>()
 
-type Sub = 'throws' | 'flashes' | 'damage' | 'heatmap'
-const sub = ref<Sub>('throws')
 const SUBS: Sub[] = ['throws', 'flashes', 'damage', 'heatmap']
 </script>
 
 <template>
   <div class="flex h-full w-full flex-col">
     <!-- Sub-navigation: Throws / Flashes / Damage -->
-    <div class="flex shrink-0 items-center gap-0.5 border-b border-ink-800 px-3 py-2">
+    <div class="flex shrink-0 items-center justify-center gap-0.5 border-b border-ink-800 px-3 py-2">
       <button
         v-for="s in SUBS"
         :key="s"
         type="button"
         class="cursor-pointer rounded-md px-3 py-1 text-sm font-medium transition-colors"
         :class="sub === s ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:text-ink-100'"
-        @click="sub = s"
+        @click="emit('update:sub', s)"
       >
         {{ t(`utilities.tabs.${s}`) }}
       </button>

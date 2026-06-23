@@ -228,7 +228,13 @@
       "undo": "Deshacer",
       "redo": "Rehacer"
     },
-    "knifeRound": "Ronda de cuchillo"
+    "knifeRound": "Ronda de cuchillo",
+    "follow": {
+      "following": "Siguiendo a {name}",
+      "exit": "Dejar de seguir (Esc)",
+      "start": "Seguir",
+      "stop": "Dejar de seguir"
+    }
   },
   "grenadeKind": {
     "smoke": "Smoke",
@@ -300,6 +306,7 @@
     "all": "Todos",
     "round": "Ronda",
     "allRounds": "Todas las rondas",
+    "jumpHint": "clic para ver",
     "time": "Tiempo de ronda",
     "multiLevelNote": "{map} tiene dos pisos: cada plot muestra un nivel.",
     "team": "Equipo"

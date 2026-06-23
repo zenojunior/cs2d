@@ -228,7 +228,13 @@
       "undo": "Cofnij",
       "redo": "Ponów"
     },
-    "knifeRound": "Runda nożowa"
+    "knifeRound": "Runda nożowa",
+    "follow": {
+      "following": "Śledzenie {name}",
+      "exit": "Przestań śledzić (Esc)",
+      "start": "Śledź",
+      "stop": "Przestań śledzić"
+    }
   },
   "grenadeKind": {
     "smoke": "Smoke",
@@ -300,6 +306,7 @@
     "all": "Wszyscy",
     "round": "Runda",
     "allRounds": "Wszystkie rundy",
+    "jumpHint": "kliknij, aby zobaczyć",
     "time": "Czas rundy",
     "multiLevelNote": "{map} ma dwa piętra: każdy wykres pokazuje jeden poziom.",
     "team": "Drużyna"

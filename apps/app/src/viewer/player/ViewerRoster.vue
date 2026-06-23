@@ -17,9 +17,16 @@ const props = withDefaults(
     side?: Side
     /** Mirror the content, for the right corner. */
     align?: 'left' | 'right'
+    /** steamId of the player being followed (highlights its card). */
+    selectedId?: string | null
   }>(),
   { align: 'left' },
 )
+
+const emit = defineEmits<{
+  /** A player card was clicked (toggles follow on the map). */
+  select: [steamId: string]
+}>()
 
 const sides = computed<{ side: Side; label: string }[]>(() =>
   props.side
@@ -39,11 +46,6 @@ function roster(side: Side) {
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
-const aliveBySide = computed(() => ({
-  CT: roster('CT').filter((p) => p.alive).length,
-  T: roster('T').filter((p) => p.alive).length,
-}))
-
 const armorIcon = (p: PlayerState) =>
   p.armor > 0 ? (p.helmet ? '/weapons/vesthelm.svg' : '/weapons/vest.svg') : null
 </script>
@@ -62,22 +64,16 @@ const armorIcon = (p: PlayerState) =>
 
     <div v-for="s in sides" :key="s.side" class="flex flex-col gap-1.5">
       <div
-        class="flex items-center justify-between text-xs"
-        :class="mirror && 'flex-row-reverse'"
-      >
-        <span class="font-display font-semibold" :style="{ color: SIDE_COLOR[s.side] }">
-          {{ s.label }}
-        </span>
-        <span class="font-mono text-ink-400 tabular-nums">
-          {{ aliveBySide[s.side] }} {{ t('viewer.aliveCount') }}
-        </span>
-      </div>
-
-      <div
         v-for="p in roster(s.side)"
         :key="p.steamId"
-        class="flex flex-col gap-1 rounded-md border border-ink-700 bg-ink-800 px-2.5 py-1.5"
-        :class="{ 'opacity-45': !p.alive }"
+        class="flex cursor-pointer flex-col gap-1 rounded-md border bg-ink-800 px-2.5 py-1.5 transition-colors"
+        :class="[
+          { 'opacity-45': !p.alive },
+          p.steamId === selectedId
+            ? 'border-surge-400 ring-1 ring-surge-400'
+            : 'border-ink-700 hover:border-ink-500',
+        ]"
+        @click="emit('select', p.steamId)"
       >
         <div class="flex items-center gap-2" :class="mirror && 'flex-row-reverse'">
           <span

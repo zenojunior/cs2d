@@ -220,6 +220,15 @@ function addContextComment() {
   const tgt = contextTarget.value
   if (tgt) onDropComment({ x: tgt.x, y: tgt.y, anchor: tgt.anchor, vx: tgt.vx, vy: tgt.vy, vw: 0, vh: 0 })
 }
+// steamId of the player under the right-click (null when it's not a player), so
+// the context menu can offer "follow / stop following".
+const contextPlayerId = computed(() => {
+  const a = contextTarget.value?.anchor
+  return a?.kind === 'player' ? a.steamId : null
+})
+function followContextPlayer() {
+  if (contextPlayerId.value) toggleFollow(contextPlayerId.value)
+}
 
 // Brief confirmation toast (auto-hides), used when copying a position to the clipboard.
 const toast = ref('')
@@ -539,6 +548,16 @@ async function exportReplay() {
 // Advanced options persist across sessions (localStorage).
 const autoZoom = useLocalStorage('viewer.advanced.autoZoom', false)
 const lowQualityEffects = useLocalStorage('viewer.advanced.lowQualityEffects', false)
+
+// Follow a player: clicking a roster card centers and tracks them on the map.
+// Clicking the same player (or Esc / the exit badge) stops following.
+const followSteamId = ref<string | null>(null)
+function toggleFollow(steamId: string) {
+  followSteamId.value = followSteamId.value === steamId ? null : steamId
+}
+const followName = computed(() =>
+  followSteamId.value ? (r.playersById.value.get(followSteamId.value)?.name ?? '?') : '',
+)
 const advancedOptions = computed(() => [
   {
     key: 'autoZoom',
@@ -671,6 +690,13 @@ onKeyStroke(
 // Lost focus (e.g. alt-tab) with TAB held: make sure the scoreboard closes.
 useEventListener(window, 'blur', () => (scoreboardOpen.value = false))
 
+// Esc stops following the current player.
+onKeyStroke('Escape', (e) => {
+  if (isTyping(e) || !followSteamId.value) return
+  e.preventDefault()
+  followSteamId.value = null
+})
+
 // Color of the side that won the round (for the Rounds menu); neutral if none.
 function roundWinnerColor(i: number): string {
   const winner = r.replay.value?.rounds[i]?.winner
@@ -703,6 +729,7 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
       :talking="audio.talking.value"
       :muted="audio.mutedSides.value"
       :auto-zoom="autoZoom"
+      :follow-steam-id="followSteamId"
       :low-quality-effects="lowQualityEffects"
       :radar-src="activeLevelRadar"
       :level-range="activeLevelRange"
@@ -871,6 +898,23 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
       </span>
     </div>
 
+    <!-- Following a player: badge with an exit button (also via Esc). -->
+    <div
+      v-if="followSteamId && !hudHidden"
+      class="pointer-events-auto absolute inset-x-0 top-20 z-10 flex justify-center"
+    >
+      <button
+        type="button"
+        v-tooltip="t('viewer.follow.exit')"
+        class="flex cursor-pointer items-center gap-2 rounded-full bg-surge-500/90 px-3 py-1 text-xs font-medium text-white shadow-lg backdrop-blur transition-colors hover:bg-surge-500"
+        @click="followSteamId = null"
+      >
+        <UiIcon name="target" class="h-3.5 w-3.5" />
+        {{ t('viewer.follow.following', { name: followName }) }}
+        <UiIcon name="x" class="h-3.5 w-3.5 opacity-80" />
+      </button>
+    </div>
+
     <!-- Coach mode hint -->
     <div
       v-if="coachMode && !exportError"
@@ -936,7 +980,7 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
     <!-- CT team: bottom-left corner (hidden in comment mode to make room for the panel) -->
     <aside
       v-if="!hudHidden && !commentMode"
-      class="pointer-events-auto absolute bottom-4 left-4 z-10 w-52 rounded-lg border border-ink-700 bg-ink-900/80 p-3 backdrop-blur"
+      class="pointer-events-auto absolute bottom-4 left-4 z-10 w-52"
     >
       <ViewerRoster
         :players="r.players.value"
@@ -945,13 +989,15 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
         side="CT"
         align="left"
         :hide-score="true"
+        :selected-id="followSteamId"
+        @select="toggleFollow"
       />
     </aside>
 
     <!-- T team: bottom-right corner (hidden in comment mode to make room for the panel) -->
     <aside
       v-if="!hudHidden && !commentMode"
-      class="pointer-events-auto absolute bottom-4 right-4 z-10 w-52 rounded-lg border border-ink-700 bg-ink-900/80 p-3 backdrop-blur"
+      class="pointer-events-auto absolute bottom-4 right-4 z-10 w-52"
     >
       <ViewerRoster
         :players="r.players.value"
@@ -960,6 +1006,8 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
         side="T"
         align="right"
         :hide-score="true"
+        :selected-id="followSteamId"
+        @select="toggleFollow"
       />
     </aside>
 
@@ -1098,6 +1146,13 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
       </template>
       <!-- Add a comment on the player under the right-click -->
       <template v-else-if="contextTarget">
+        <ContextMenuItem v-if="contextPlayerId" @select="followContextPlayer">
+          <UiIcon name="target" class="h-4 w-4 text-ink-400" />
+          {{ followSteamId === contextPlayerId ? t('viewer.follow.stop') : t('viewer.follow.start') }}
+          <span class="ml-auto max-w-28 truncate pl-3 text-ink-400">
+            {{ anchorLabel(contextTarget.anchor) }}
+          </span>
+        </ContextMenuItem>
         <ContextMenuItem @select="addContextComment">
           <UiIcon name="message" class="h-4 w-4 text-ink-400" />
           {{ t('viewer.comment.add') }}

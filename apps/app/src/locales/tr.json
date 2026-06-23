@@ -228,7 +228,13 @@
       "undo": "Geri al",
       "redo": "Yinele"
     },
-    "knifeRound": "Bıçak raundu"
+    "knifeRound": "Bıçak raundu",
+    "follow": {
+      "following": "{name} takip ediliyor",
+      "exit": "Takibi bırak (Esc)",
+      "start": "Takip et",
+      "stop": "Takibi bırak"
+    }
   },
   "grenadeKind": {
     "smoke": "Smoke",
@@ -300,6 +306,7 @@
     "all": "Tümü",
     "round": "Raunt",
     "allRounds": "Tüm rauntlar",
+    "jumpHint": "izlemek için tıkla",
     "time": "Tur süresi",
     "multiLevelNote": "{map} iki katlıdır: her grafik bir katı gösterir.",
     "team": "Takım"

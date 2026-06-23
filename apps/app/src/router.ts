@@ -3,6 +3,8 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 // Standalone app routes: everything revolves around the demo analyzer.
 // `/` opens the upload; `/:id` reopens a demo from history; the optional `:tab`
 // segment selects a sub-view (`heatmaps` / `grenades`), the 2D replay otherwise.
+// The optional `:sub` segment selects a sub-view's own page (e.g. the heatmap
+// source: `/:id/heatmaps/kills`).
 const routes: RouteRecordRaw[] = [
   {
     path: '/project',
@@ -25,7 +27,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/LibraryPage.vue'),
   },
   {
-    path: '/:id?/:tab?',
+    path: '/:id?/:tab?/:sub?',
     name: 'demoviewer',
     component: () => import('@/viewer/DemoAnalyzerView.vue'),
   },

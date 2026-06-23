@@ -9,6 +9,9 @@ const props = defineProps<{
   markers: TimelineMarker[]
   /** Per-team voice amplitude envelope (0..1 per column). */
   waveform?: { ct: number[]; t: number[] } | null
+  /** CT<->T balance (-1 = CT only, 0 = both, +1 = T only): scales each team's
+   *  bars so the attenuated side visibly shrinks. */
+  balance?: number
   /** Seconds where the round goes live (end of freeze). Freeze = [0, liveStartT]. */
   liveStartT?: number
   /** Seconds where the post-round starts (round decided). Post = [postStartT, duration]. */
@@ -50,14 +53,20 @@ const postPct = computed(() => {
 // viewBox in column units (width = number of bins, height 100, center at 50).
 const N = computed(() => props.waveform?.ct.length ?? 0)
 const AMP = 46 // max amplitude (viewBox units) on each side
+// Per-team gain from the balance, mirroring teamGain() in useVoicePlayback: the
+// favored side stays at full height, the other side's bars shrink toward zero.
+const ctGain = computed(() => 1 - Math.max(0, props.balance ?? 0))
+const tGain = computed(() => 1 - Math.max(0, -(props.balance ?? 0)))
 const bars = computed(() => {
   const w = props.waveform
   if (!w) return []
+  const cg = ctGain.value
+  const tg = tGain.value
   return w.ct.map((ctv, i) => ({
     i,
-    ctY: 50 - ctv * AMP,
-    ctH: ctv * AMP,
-    tH: (w.t[i] ?? 0) * AMP,
+    ctY: 50 - ctv * cg * AMP,
+    ctH: ctv * cg * AMP,
+    tH: (w.t[i] ?? 0) * tg * AMP,
   }))
 })
 // Width (in column units) of the clip for the already-played part.

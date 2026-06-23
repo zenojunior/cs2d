@@ -228,7 +228,13 @@
       "undo": "Annuler",
       "redo": "Rétablir"
     },
-    "knifeRound": "Round au couteau"
+    "knifeRound": "Round au couteau",
+    "follow": {
+      "following": "Suivi de {name}",
+      "exit": "Arrêter de suivre (Échap)",
+      "start": "Suivre",
+      "stop": "Arrêter de suivre"
+    }
   },
   "grenadeKind": {
     "smoke": "Smoke",
@@ -300,6 +306,7 @@
     "all": "Tous",
     "round": "Round",
     "allRounds": "Tous les rounds",
+    "jumpHint": "cliquer pour voir",
     "time": "Temps de manche",
     "multiLevelNote": "{map} a deux étages : chaque graphique montre un niveau.",
     "team": "Équipe"

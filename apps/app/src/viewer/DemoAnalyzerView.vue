@@ -93,13 +93,55 @@ const TAB_QUERY: Record<Tab, string | undefined> = {
 function goTab(tab: Tab) {
   // External replay: keep ?replay=/?name= and switch the tab via ?tab=.
   if (currentSrc.value) {
-    const query = { ...route.query, tab: TAB_QUERY[tab] }
+    // Drop the per-tab sub-page params (?h=, ?u=) when switching tabs.
+    const { h: _h, u: _u, ...rest } = route.query
+    const query = { ...rest, tab: TAB_QUERY[tab] }
     if (!query.tab) delete query.tab
     router.push({ path: '/', query })
     return
   }
   const id = currentId.value
   if (id) router.push(`/${id}${TAB_SEGMENT[tab]}`)
+}
+
+// The heatmap's own pages (presence/kills/deaths), each a separate URL: history
+// demos carry it as a path segment (/:id/heatmaps/kills), external replays as
+// `?h=` (presence is the default, so it has no segment/param).
+type HeatmapSource = 'presence' | 'kills' | 'deaths'
+const heatmapSource = computed<HeatmapSource>(() => {
+  const raw = route.params.sub || route.query.h
+  const s = Array.isArray(raw) ? raw[0] : raw
+  return s === 'kills' || s === 'deaths' ? s : 'presence'
+})
+function goHeatmapSource(src: HeatmapSource) {
+  if (currentSrc.value) {
+    const query = { ...route.query, tab: 'heatmaps', h: src === 'presence' ? undefined : src }
+    if (!query.h) delete query.h
+    router.push({ path: '/', query })
+    return
+  }
+  const id = currentId.value
+  if (id) router.push(`/${id}/heatmaps${src === 'presence' ? '' : `/${src}`}`)
+}
+
+// The utilities tab's own pages (throws/flashes/damage/heatmap), each a separate
+// URL: history demos carry it as a path segment (/:id/utilities/flashes),
+// external replays as `?u=` (throws is the default, so it has no segment/param).
+type UtilitySub = 'throws' | 'flashes' | 'damage' | 'heatmap'
+const utilitySub = computed<UtilitySub>(() => {
+  const raw = route.params.sub || route.query.u
+  const s = Array.isArray(raw) ? raw[0] : raw
+  return s === 'flashes' || s === 'damage' || s === 'heatmap' ? s : 'throws'
+})
+function goUtilitySub(sub: UtilitySub) {
+  if (currentSrc.value) {
+    const query = { ...route.query, tab: 'utilities', u: sub === 'throws' ? undefined : sub }
+    if (!query.u) delete query.u
+    router.push({ path: '/', query })
+    return
+  }
+  const id = currentId.value
+  if (id) router.push(`/${id}/utilities${sub === 'throws' ? '' : `/${sub}`}`)
 }
 
 // Landing-page ambient preview: rotates through a few maps, switching to the
@@ -353,11 +395,19 @@ function onImportInput(e: Event) {
           :autoplay="autoplay"
         />
       </div>
-      <HeatmapView v-if="activeTab === 'heatmap'" :replay="parser.replay.value" />
+      <HeatmapView
+        v-if="activeTab === 'heatmap'"
+        :replay="parser.replay.value"
+        :source="heatmapSource"
+        @update:source="goHeatmapSource"
+        @jump="onGrenadeJump"
+      />
       <UtilitiesView
         v-if="activeTab === 'utilities'"
         :replay="parser.replay.value"
         :players-by-id="playersById"
+        :sub="utilitySub"
+        @update:sub="goUtilitySub"
         @jump="onGrenadeJump"
       />
       <EconomyView v-if="activeTab === 'economy'" :replay="parser.replay.value" />
@@ -447,33 +497,38 @@ function onImportInput(e: Event) {
       <p class="max-w-sm text-xs text-ink-500">{{ t('analyzer.localNote') }}</p>
     </div>
 
-    <!-- Processing state (new parse or opening a demo via the URL) -->
+    <!-- Processing state (new parse, importing a .cs2dv, or opening a demo via
+         the URL). The extension hands over a .cs2dv, so `importing` keeps this
+         loader on screen instead of falling back to the landing dropzone. -->
     <div
       v-else-if="
-        routeLoading || parser.status.value === 'reading' || parser.status.value === 'parsing'
+        routeLoading ||
+        importing ||
+        parser.status.value === 'reading' ||
+        parser.status.value === 'parsing'
       "
       class="flex h-full flex-col items-center justify-center gap-4 px-6 text-center"
     >
       <UiIcon name="loader" class="h-10 w-10 animate-spin text-surge-400" />
       <div>
         <p class="font-display text-lg text-ink-50">
-          {{ routeLoading ? t('analyzer.openingDemo') : phaseLabel }}
+          {{ importing ? t('analyzer.importing') : routeLoading ? t('analyzer.openingDemo') : phaseLabel }}
         </p>
-        <p v-if="parser.fileName.value" class="mt-1 text-sm text-ink-300">
+        <p v-if="!importing && parser.fileName.value" class="mt-1 text-sm text-ink-300">
           {{ parser.fileName.value }}
           <span v-if="parser.fileSize.value" class="text-ink-500">
             · {{ fmtSize(parser.fileSize.value) }}
             <template v-if="parser.rawSize.value"> → {{ fmtSize(parser.rawSize.value) }}</template>
           </span>
         </p>
-        <p v-if="!routeLoading && parseTickDetail" class="mt-1 font-mono text-xs text-ink-500">
+        <p v-if="!routeLoading && !importing && parseTickDetail" class="mt-1 font-mono text-xs text-ink-500">
           {{ parseTickDetail }}
         </p>
       </div>
 
       <!-- Linear progress: real bar (tick-driven during parsing) so the user can
            see actual movement, especially for big .zst demos. -->
-      <div v-if="!routeLoading" class="w-full max-w-sm">
+      <div v-if="!routeLoading && !importing" class="w-full max-w-sm">
         <div class="h-1.5 w-full overflow-hidden rounded-full bg-ink-800">
           <div
             class="h-full rounded-full bg-surge-400 transition-all duration-300 ease-out"
