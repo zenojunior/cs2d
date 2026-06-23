@@ -160,33 +160,91 @@ function render() {
     ctx.fillStyle = '#0b0e14'
     ctx.fillRect(0, 0, cw, ch)
   }
+  // Keep the open popover anchored to its marker as the view zooms/pans.
+  if (selected.value) {
+    const f = worldToFraction(props.calibration, selected.value.wx, selected.value.wy)
+    selected.value.sx = panX + f.fx * w
+    selected.value.sy = panY + f.fy * w
+  }
   if (props.mode === 'dots') {
     drawDots(w)
+    drawSelection(w)
   } else if (heatHasData) {
     ctx.imageSmoothingEnabled = true
     ctx.drawImage(heatCanvas, panX, panY, w, w)
   }
 }
 
-// Skull marker: cache one rendered (and side-tinted) image per color, so we draw
-// it as an image instead of re-rasterizing an SVG per point. Redraw on load.
-const skullCache = new Map<string, HTMLImageElement>()
-function skullImage(color: string): HTMLImageElement {
+/** When a kill/death is selected, draw a line from the shooter's spot to the
+ *  death spot, mark where the shooter was (dot, attacker side color) and the
+ *  death spot (skull, victim side color). */
+function drawSelection(w: number) {
+  const k = selected.value?.kill
+  if (!ctx || !k || k.ax == null || k.ay == null) return
+  const a = worldToFraction(props.calibration, k.ax, k.ay)
+  const v = worldToFraction(props.calibration, k.vx, k.vy)
+  const asx = panX + a.fx * w
+  const asy = panY + a.fy * w
+  const vsx = panX + v.fx * w
+  const vsy = panY + v.fy * w
+  const r = Math.max(3, L * 0.007)
+  ctx.save()
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.65)'
+  ctx.shadowBlur = 2
+  // Line shooter -> death spot.
+  ctx.setLineDash([5, 4])
+  ctx.lineWidth = 1.5
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'
+  ctx.beginPath()
+  ctx.moveTo(asx, asy)
+  ctx.lineTo(vsx, vsy)
+  ctx.stroke()
+  ctx.setLineDash([])
+  // Shooter marker.
+  ctx.beginPath()
+  ctx.arc(asx, asy, Math.max(4, L * 0.009), 0, Math.PI * 2)
+  ctx.fillStyle = k.attackerColor
+  ctx.fill()
+  ctx.lineWidth = 2
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'
+  ctx.stroke()
+  // Death spot: skull, tinted by the victim's side.
+  const skullImg = skullImage(k.victimColor)
+  if (skullImg) {
+    const s = r * 3.6
+    ctx.drawImage(skullImg, vsx - s / 2, vsy - s / 2, s, s)
+  }
+  ctx.restore()
+}
+
+// Skull marker (deaths): the skull silhouette, tinted per side. We rasterize the
+// SVG once, then build one side-colored canvas per color via `source-in`
+// compositing (cached). Redraw when the source image loads.
+const SKULL_PX = 64
+const skullSrc = new Image()
+let skullReady = false
+skullSrc.onload = () => {
+  skullReady = true
+  render()
+}
+skullSrc.src = '/weapons/skull.svg'
+
+const skullCache = new Map<string, HTMLCanvasElement>()
+function skullImage(color: string): HTMLCanvasElement | null {
+  if (!skullReady) return null
   const cached = skullCache.get(color)
   if (cached) return cached
-  const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${color}"` +
-    ` stroke-width="2" stroke-linecap="round" stroke-linejoin="round">` +
-    `<circle cx="9" cy="12" r="1.2" fill="${color}" stroke="none"/>` +
-    `<circle cx="15" cy="12" r="1.2" fill="${color}" stroke="none"/>` +
-    `<path d="m12.5 17-.5-1-.5 1h1z"/>` +
-    `<path d="M8 20v2h8v-2"/>` +
-    `<path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>`
-  const img = new Image()
-  img.onload = () => render()
-  img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg)
-  skullCache.set(color, img)
-  return img
+  const off = document.createElement('canvas')
+  off.width = SKULL_PX
+  off.height = SKULL_PX
+  const octx = off.getContext('2d')!
+  octx.drawImage(skullSrc, 0, 0, SKULL_PX, SKULL_PX)
+  // Recolor the opaque silhouette to the side color, keeping its alpha shape.
+  octx.globalCompositeOperation = 'source-in'
+  octx.fillStyle = color
+  octx.fillRect(0, 0, SKULL_PX, SKULL_PX)
+  skullCache.set(color, off)
+  return off
 }
 
 /** One marker per point, colored by side (CT blue, T gold, gray when unknown):
@@ -220,7 +278,7 @@ function drawDots(w: number) {
     }
     if (skull) {
       const img = skullImage(color)
-      if (!img.complete || !img.naturalWidth) continue
+      if (!img) continue
       const s = r * 3.6 * (hot ? 1.3 : 1)
       ctx.drawImage(img, sx - s / 2, sy - s / 2, s, s)
     } else {
@@ -264,13 +322,14 @@ function onWheel(e: WheelEvent) {
   panX = mx - (mx - panX) * real
   panY = my - (my - panY) * real
   zoom.value = next
-  selected.value = null
   render()
 }
 
 type Point = (typeof props.points)[number]
-// Popover for a clicked kill/death marker, positioned in CSS px over the canvas.
-const selected = ref<{ sx: number; sy: number; kill: KillInfo } | null>(null)
+// Popover for a clicked kill/death marker. `wx/wy` is the clicked marker's world
+// position (the anchor); `sx/sy` is its current on-screen px, recomputed on every
+// render so the popover follows zoom/pan instead of closing.
+const selected = ref<{ wx: number; wy: number; sx: number; sy: number; kill: KillInfo } | null>(null)
 // Kill point currently under the cursor, drawn emphasized (hover effect).
 const hovered = ref<Point | null>(null)
 
@@ -318,7 +377,6 @@ function onPointerMove(e: PointerEvent) {
     moved += Math.abs(e.clientX - lastX) + Math.abs(e.clientY - lastY)
     lastX = e.clientX
     lastY = e.clientY
-    if (moved > 4) selected.value = null
     render()
     return
   }
@@ -343,7 +401,10 @@ function onPointerUp(e: PointerEvent) {
   if (Math.abs(e.clientX - downX) + Math.abs(e.clientY - downY) <= 4) {
     const rect = canvas.value!.getBoundingClientRect()
     const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top)
-    selected.value = hit ? { sx: hit.sx, sy: hit.sy, kill: hit.point.kill! } : null
+    selected.value = hit
+      ? { wx: hit.point.x, wy: hit.point.y, sx: hit.sx, sy: hit.sy, kill: hit.point.kill! }
+      : null
+    render()
   }
 }
 
@@ -362,14 +423,12 @@ function zoomBy(factor: number) {
   panX = cx - (cx - panX) * real
   panY = cy - (cy - panY) * real
   zoom.value = next
-  selected.value = null
   render()
 }
 function resetView() {
   zoom.value = 1
   panX = (cw - L) / 2
   panY = (ch - L) / 2
-  selected.value = null
   render()
 }
 

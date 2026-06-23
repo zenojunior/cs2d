@@ -451,33 +451,38 @@ function onImportInput(e: Event) {
       <p class="max-w-sm text-xs text-ink-500">{{ t('analyzer.localNote') }}</p>
     </div>
 
-    <!-- Processing state (new parse or opening a demo via the URL) -->
+    <!-- Processing state (new parse, importing a .cs2dv, or opening a demo via
+         the URL). The extension hands over a .cs2dv, so `importing` keeps this
+         loader on screen instead of falling back to the landing dropzone. -->
     <div
       v-else-if="
-        routeLoading || parser.status.value === 'reading' || parser.status.value === 'parsing'
+        routeLoading ||
+        importing ||
+        parser.status.value === 'reading' ||
+        parser.status.value === 'parsing'
       "
       class="flex h-full flex-col items-center justify-center gap-4 px-6 text-center"
     >
       <UiIcon name="loader" class="h-10 w-10 animate-spin text-surge-400" />
       <div>
         <p class="font-display text-lg text-ink-50">
-          {{ routeLoading ? t('analyzer.openingDemo') : phaseLabel }}
+          {{ importing ? t('analyzer.importing') : routeLoading ? t('analyzer.openingDemo') : phaseLabel }}
         </p>
-        <p v-if="parser.fileName.value" class="mt-1 text-sm text-ink-300">
+        <p v-if="!importing && parser.fileName.value" class="mt-1 text-sm text-ink-300">
           {{ parser.fileName.value }}
           <span v-if="parser.fileSize.value" class="text-ink-500">
             · {{ fmtSize(parser.fileSize.value) }}
             <template v-if="parser.rawSize.value"> → {{ fmtSize(parser.rawSize.value) }}</template>
           </span>
         </p>
-        <p v-if="!routeLoading && parseTickDetail" class="mt-1 font-mono text-xs text-ink-500">
+        <p v-if="!routeLoading && !importing && parseTickDetail" class="mt-1 font-mono text-xs text-ink-500">
           {{ parseTickDetail }}
         </p>
       </div>
 
       <!-- Linear progress: real bar (tick-driven during parsing) so the user can
            see actual movement, especially for big .zst demos. -->
-      <div v-if="!routeLoading" class="w-full max-w-sm">
+      <div v-if="!routeLoading && !importing" class="w-full max-w-sm">
         <div class="h-1.5 w-full overflow-hidden rounded-full bg-ink-800">
           <div
             class="h-full rounded-full bg-surge-400 transition-all duration-300 ease-out"

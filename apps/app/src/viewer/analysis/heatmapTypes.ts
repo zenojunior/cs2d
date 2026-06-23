@@ -16,4 +16,10 @@ export interface KillInfo {
   weaponIcon: string | null
   headshot: boolean
   assistedFlash: boolean
+  /** Shooter (attacker) world position at the kill, if known (null otherwise). */
+  ax: number | null
+  ay: number | null
+  /** Victim world position (the death spot). */
+  vx: number
+  vy: number
 }

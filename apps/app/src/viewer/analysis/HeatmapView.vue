@@ -140,6 +140,7 @@ const nameById = computed(() => {
 function killInfo(round: Round, idx: number, ev: Extract<Round['events'][number], { type: 'kill' }>): KillInfo {
   const aSide = ev.attackerSteamId ? sideInRound(round, idx, ev.attackerSteamId) : null
   const vSide = sideInRound(round, idx, ev.victimSteamId)
+  const aPos = ev.attackerSteamId ? playerPosAt(round, ev.attackerSteamId, ev.tick) : null
   return {
     roundIndex: idx,
     t: ev.t,
@@ -152,6 +153,10 @@ function killInfo(round: Round, idx: number, ev: Extract<Round['events'][number]
     weaponIcon: killWeaponIcon(ev.weapon),
     headshot: ev.headshot,
     assistedFlash: ev.assistedFlash,
+    ax: aPos?.x ?? null,
+    ay: aPos?.y ?? null,
+    vx: ev.x,
+    vy: ev.y,
   }
 }
 
