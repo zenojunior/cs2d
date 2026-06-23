@@ -137,7 +137,8 @@ function onRoundsWheel(e: WheelEvent) {
           </button>
 
           <template v-for="(r, i) in rounds" :key="r.number">
-            <template v-if="!hideKnife || roundLabels[i] !== '0'">
+            <!-- Skip frameless rounds (e.g. Gamers Club's knife "result" round). -->
+            <template v-if="r.frames.length > 0 && (!hideKnife || roundLabels[i] !== '0')">
             <!-- Side-swap marker (halftime / overtime). -->
             <div
               v-if="sideSwaps.has(i)"

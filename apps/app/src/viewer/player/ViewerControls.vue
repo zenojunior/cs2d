@@ -312,7 +312,10 @@ onMounted(() => centerCurrent('auto'))
           class="flex gap-1.5 overflow-x-auto px-1.5 pb-3 pt-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           @wheel="onRoundsWheel"
         >
+          <!-- Skip frameless rounds (e.g. Gamers Club's knife "result" round):
+               they have no positions, so a bubble for them would seek to nothing. -->
           <template v-for="(r, i) in rounds" :key="r.number">
+            <template v-if="r.frames.length > 0">
             <!-- Side-swap marker (halftime / overtime): drawn before the round
                  where the teams flipped CT<->T. -->
             <div
@@ -365,6 +368,7 @@ onMounted(() => centerCurrent('auto'))
                 class="pointer-events-none absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-white ring-2 ring-ink-900"
               />
             </button>
+            </template>
           </template>
         </div>
       </div>
