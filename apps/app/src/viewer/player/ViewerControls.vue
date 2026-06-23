@@ -397,6 +397,7 @@ onMounted(() => centerCurrent('auto'))
         :duration="totalT"
         :markers="markers"
         :waveform="waveform"
+        :balance="balance"
         :live-start-t="liveStartT"
         :post-start-t="postStartT"
         :freeze-label="`${t('viewer.freeze')} · ${Math.round(freezeSeconds)}s`"
