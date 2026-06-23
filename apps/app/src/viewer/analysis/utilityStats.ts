@@ -59,6 +59,42 @@ export function isKnifeRound(round: Round): boolean {
 }
 
 /**
+ * A pre-game round that precedes the real match and does not count on the
+ * scoreboard: the knife round (knife-only frames) or a frameless "result" round
+ * some platforms emit alongside it. FACEIT opens with a single knife round;
+ * Gamers Club emits two (a 0-frame result round + the knife frames), so the
+ * opener cannot be assumed to be a single round.
+ */
+export function isPreGameRound(round: Round): boolean {
+  return round.frames.length === 0 || isKnifeRound(round)
+}
+
+/**
+ * Count of leading pre-game rounds (knife / frameless openers). Only leading
+ * rounds count, so a pathological frameless round mid-match never shifts the
+ * numbering. Returns 0 when every round looks pre-game (nothing real to anchor).
+ */
+export function preGameRoundCount(rounds: Round[]): number {
+  let n = 0
+  while (n < rounds.length && isPreGameRound(rounds[n])) n++
+  return n >= rounds.length ? 0 : n
+}
+
+/**
+ * Display label per round: leading pre-game rounds are "0" (hidden where the UI
+ * hides the knife round); the real match rounds are numbered from 1. Replaces
+ * the old "knife at index 0 only" assumption, which mis-numbered Gamers Club
+ * demos (two opener rounds). With no pre-game round, the parser's `number` is
+ * kept (matchmaking demos, where it is the source of truth).
+ */
+export function roundDisplayLabels(rounds: Round[]): string[] {
+  const preGame = preGameRoundCount(rounds)
+  return rounds.map((r, i) =>
+    i < preGame ? '0' : preGame === 0 ? String(r.number) : String(i - preGame + 1),
+  )
+}
+
+/**
  * The flash that set up a kill: the most recent blind still active on the victim
  * at the moment of death, thrown by someone on the killer's team against an
  * enemy. Returns the flasher (which may be the killer themselves, a self-flash)
@@ -104,7 +140,7 @@ export function flashSetupForKill(
  * fallback for a player absent from that round's frames.
  */
 export function groupTeams(replay: Replay): Team[] {
-  const ref = replay.rounds.find((r) => !isKnifeRound(r)) ?? replay.rounds[0]
+  const ref = replay.rounds.find((r) => !isPreGameRound(r)) ?? replay.rounds[0]
   const ctName = ref?.ctName || ''
   const tName = ref?.tName || ''
   const sides = ref ? roundSides(ref) : new Map<string, Side>()

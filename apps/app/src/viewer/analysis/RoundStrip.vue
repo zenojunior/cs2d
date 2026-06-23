@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import type { Round, Side } from '@/viewer/domain/schema'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
-import { isKnifeRound } from '@/viewer/analysis/utilityStats'
+import { roundDisplayLabels } from '@/viewer/analysis/utilityStats'
 import UiIcon from '@/ui/UiIcon.vue'
 import { useI18n } from '@/i18n'
 
@@ -26,14 +26,8 @@ const props = defineProps<{
 
 const model = defineModel<number | 'all'>({ required: true })
 
-const hasKnifeRound = computed(() => {
-  const r0 = props.rounds[0]
-  return r0 ? isKnifeRound(r0) : false
-})
-/** Label per round (knife becomes "0" and shifts the rest), like the player. */
-const roundLabels = computed(() =>
-  props.rounds.map((r, i) => String(hasKnifeRound.value ? i : r.number)),
-)
+/** Label per round (pre-game rounds become "0" and shift the rest), like the player. */
+const roundLabels = computed(() => roundDisplayLabels(props.rounds))
 
 /**
  * Round indices where the teams switched sides versus the previous round

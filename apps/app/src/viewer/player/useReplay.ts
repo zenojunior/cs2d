@@ -1,7 +1,7 @@
 import { computed, onUnmounted, ref, shallowRef } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 import type { PlayerMeta, PlayerState, Replay, Round, Side } from '@/viewer/domain/schema'
-import { isKnifeRound, roundSides } from '@/viewer/analysis/utilityStats'
+import { preGameRoundCount, roundDisplayLabels, roundSides } from '@/viewer/analysis/utilityStats'
 
 /** Playback speeds offered in the controls. */
 export const SPEEDS = [1, 2, 4, 8] as const
@@ -201,26 +201,21 @@ export function useReplay() {
   )
 
   /**
-   * Knife round: some servers (FACEIT, scrims) open with a knife-only round to
-   * pick sides. It does not count on the scoreboard, so we treat the opener as
-   * round 0 when it is knife-only.
+   * Leading pre-game rounds: the knife round (FACEIT/scrims open with one to
+   * pick sides) plus any frameless "result" round emitted next to it (Gamers
+   * Club). They do not count on the scoreboard, so they are labeled "0" and the
+   * real rounds are numbered from 1 (see `roundDisplayLabels`).
    */
-  const hasKnifeRound = computed(() => {
-    const r0 = replay.value?.rounds[0]
-    return r0 ? isKnifeRound(r0) : false
-  })
+  const preGameCount = computed(() => preGameRoundCount(replay.value?.rounds ?? []))
+  const hasKnifeRound = computed(() => preGameCount.value > 0)
 
-  /** Label shown per round (knife becomes "0" and shifts the rest). */
-  const roundLabels = computed(() =>
-    (replay.value?.rounds ?? []).map((r, i) =>
-      String(hasKnifeRound.value ? i : r.number),
-    ),
-  )
+  /** Label shown per round (pre-game rounds become "0" and shift the rest). */
+  const roundLabels = computed(() => roundDisplayLabels(replay.value?.rounds ?? []))
 
-  /** Count of "real" rounds (excludes the knife round). */
+  /** Count of "real" rounds (excludes the pre-game rounds). */
   const totalRounds = computed(() => {
     const n = replay.value?.rounds.length ?? 0
-    return hasKnifeRound.value ? n - 1 : n
+    return n - preGameCount.value
   })
 
   const currentRoundLabel = computed(() => roundLabels.value[roundIndex.value] ?? '')

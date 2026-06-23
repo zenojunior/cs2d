@@ -14,6 +14,7 @@
  * swaps, so a team's rounds can be grouped even though its side (CT/T) flips.
  */
 import type { Round, Side } from '@/viewer/domain/schema'
+import { preGameRoundCount } from '@/viewer/analysis/utilityStats'
 
 export type BuyType = 'pistol' | 'eco' | 'semi' | 'force-buy' | 'full'
 
@@ -70,16 +71,6 @@ export interface MatchEconomy {
   teams: [TeamEconomy, TeamEconomy]
   /** Counted rounds (knife round excluded), for the per-round charts. */
   roundCount: number
-}
-
-/**
- * Knife round (FACEIT/scrims open with one to pick sides): the first round with
- * nothing but knives across all samples. It does not count, so it is excluded.
- */
-function hasKnifeRound(rounds: Round[]): boolean {
-  const r0 = rounds[0]
-  if (!r0) return false
-  return r0.frames.every((f) => f.players.every((p) => p.weapon === 'Faca' || p.weapon === ''))
 }
 
 /**
@@ -221,13 +212,13 @@ function classifyBuy(
  * tick rate (defaults to 64), used to find the 7s post-freeze sample.
  */
 export function buildMatchEconomy(rounds: Round[], demoTickRate = 64): MatchEconomy {
-  const knife = hasKnifeRound(rounds)
+  const preGame = preGameRoundCount(rounds)
   const swaps = sideSwaps(rounds)
 
   // Pistol rounds: the first round of each regulation half (round 1 and the
   // first after the halftime swap). Overtime half-starts are NOT pistols (CSDM
   // gates on `OvertimeCount == 0`), so only the first two half-starts count.
-  const firstReal = knife ? 1 : 0
+  const firstReal = preGame
   const halfStarts = [...new Set<number>([firstReal, ...swaps])].sort((a, b) => a - b)
   const pistolIndices = new Set(halfStarts.slice(0, 2))
 
@@ -237,7 +228,7 @@ export function buildMatchEconomy(rounds: Round[], demoTickRate = 64): MatchEcon
 
   rounds.forEach((r, i) => {
     if (swaps.has(i)) swapsSoFar++
-    if (knife && i === 0) return // knife round does not count
+    if (i < preGame) return // pre-game rounds (knife / frameless) do not count
 
     // Which stable team is on CT this round (flips with each swap).
     const ctTeam = swapsSoFar % 2 === 0 ? team0 : team1
@@ -248,7 +239,7 @@ export function buildMatchEconomy(rounds: Round[], demoTickRate = 64): MatchEcon
     const frame = econFrame(r, demoTickRate)
     const pistol = pistolIndices.has(i)
     const prevWinner = i > 0 ? rounds[i - 1].winner : null
-    const roundNumber = knife ? i : r.number
+    const roundNumber = preGame > 0 ? i - preGame + 1 : r.number
 
     const ctAgg = aggregate(frame, 'CT')
     const tAgg = aggregate(frame, 'T')
