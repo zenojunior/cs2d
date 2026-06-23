@@ -73,13 +73,28 @@ const timeRange = ref<number[]>([0, 0])
 function freezeSeconds(round: Round): number {
   return (round.startTick - round.freezeStartTick) / props.replay.demoTickRate
 }
-/** Longest live round time across the match: the slider's upper bound. */
+// Absolute tick ranges of match pauses (tactical timeouts / tech pauses). While
+// paused, every player stands frozen at spawn, so those frames would pile
+// hundreds of samples onto a handful of base spots and dwarf the real positions.
+// They are dropped from the presence heatmap (and from the slider's range below).
+const pauseRanges = computed(() =>
+  (props.replay.pauses ?? []).map((p) => [p.startTick, p.endTick] as const),
+)
+function isPaused(tick: number): boolean {
+  for (const [start, end] of pauseRanges.value) if (tick >= start && tick <= end) return true
+  return false
+}
+/** Longest live round time across the match (excluding pauses): the slider's
+ *  upper bound. The last frame can fall inside a pause, so scan for the latest
+ *  non-paused frame rather than just taking `frames.at(-1)`. */
 const maxRoundTime = computed(() => {
   let max = 0
   for (const round of props.replay.rounds) {
     const fz = freezeSeconds(round)
-    const last = round.frames[round.frames.length - 1]
-    if (last) max = Math.max(max, last.t - fz)
+    for (const f of round.frames) {
+      if (isPaused(f.tick)) continue
+      max = Math.max(max, f.t - fz)
+    }
   }
   return Math.ceil(max)
 })
@@ -209,8 +224,10 @@ const rawPoints = computed<Pt[]>(() => {
       // Presence: every sample of every player. High volume, but binning is O(n).
       // Skip freeze-time frames: players sit still in spawn during the buy period,
       // which otherwise makes the CT/T bases dwarf every real position on the map.
+      // Same reasoning for pauses (timeouts): everyone is frozen at spawn.
       for (const f of round.frames) {
         if (f.tick < round.startTick) continue
+        if (isPaused(f.tick)) continue
         for (const p of f.players) {
           if (!p.alive) continue
           out.push({ x: p.x, y: p.y, z: p.z, side: p.side, steamId: p.steamId, t: Math.max(0, f.t - fz) })
