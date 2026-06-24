@@ -95,7 +95,7 @@ provide(appFullscreenKey, { isFullscreen, toggle })
         </button>
 
         <!-- End: extension dialog + GitHub link + language menu -->
-        <div class="ml-auto flex items-center gap-2">
+        <div class="order-3 ml-auto flex items-center gap-2 sm:order-none">
           <ExtensionDialog v-if="showExtension" />
           <a
             :href="GITHUB_URL"
@@ -135,10 +135,13 @@ provide(appFullscreenKey, { isFullscreen, toggle })
           </Menubar>
         </div>
 
-        <!-- Center: tool actions (via Teleport, e.g. the viewer tabs) -->
+        <!-- Center: tool actions (via Teleport, e.g. the viewer tabs). On narrow
+             viewports it flows between the side controls and scrolls sideways
+             (order-2 places it before the right group); from `sm` up it is the
+             absolutely centered bar it has always been. -->
         <div
           id="publicbar-center"
-          class="absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center"
+          class="order-2 flex min-w-0 flex-1 items-center overflow-x-auto scrollbar-none sm:absolute sm:inset-y-0 sm:left-1/2 sm:order-none sm:flex-none sm:-translate-x-1/2 sm:overflow-visible"
         />
       </header>
 

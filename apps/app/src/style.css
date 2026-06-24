@@ -162,6 +162,15 @@
   .clip-notch {
     clip-path: polygon(0 0, 100% 0, 100% calc(100% - 0.5rem), calc(100% - 0.5rem) 100%, 0 100%);
   }
+
+  /* Horizontal scroll without a visible scrollbar: used by the tab bars, which
+     scroll sideways on narrow/mobile viewports when the labels overflow. */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* ============================================================================
