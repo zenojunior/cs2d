@@ -3,7 +3,7 @@ import { computed, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useFullscreen, useMediaQuery } from '@vueuse/core'
 import { Flag } from '@blade-flags/vue'
-import { circleFlags } from '@blade-flags/core/flags/circle'
+import { localeFlags } from '@/shell/localeFlags'
 import UiIcon from '@/ui/UiIcon.vue'
 import AppSidebar from '@/shell/AppSidebar.vue'
 import ExtensionDialog from '@/shell/ExtensionDialog.vue'
@@ -136,7 +136,7 @@ provide(appFullscreenKey, { isFullscreen, toggle })
           <Menubar>
             <MenubarMenu>
               <MenubarTrigger :aria-label="t('shell.language')">
-                <Flag :code="current.flag" :flags="circleFlags" class="h-4 w-4 shrink-0" />
+                <Flag :code="current.flag" :flags="localeFlags" class="h-4 w-4 shrink-0" />
                 <span class="font-mono text-[11px] font-medium">{{ current.label }}</span>
                 <UiIcon name="chevron-down" class="h-3 w-3 text-ink-500" />
               </MenubarTrigger>
@@ -147,7 +147,7 @@ provide(appFullscreenKey, { isFullscreen, toggle })
                   :class="locale === l.code ? 'bg-ink-800 text-ink-50' : ''"
                   @select="setLocale(l.code as LocaleCode)"
                 >
-                  <Flag :code="l.flag" :flags="circleFlags" class="h-4 w-4 shrink-0" />
+                  <Flag :code="l.flag" :flags="localeFlags" class="h-4 w-4 shrink-0" />
                   <span class="flex-1 truncate">{{ l.name }}</span>
                   <UiIcon
                     v-if="locale === l.code"

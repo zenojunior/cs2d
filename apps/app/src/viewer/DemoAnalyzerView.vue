@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useMediaQuery } from '@vueuse/core'
 import UiIcon from '@/ui/UiIcon.vue'
-import ViewerStage from '@/viewer/player/ViewerStage.vue'
-import HeatmapView from '@/viewer/analysis/HeatmapView.vue'
-import UtilitiesView from '@/viewer/analysis/UtilitiesView.vue'
-import EconomyView from '@/viewer/analysis/EconomyView.vue'
-import DuelsView from '@/viewer/analysis/DuelsView.vue'
-import DemoPreviewLoop from '@/viewer/player/DemoPreviewLoop.vue'
+// The stage, the analysis tabs and the ambient preview are only needed once a
+// demo is open (or, for the preview, on desktop). Load them lazily so the idle
+// landing chunk stays small: the dropzone hero is all the first paint needs.
+import type ViewerStageType from '@/viewer/player/ViewerStage.vue'
+const ViewerStage = defineAsyncComponent(() => import('@/viewer/player/ViewerStage.vue'))
+const HeatmapView = defineAsyncComponent(() => import('@/viewer/analysis/HeatmapView.vue'))
+const UtilitiesView = defineAsyncComponent(() => import('@/viewer/analysis/UtilitiesView.vue'))
+const EconomyView = defineAsyncComponent(() => import('@/viewer/analysis/EconomyView.vue'))
+const DuelsView = defineAsyncComponent(() => import('@/viewer/analysis/DuelsView.vue'))
+const DemoPreviewLoop = defineAsyncComponent(() => import('@/viewer/player/DemoPreviewLoop.vue'))
 import { useDemoParser } from '@/viewer/ingest/useDemoParser'
 import { useRecentDemos } from '@/viewer/ingest/useRecentDemos'
 import { importArchive } from '@/viewer/ingest/demoArchive'
@@ -179,11 +184,15 @@ const PREVIEWS = [
 ]
 const previewIndex = ref(Math.floor(Math.random() * PREVIEWS.length))
 const currentPreview = computed(() => PREVIEWS[previewIndex.value])
+// The ambient preview only shows from `lg` up. Gate it on a media query (not just
+// `hidden lg:block`) so it isn't mounted on mobile, where it would still fetch
+// the preview JSON + radar (~250KB) for something the user never sees.
+const showPreview = useMediaQuery('(min-width: 1024px)')
 function nextPreview() {
   previewIndex.value = (previewIndex.value + 1) % PREVIEWS.length
 }
 
-const stage = ref<InstanceType<typeof ViewerStage> | null>(null)
+const stage = ref<InstanceType<typeof ViewerStageType> | null>(null)
 // Leaving the 2D stage pauses playback (the stage stays mounted via v-show).
 watch(activeTab, (tab) => {
   if (tab !== 'viewer') stage.value?.pause()
@@ -587,7 +596,7 @@ function onImportInput(e: Event) {
     <div v-else class="relative h-full overflow-hidden">
       <!-- Looping preview as ambient background, filling the right half of the screen.
            No box or controls: just illustrates what the tool is about. -->
-      <div class="pointer-events-none absolute inset-y-0 right-0 left-1/2 hidden lg:block">
+      <div v-if="showPreview" class="pointer-events-none absolute inset-y-0 right-0 left-1/2">
         <DemoPreviewLoop
           :key="currentPreview"
           :src="currentPreview"
