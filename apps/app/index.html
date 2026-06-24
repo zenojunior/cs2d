@@ -38,10 +38,21 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Load the Google Fonts stylesheet without blocking the first paint: it
+         applies once downloaded (media swap), so the inline loader and content
+         paint immediately and the fonts swap in via font-display:swap. -->
     <link
       href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
 
     <!-- Structured data: free, browser-based tool (rich results / discovery). -->
     <script type="application/ld+json">
@@ -62,7 +73,43 @@
     </script>
   </head>
   <body>
-    <div id="app"></div>
+    <!-- Inline app shell: painted straight from the static HTML, before the JS
+         bundle and locale finish loading, so the first visit shows the dark
+         background + a spinner instead of a blank/grey screen. Vue clears #app's
+         contents (loader included) when it mounts. -->
+    <style>
+      #app-loading {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #0a0c12;
+      }
+      #app-loading .spinner {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 3px solid #1f2533;
+        border-top-color: #fdac1a;
+        animation: app-loading-spin 0.8s linear infinite;
+      }
+      @keyframes app-loading-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #app-loading .spinner {
+          animation-duration: 2s;
+        }
+      }
+    </style>
+    <div id="app">
+      <div id="app-loading">
+        <div class="spinner"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

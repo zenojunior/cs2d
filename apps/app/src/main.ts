@@ -10,6 +10,10 @@ app.use(router)
 app.use(i18n)
 registerDirectives(app)
 
-// Wait for the detected locale's messages to load before painting, so the app
-// shows the right language instead of flashing the pt fallback.
-i18nReady.then(() => app.mount('#app'))
+// Mount right away (replacing the inline #app loader) instead of waiting on the
+// detected locale, so the UI paints as soon as the bundle is ready. pt is bundled
+// so it renders immediately; a non-pt locale swaps in once i18nReady resolves
+// (covered by the inline loader, no blank screen). Errors are swallowed: a failed
+// locale fetch must not keep the app from mounting.
+i18nReady.catch(() => {})
+app.mount('#app')
