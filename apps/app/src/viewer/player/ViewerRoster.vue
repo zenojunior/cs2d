@@ -100,10 +100,19 @@ const armorIcon = (p: PlayerState) =>
           class="flex h-4 items-center gap-1"
           :class="mirror && 'flex-row-reverse'"
         >
+          <!-- Active weapon, except the knife: while it's out we show the stowed
+               main gun instead, so the roster always reflects the real loadout. -->
           <img
-            v-if="weaponIconPath(p.weapon)"
+            v-if="p.weapon !== 'Faca' && weaponIconPath(p.weapon)"
             :src="weaponIconPath(p.weapon)!"
             :alt="p.weapon"
+            class="h-3.5 w-6 shrink-0 object-contain opacity-90"
+            :class="mirror ? 'object-right' : 'object-left'"
+          />
+          <img
+            v-else-if="p.weapon === 'Faca' && p.primary && weaponIconPath(p.primary)"
+            :src="weaponIconPath(p.primary)!"
+            :alt="p.primary"
             class="h-3.5 w-6 shrink-0 object-contain opacity-90"
             :class="mirror ? 'object-right' : 'object-left'"
           />
@@ -126,7 +135,7 @@ const armorIcon = (p: PlayerState) =>
             v-tooltip="p.helmet ? t('viewer.vestHelmet') : t('viewer.vest')"
             :src="armorIcon(p)!"
             alt="Colete"
-            class="h-3.5 w-3 shrink-0 object-contain opacity-80"
+            class="h-4 w-3.5 shrink-0 object-contain opacity-80"
           />
         </div>
         <div

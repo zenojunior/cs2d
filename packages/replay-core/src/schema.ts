@@ -213,6 +213,10 @@ export interface PlayerState {
   side: Side
   /** Short label of the active weapon (e.g. "AK-47", "AWP", "HE"). */
   weapon: string
+  /** The main gun stowed in the inventory (rifle/SMG/sniper/shotgun/MG, or a pistol
+   *  if that's all they carry). Lets the UI keep showing the real weapon while the
+   *  knife is out. Omitted when the player holds only a knife/grenades/C4/Zeus. */
+  primary?: string
   money: number
   /** Current equipment value (weapons + utility + armor). The economy view reads
    *  it on the first live frame of each round to derive the team's buy. */
