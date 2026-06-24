@@ -109,6 +109,8 @@ const emit = defineEmits<{
   moveGrenade: [{ id: string; x: number; y: number }]
   /** A placed grenade was removed (right-clicked) from the board. */
   removeGrenade: [{ id: string }]
+  /** The user dragged the map by hand, so auto zoom / follow should release control. */
+  cancelCamera: []
 }>()
 
 const KILL_FADE = 1.4
@@ -2066,16 +2068,24 @@ function onPointerDown(e: PointerEvent) {
     canvas.value?.setPointerCapture(e.pointerId)
     return
   }
-  // Normal mode: left button pans (disabled in auto zoom / follow).
-  if (!props.autoZoom && !props.followSteamId) {
-    dragging = true
-    lastX = e.clientX
-    lastY = e.clientY
-    canvas.value?.setPointerCapture(e.pointerId)
-  }
+  // Normal mode: left button pans. Auto zoom / follow also start a drag, but the
+  // camera mode is only released once the pointer actually moves (see onPointerMove),
+  // so a plain click on a followed player doesn't drop the camera.
+  dragging = true
+  lastX = e.clientX
+  lastY = e.clientY
+  canvas.value?.setPointerCapture(e.pointerId)
 }
 function onPointerMove(e: PointerEvent) {
   if (dragging) {
+    // A hand drag releases auto zoom / follow once it passes the click threshold,
+    // so the manual pan below isn't fought by the camera loops.
+    if ((props.autoZoom || props.followSteamId) && Math.hypot(e.clientX - downX, e.clientY - downY) > 3) {
+      emit('cancelCamera')
+      lastX = e.clientX
+      lastY = e.clientY
+      return
+    }
     panX += e.clientX - lastX
     panY += e.clientY - lastY
     lastX = e.clientX
