@@ -71,15 +71,17 @@ provide(appFullscreenKey, { isFullscreen, toggle })
         v-show="!isFullscreen"
         class="relative z-20 flex h-14 shrink-0 items-center gap-4 border-b border-ink-800/80 bg-ink-950/80 px-4 backdrop-blur-md sm:px-6"
       >
-        <!-- Start: a Back button while viewing a demo, the sidebar toggle otherwise -->
+        <!-- Start: a Back button while viewing a demo, the sidebar toggle otherwise.
+             Icon only (the label confused users); the text lives in the tooltip. -->
         <button
           v-if="inDemo"
           type="button"
-          class="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-ink-200 transition-colors hover:bg-ink-800"
+          :aria-label="t('shell.back')"
+          :title="t('shell.back')"
+          class="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-md text-ink-400 transition-colors hover:bg-ink-800 hover:text-ink-100"
           @click="exitDemo"
         >
-          <UiIcon name="arrow-left" class="h-4 w-4 text-ink-400" />
-          {{ t('shell.back') }}
+          <UiIcon name="arrow-left" class="h-4 w-4" />
         </button>
         <button
           v-else
