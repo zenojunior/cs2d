@@ -13,7 +13,7 @@ import { importArchive } from '@cs2/replay-core/demoArchive'
 import { exportLogs, makeLog } from '../utils/log'
 
 // Where stored replays open for playback (the public 2D viewer).
-const WEB_APP = 'https://cs2.zenojunior.com'
+const WEB_APP = 'https://cs2d.app'
 
 const log = makeLog('background')
 // Grab the full log from the service-worker console with `await cs2dvLogs()`.

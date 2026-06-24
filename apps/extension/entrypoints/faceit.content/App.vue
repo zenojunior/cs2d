@@ -7,7 +7,7 @@ import Select from '@/components/ui/select/Select.vue'
 import type { ActiveJob, ArchiveMetaRow, StateReply } from '@/utils/protocol'
 import { LOCALES, currentLocale, initLocale, setLocale, t, type LocaleCode } from './i18n'
 
-const WEB_APP = 'https://cs2.zenojunior.com'
+const WEB_APP = 'https://cs2d.app'
 
 // Maps whose top-down 2D radar ships in the extension (public/maps/radars).
 const KNOWN_RADARS = new Set([
@@ -398,7 +398,7 @@ onUnmounted(() => {
             </a>
             <a :href="WEB_APP" target="_blank" rel="noopener" class="group relative hover:text-foreground">
               <Globe class="size-4" />
-              <span class="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded border border-border bg-background px-1.5 py-0.5 text-[10px] text-foreground opacity-0 shadow-md transition-opacity group-hover:opacity-100">cs2.zenojunior.com</span>
+              <span class="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded border border-border bg-background px-1.5 py-0.5 text-[10px] text-foreground opacity-0 shadow-md transition-opacity group-hover:opacity-100">cs2d.app</span>
             </a>
           </div>
           <span v-if="version" class="text-[10px] text-muted-foreground">v{{ version }}</span>
