@@ -163,8 +163,6 @@ function render() {
   const w = L * zoom.value
   if (radarReady) {
     ctx.drawImage(radarImg, panX, panY, w, w)
-    ctx.fillStyle = 'rgba(8, 11, 18, 0.45)'
-    ctx.fillRect(panX, panY, w, w)
   } else {
     ctx.fillStyle = '#0b0e14'
     ctx.fillRect(0, 0, cw, ch)
