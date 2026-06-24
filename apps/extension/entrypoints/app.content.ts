@@ -10,7 +10,7 @@ const EXT = 'cs2dv-extension'
 const APP = 'cs2dv-app'
 
 export default defineContentScript({
-  matches: ['*://cs2.zenojunior.com/*', 'http://localhost/*'],
+  matches: ['*://cs2d.app/*', 'http://localhost/*'],
   main() {
     const matchId = new URLSearchParams(location.hash.slice(1)).get('cs2dv')
     if (!matchId) return

@@ -24,6 +24,23 @@ function toggle() {
   }
 }
 
+// Mobile drawer state. On narrow viewports the sidebar is off-canvas and opens
+// as an overlay on top of the content instead of pushing it. Not persisted:
+// every visit starts closed.
+const mobileOpen = ref(false)
+
+function openMobile() {
+  mobileOpen.value = true
+}
+
+function closeMobile() {
+  mobileOpen.value = false
+}
+
+function toggleMobile() {
+  mobileOpen.value = !mobileOpen.value
+}
+
 export function useSidebar() {
-  return { collapsed, toggle }
+  return { collapsed, toggle, mobileOpen, openMobile, closeMobile, toggleMobile }
 }

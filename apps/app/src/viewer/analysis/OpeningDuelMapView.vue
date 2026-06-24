@@ -159,9 +159,10 @@ const rows = computed(() =>
 </script>
 
 <template>
-  <div class="flex h-full w-full">
-    <!-- Team filter + opening-duel list -->
-    <aside class="flex w-96 shrink-0 flex-col border-r border-ink-800 bg-ink-900/40">
+  <div class="flex h-full w-full flex-col sm:flex-row">
+    <!-- Team filter + opening-duel list: full width on top on mobile (capped
+         height, the list scrolls), fixed side column from sm up. -->
+    <aside class="flex max-h-[45vh] w-full shrink-0 flex-col border-b border-ink-800 bg-ink-900/40 sm:max-h-none sm:w-96 sm:border-b-0 sm:border-r">
       <div class="border-b border-ink-800 p-3">
         <div class="flex overflow-hidden rounded border border-ink-700 text-xs">
           <button
@@ -215,7 +216,7 @@ const rows = computed(() =>
     </aside>
 
     <!-- Plots: one per floor (side by side) or a single one -->
-    <div class="relative min-w-0 flex-1">
+    <div class="relative min-h-0 min-w-0 flex-1">
       <div class="flex h-full divide-x divide-ink-800">
         <HeatmapPlot
           v-for="plot in plots"

@@ -32,13 +32,14 @@ const SUBS: Sub[] = ['matrix', 'opening', 'opening-map']
 
 <template>
   <div class="flex h-full w-full flex-col">
-    <!-- Sub-navigation: Matrix / Opening / Opening map -->
-    <div class="flex shrink-0 items-center justify-center gap-0.5 border-b border-ink-800 px-3 py-2">
+    <!-- Sub-navigation: Matrix / Opening / Opening map. Scrolls sideways on
+         narrow viewports instead of overflowing. -->
+    <div class="flex shrink-0 items-center justify-start gap-0.5 overflow-x-auto border-b border-ink-800 px-3 py-2 scrollbar-none sm:justify-center">
       <button
         v-for="s in SUBS"
         :key="s"
         type="button"
-        class="cursor-pointer rounded-md px-3 py-1 text-sm font-medium transition-colors"
+        class="shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors"
         :class="sub === s ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:text-ink-100'"
         @click="emit('update:sub', s)"
       >

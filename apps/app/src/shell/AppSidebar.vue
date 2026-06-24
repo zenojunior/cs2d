@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useMediaQuery } from '@vueuse/core'
 import Cs2Mark from '@/shell/Cs2Mark.vue'
 import UiIcon from '@/ui/UiIcon.vue'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/ui/tooltip'
@@ -9,9 +11,13 @@ import { useI18n } from '@/i18n'
 // Compact, collapsible primary nav (VS Code activity-bar style). The collapse
 // state is shared (useSidebar) so the top-bar button drives it; when collapsed
 // only the icons show and hovering an item reveals its label as a tooltip.
+// On mobile the sidebar is an off-canvas drawer (driven by `mobileOpen`) and
+// always shows full labels, so it's only ever icon-only on desktop.
 const { t } = useI18n()
 const route = useRoute()
-const { collapsed } = useSidebar()
+const { collapsed, mobileOpen } = useSidebar()
+const isDesktop = useMediaQuery('(min-width: 640px)')
+const iconOnly = computed(() => isDesktop.value && collapsed.value)
 
 // Top: the core tool navigation. The analyzer route ('demoviewer') backs both the
 // upload home and the open viewer; the showcase bracket sits alongside them.
@@ -30,7 +36,7 @@ const MINOR_LINKS = [
 
 function itemClass(name: string) {
   return [
-    collapsed.value ? 'justify-center px-0' : 'px-3',
+    iconOnly.value ? 'justify-center px-0' : 'px-3',
     route.name === name
       ? 'bg-ink-800 text-ink-50'
       : 'text-ink-300 hover:bg-ink-800 hover:text-ink-100',
@@ -40,18 +46,18 @@ function itemClass(name: string) {
 
 <template>
   <aside
-    class="flex shrink-0 flex-col border-r border-ink-800/80 bg-ink-950/80 p-2 transition-[width] duration-200"
-    :class="collapsed ? 'w-14' : 'w-52'"
+    class="fixed inset-y-0 left-0 z-40 flex w-52 shrink-0 flex-col border-r border-ink-800/80 bg-ink-950 p-2 transition-transform duration-200 sm:static sm:z-auto sm:translate-x-0 sm:bg-ink-950/80 sm:transition-[width]"
+    :class="[mobileOpen ? 'translate-x-0' : '-translate-x-full', collapsed ? 'sm:w-14' : 'sm:w-52']"
   >
     <!-- Brand: icon always visible, title hidden when collapsed -->
     <RouterLink
       to="/"
       :aria-label="t('shell.home')"
       class="flex h-10 items-center gap-2 rounded-md px-1 text-ink-200 transition-colors hover:bg-ink-800"
-      :class="collapsed ? 'justify-center' : ''"
+      :class="iconOnly ? 'justify-center' : ''"
     >
       <Cs2Mark size="sm" />
-      <span v-if="!collapsed" class="truncate text-sm font-medium">CS Demo Analyzer</span>
+      <span v-if="!iconOnly" class="truncate text-sm font-medium">CS Demo Analyzer</span>
     </RouterLink>
 
     <TooltipProvider>
@@ -66,10 +72,10 @@ function itemClass(name: string) {
               :class="itemClass(item.name)"
             >
               <UiIcon :name="item.icon" class="h-4 w-4 shrink-0" />
-              <span v-if="!collapsed" class="truncate">{{ t(item.label) }}</span>
+              <span v-if="!iconOnly" class="truncate">{{ t(item.label) }}</span>
             </RouterLink>
           </TooltipTrigger>
-          <TooltipContent v-if="collapsed">{{ t(item.label) }}</TooltipContent>
+          <TooltipContent v-if="iconOnly">{{ t(item.label) }}</TooltipContent>
         </Tooltip>
       </nav>
 
@@ -77,10 +83,10 @@ function itemClass(name: string) {
       <nav class="mt-auto">
         <div
           class="flex items-center justify-center"
-          :class="collapsed ? 'gap-2' : 'gap-3 px-3'"
+          :class="iconOnly ? 'gap-2' : 'gap-3 px-3'"
         >
           <template v-for="(item, i) in MINOR_LINKS" :key="item.name">
-            <span v-if="!collapsed && i > 0" class="text-ink-700">·</span>
+            <span v-if="!iconOnly && i > 0" class="text-ink-700">·</span>
             <Tooltip>
               <TooltipTrigger as-child>
                 <RouterLink
@@ -93,11 +99,11 @@ function itemClass(name: string) {
                       : 'text-ink-500 hover:text-ink-300'
                   "
                 >
-                  <UiIcon v-if="collapsed" :name="item.icon" class="h-3.5 w-3.5" />
+                  <UiIcon v-if="iconOnly" :name="item.icon" class="h-3.5 w-3.5" />
                   <span v-else class="text-xs">{{ t(item.label) }}</span>
                 </RouterLink>
               </TooltipTrigger>
-              <TooltipContent v-if="collapsed">{{ t(item.label) }}</TooltipContent>
+              <TooltipContent v-if="iconOnly">{{ t(item.label) }}</TooltipContent>
             </Tooltip>
           </template>
         </div>

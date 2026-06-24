@@ -449,7 +449,7 @@ function onImportInput(e: Event) {
         <div class="flex items-center gap-0.5 rounded-lg border border-ink-700 bg-ink-900/60 p-0.5">
           <button
             type="button"
-            class="cursor-pointer rounded-md px-3 py-1 text-sm font-medium transition-colors"
+            class="shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors"
             :class="activeTab === 'viewer' ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:text-ink-100'"
             @click="goTab('viewer')"
           >
@@ -457,7 +457,7 @@ function onImportInput(e: Event) {
           </button>
           <button
             type="button"
-            class="cursor-pointer rounded-md px-3 py-1 text-sm font-medium transition-colors"
+            class="shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors"
             :class="activeTab === 'heatmap' ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:text-ink-100'"
             @click="goTab('heatmap')"
           >
@@ -465,7 +465,7 @@ function onImportInput(e: Event) {
           </button>
           <button
             type="button"
-            class="cursor-pointer rounded-md px-3 py-1 text-sm font-medium transition-colors"
+            class="shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors"
             :class="activeTab === 'utilities' ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:text-ink-100'"
             @click="goTab('utilities')"
           >
@@ -473,7 +473,7 @@ function onImportInput(e: Event) {
           </button>
           <button
             type="button"
-            class="cursor-pointer rounded-md px-3 py-1 text-sm font-medium transition-colors"
+            class="shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors"
             :class="activeTab === 'economy' ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:text-ink-100'"
             @click="goTab('economy')"
           >
@@ -481,7 +481,7 @@ function onImportInput(e: Event) {
           </button>
           <button
             type="button"
-            class="cursor-pointer rounded-md px-3 py-1 text-sm font-medium transition-colors"
+            class="shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors"
             :class="activeTab === 'duels' ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:text-ink-100'"
             @click="goTab('duels')"
           >

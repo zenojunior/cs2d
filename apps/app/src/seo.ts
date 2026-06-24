@@ -3,7 +3,7 @@ import { useRoute } from 'vue-router'
 import { useI18n } from '@/i18n'
 
 // Canonical production origin; used for <link rel=canonical> and og:url.
-const SITE_URL = 'https://cs2.zenojunior.com'
+const SITE_URL = 'https://cs2d.app'
 const BRAND = 'CS Demo Analyzer'
 
 // Per-route head data keyed by route name. `titleKey` is an i18n key shown

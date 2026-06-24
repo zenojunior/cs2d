@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, provide, ref } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useFullscreen } from '@vueuse/core'
+import { useFullscreen, useMediaQuery } from '@vueuse/core'
 import { Flag } from '@blade-flags/vue'
 import { circleFlags } from '@blade-flags/core/flags/circle'
 import UiIcon from '@/ui/UiIcon.vue'
@@ -36,11 +36,29 @@ const showExtension = import.meta.env.DEV
 
 const current = computed(() => LOCALES.find((l) => l.code === locale.value) ?? LOCALES[0])
 
-// Primary-sidebar collapse, driven from the start of the top bar.
-const { collapsed, toggle: toggleSidebar } = useSidebar()
+// Primary-sidebar state, driven from the start of the top bar. On desktop the
+// toggle collapses/expands the in-flow sidebar; on mobile it opens/closes the
+// off-canvas drawer overlay.
+const { collapsed, toggle: toggleSidebar, mobileOpen, closeMobile, toggleMobile } = useSidebar()
+const isDesktop = useMediaQuery('(min-width: 640px)')
+
+function onToggleSidebar() {
+  if (isDesktop.value) toggleSidebar()
+  else toggleMobile()
+}
+// Drives the toggle icon: is the sidebar currently shown? (expanded on desktop,
+// drawer open on mobile.)
+const sidebarShown = computed(() => (isDesktop.value ? !collapsed.value : mobileOpen.value))
 
 const route = useRoute()
 const router = useRouter()
+
+// Close the mobile drawer when navigating or once the viewport grows to desktop
+// (where the sidebar is in-flow and the overlay no longer applies).
+watch(() => route.fullPath, () => closeMobile())
+watch(isDesktop, (desktop) => {
+  if (desktop) closeMobile()
+})
 
 // A demo is being viewed when the analyzer route carries an id (history demo) or a
 // `replay` query (external Major replay). In that case we drop the sidebar and swap
@@ -66,6 +84,13 @@ provide(appFullscreenKey, { isFullscreen, toggle })
   <div ref="shellRoot" class="flex h-dvh overflow-hidden bg-ink-950">
     <AppSidebar v-show="!isFullscreen && !inDemo" />
 
+    <!-- Mobile drawer backdrop: taps outside the open sidebar close it. -->
+    <div
+      v-if="mobileOpen"
+      class="fixed inset-0 z-30 bg-black/50 sm:hidden"
+      @click="closeMobile"
+    />
+
     <div class="flex min-w-0 flex-1 flex-col">
       <header
         v-show="!isFullscreen"
@@ -89,13 +114,13 @@ provide(appFullscreenKey, { isFullscreen, toggle })
           :aria-label="t('shell.toggleMenu')"
           :title="t('shell.toggleMenu')"
           class="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-md text-ink-400 transition-colors hover:bg-ink-800 hover:text-ink-100"
-          @click="toggleSidebar"
+          @click="onToggleSidebar"
         >
-          <UiIcon :name="collapsed ? 'panel-left-open' : 'panel-left-close'" class="h-4 w-4" />
+          <UiIcon :name="sidebarShown ? 'panel-left-close' : 'panel-left-open'" class="h-4 w-4" />
         </button>
 
         <!-- End: extension dialog + GitHub link + language menu -->
-        <div class="ml-auto flex items-center gap-2">
+        <div class="order-3 ml-auto flex items-center gap-2 sm:order-none">
           <ExtensionDialog v-if="showExtension" />
           <a
             :href="GITHUB_URL"
@@ -135,10 +160,13 @@ provide(appFullscreenKey, { isFullscreen, toggle })
           </Menubar>
         </div>
 
-        <!-- Center: tool actions (via Teleport, e.g. the viewer tabs) -->
+        <!-- Center: tool actions (via Teleport, e.g. the viewer tabs). On narrow
+             viewports it flows between the side controls and scrolls sideways
+             (order-2 places it before the right group); from `sm` up it is the
+             absolutely centered bar it has always been. -->
         <div
           id="publicbar-center"
-          class="absolute inset-y-0 left-1/2 flex -translate-x-1/2 items-center"
+          class="order-2 flex min-w-0 flex-1 items-center overflow-x-auto scrollbar-none sm:absolute sm:inset-y-0 sm:left-1/2 sm:order-none sm:flex-none sm:-translate-x-1/2 sm:overflow-visible"
         />
       </header>
 

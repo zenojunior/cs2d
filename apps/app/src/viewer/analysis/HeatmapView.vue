@@ -304,13 +304,14 @@ const rangeColor = computed(() => {
 
 <template>
   <div class="flex h-full w-full flex-col">
-    <!-- Sub-navigation: Kills / Deaths / Presence -->
-    <div class="flex shrink-0 items-center justify-center gap-0.5 border-b border-ink-800 px-3 py-2">
+    <!-- Sub-navigation: Presence / Kills / Deaths / Grenades. Scrolls sideways
+         on narrow viewports instead of overflowing. -->
+    <div class="flex shrink-0 items-center justify-start gap-0.5 overflow-x-auto border-b border-ink-800 px-3 py-2 scrollbar-none sm:justify-center">
       <button
         v-for="(meta, key) in SOURCE_META"
         :key="key"
         type="button"
-        class="cursor-pointer rounded-md px-3 py-1 text-sm font-medium transition-colors"
+        class="shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors"
         :class="source === key ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:text-ink-100'"
         @click="emit('update:source', key as Source)"
       >
@@ -321,11 +322,15 @@ const rangeColor = computed(() => {
     <!-- Grenade detonation heatmap: brings its own filters and plots. -->
     <UtilityHeatmapView v-if="source === 'grenades'" :replay="replay" class="min-h-0 flex-1" />
 
-    <div v-else class="flex min-h-0 flex-1">
-    <!-- Filters panel -->
-    <aside class="flex w-64 shrink-0 flex-col gap-4 overflow-y-auto border-r border-ink-800 bg-ink-900/40 p-4">
+    <div v-else class="flex min-h-0 flex-1 flex-col sm:flex-row">
+    <!-- Filters panel: full width on top on mobile, fixed side column from sm up. -->
+    <aside class="flex max-h-[40vh] w-full shrink-0 flex-col gap-4 overflow-y-auto border-b border-ink-800 bg-ink-900/40 p-4 sm:max-h-none sm:w-64 sm:border-b-0 sm:border-r">
+      <!-- Filters: a compact grid on mobile (Side full width, Team/Player side by
+           side) to save vertical space; a stacked column from sm up, where
+           sm:contents dissolves this wrapper back into the aside's flex column. -->
+      <div class="grid grid-cols-2 gap-2 sm:contents">
       <!-- Side -->
-      <div :class="{ 'pointer-events-none opacity-40': !hasIdentity }">
+      <div class="col-span-2" :class="{ 'pointer-events-none opacity-40': !hasIdentity }">
         <label class="mb-1.5 block text-xs font-medium text-ink-300">{{ t('heatmap.side') }}</label>
         <div class="flex overflow-hidden rounded-md border border-ink-700">
           <button
@@ -353,6 +358,7 @@ const rangeColor = computed(() => {
         <label class="mb-1.5 block text-xs font-medium text-ink-300">{{ t('heatmap.player') }}</label>
         <UiSelect v-model="playerFilter" :options="playerOptions" class="w-full" />
       </div>
+      </div>
 
       <p v-if="levels" class="text-xs text-ink-600">
         {{ t('heatmap.multiLevelNote', { map: replay.map.replace(/^de_/, '') }) }}
@@ -360,7 +366,7 @@ const rangeColor = computed(() => {
     </aside>
 
     <!-- Plots: one per floor (side by side) or a single one -->
-    <div class="relative min-w-0 flex-1">
+    <div class="relative min-h-0 min-w-0 flex-1">
       <div class="flex h-full divide-x divide-ink-800">
         <HeatmapPlot
           v-for="plot in plots"

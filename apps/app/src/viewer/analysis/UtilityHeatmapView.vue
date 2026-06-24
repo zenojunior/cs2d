@@ -135,9 +135,9 @@ const plots = computed<Plot[]>(() => {
 </script>
 
 <template>
-  <div class="flex h-full w-full">
-    <!-- Filters panel -->
-    <aside class="flex w-64 shrink-0 flex-col gap-4 overflow-y-auto border-r border-ink-800 bg-ink-900/40 p-4">
+  <div class="flex h-full w-full flex-col sm:flex-row">
+    <!-- Filters panel: full width on top on mobile, fixed side column from sm up. -->
+    <aside class="flex max-h-[40vh] w-full shrink-0 flex-col gap-4 overflow-y-auto border-b border-ink-800 bg-ink-900/40 p-4 sm:max-h-none sm:w-64 sm:border-b-0 sm:border-r">
       <!-- Grenade type -->
       <div>
         <label class="mb-1.5 block text-xs font-medium text-ink-300">{{ t('heatmap.data') }}</label>
@@ -222,7 +222,7 @@ const plots = computed<Plot[]>(() => {
     </aside>
 
     <!-- Plots: one per floor (side by side) or a single one -->
-    <div class="flex min-w-0 flex-1 divide-x divide-ink-800">
+    <div class="flex min-h-0 min-w-0 flex-1 divide-x divide-ink-800">
       <HeatmapPlot
         v-for="plot in plots"
         :key="plot.key"

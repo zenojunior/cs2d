@@ -233,9 +233,10 @@ function onLeave() {
 </script>
 
 <template>
-  <div class="flex h-full w-full">
-    <!-- Filtros + lista -->
-    <aside class="flex w-72 shrink-0 flex-col border-r border-ink-800 bg-ink-900/40">
+  <div class="flex h-full w-full flex-col sm:flex-row">
+    <!-- Filtros + lista: full width on top on mobile (capped height, the list
+         scrolls), fixed side column from sm up. -->
+    <aside class="flex max-h-[45vh] w-full shrink-0 flex-col border-b border-ink-800 bg-ink-900/40 sm:max-h-none sm:w-72 sm:border-b-0 sm:border-r">
       <!-- Filtros -->
       <div class="space-y-2 border-b border-ink-800 p-3">
         <!-- Tipo -->
@@ -328,7 +329,7 @@ function onLeave() {
     </aside>
 
     <!-- Radar: prévia do arco da granada em foco -->
-    <div class="relative min-w-0 flex-1">
+    <div class="relative min-h-0 min-w-0 flex-1">
       <ViewerMap
         :players="[]"
         :current-t="0"

@@ -977,10 +977,11 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
       :total-rounds="r.totalRounds.value"
     />
 
-    <!-- CT team: bottom-left corner (hidden in comment mode to make room for the panel) -->
+    <!-- CT team: bottom-left corner (hidden in comment mode to make room for the
+         panel, and hidden on mobile where there's no room for the rosters) -->
     <aside
       v-if="!hudHidden && !commentMode"
-      class="pointer-events-auto absolute bottom-4 left-4 z-10 w-52"
+      class="pointer-events-auto absolute bottom-4 left-4 z-10 hidden w-52 sm:block"
     >
       <ViewerRoster
         :players="r.players.value"
@@ -994,10 +995,11 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
       />
     </aside>
 
-    <!-- T team: bottom-right corner (hidden in comment mode to make room for the panel) -->
+    <!-- T team: bottom-right corner (hidden in comment mode to make room for the
+         panel, and hidden on mobile where there's no room for the rosters) -->
     <aside
       v-if="!hudHidden && !commentMode"
-      class="pointer-events-auto absolute bottom-4 right-4 z-10 w-52"
+      class="pointer-events-auto absolute bottom-4 right-4 z-10 hidden w-52 sm:block"
     >
       <ViewerRoster
         :players="r.players.value"
