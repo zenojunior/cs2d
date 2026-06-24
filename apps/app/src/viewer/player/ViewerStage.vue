@@ -555,6 +555,11 @@ const followSteamId = ref<string | null>(null)
 function toggleFollow(steamId: string) {
   followSteamId.value = followSteamId.value === steamId ? null : steamId
 }
+// Dragging the map by hand hands control back to the user: drop follow and auto zoom.
+function onCancelCamera() {
+  followSteamId.value = null
+  autoZoom.value = false
+}
 const followName = computed(() =>
   followSteamId.value ? (r.playersById.value.get(followSteamId.value)?.name ?? '?') : '',
 )
@@ -750,6 +755,7 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
       @add-grenade="onAddGrenade"
       @move-grenade="onMoveGrenade"
       @remove-grenade="onRemoveGrenade"
+      @cancel-camera="onCancelCamera"
       @drop-comment="onDropComment"
       @select-comment="onSelectComment"
       :popover-anchor="popoverAnchor"
