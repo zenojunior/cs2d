@@ -325,8 +325,12 @@ const rangeColor = computed(() => {
     <div v-else class="flex min-h-0 flex-1 flex-col sm:flex-row">
     <!-- Filters panel: full width on top on mobile, fixed side column from sm up. -->
     <aside class="flex max-h-[40vh] w-full shrink-0 flex-col gap-4 overflow-y-auto border-b border-ink-800 bg-ink-900/40 p-4 sm:max-h-none sm:w-64 sm:border-b-0 sm:border-r">
+      <!-- Filters: a compact grid on mobile (Side full width, Team/Player side by
+           side) to save vertical space; a stacked column from sm up, where
+           sm:contents dissolves this wrapper back into the aside's flex column. -->
+      <div class="grid grid-cols-2 gap-2 sm:contents">
       <!-- Side -->
-      <div :class="{ 'pointer-events-none opacity-40': !hasIdentity }">
+      <div class="col-span-2" :class="{ 'pointer-events-none opacity-40': !hasIdentity }">
         <label class="mb-1.5 block text-xs font-medium text-ink-300">{{ t('heatmap.side') }}</label>
         <div class="flex overflow-hidden rounded-md border border-ink-700">
           <button
@@ -353,6 +357,7 @@ const rangeColor = computed(() => {
       <div :class="{ 'pointer-events-none opacity-40': !hasIdentity }">
         <label class="mb-1.5 block text-xs font-medium text-ink-300">{{ t('heatmap.player') }}</label>
         <UiSelect v-model="playerFilter" :options="playerOptions" class="w-full" />
+      </div>
       </div>
 
       <p v-if="levels" class="text-xs text-ink-600">
