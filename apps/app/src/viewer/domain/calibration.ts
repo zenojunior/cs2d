@@ -56,12 +56,12 @@ export const MAP_CALIBRATION: Record<string, MapCalibration> = {
     posY: 2887,
     blastRadius: 2275,
     // Nuke is the classic two-floor case: each floor has its own radar. The Z
-    // cut sits BETWEEN the floors: the main one (site A) is around z ~ -415 and
-    // the basement (site B) around z ~ -767, so we split at -575. Upper floor =
-    // higher Z. (Adjust if a real replay shows floors at a different height.)
+    // cut sits BETWEEN the floors. We use the official altitude split from the
+    // cs2-map-icons radar dump (de_nuke verticalsections: -495). Upper floor =
+    // higher Z.
     levels: [
-      { name: 'Superior', minZ: -575, maxZ: Infinity },
-      { name: 'Inferior', minZ: -Infinity, maxZ: -575, radar: '/maps/de_nuke_lower_radar.png' },
+      { name: 'Superior', minZ: -495, maxZ: Infinity },
+      { name: 'Inferior', minZ: -Infinity, maxZ: -495, radar: '/maps/de_nuke_lower_radar.png' },
     ],
   },
   de_ancient: { radar: '/maps/de_ancient_radar.png', scale: 5.0, posX: -2953, posY: 2164, blastRadius: 2250 },
