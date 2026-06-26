@@ -146,9 +146,11 @@
     "menu": {
       "open": "Abrir replay",
       "copyName": "Copiar nombre del archivo",
-      "remove": "Quitar del historial",
+      "export": "Exportar",
+      "remove": "Eliminar",
       "rounds": "rondas",
-      "withVoice": "Con voz de los jugadores"
+      "withVoice": "Con voz de los jugadores",
+      "rename": "Renombrar"
     }
   },
   "viewer": {
@@ -378,6 +380,15 @@
     "device": "{used} de {quota} usados en el dispositivo",
     "empty": "Aún no analizaste ninguna demo.",
     "uploadCta": "Analizar una demo",
-    "allMaps": "Todos los mapas"
+    "allMaps": "Todos los mapas",
+    "removeTitle": "¿Eliminar demo?",
+    "removeBody": "{name} se eliminará de tu historial local. Esta acción no se puede deshacer.",
+    "removeConfirm": "Eliminar",
+    "removeCancel": "Cancelar",
+    "preview": {
+      "watch": "Ver",
+      "round": "Ronda {n}",
+      "desc": "Captura de la ronda antes de la primera baja."
+    }
   }
 }

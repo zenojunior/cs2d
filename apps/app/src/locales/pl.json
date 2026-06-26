@@ -146,9 +146,11 @@
     "menu": {
       "open": "Otwórz replay",
       "copyName": "Kopiuj nazwę pliku",
-      "remove": "Usuń z historii",
+      "export": "Eksportuj",
+      "remove": "Usuń",
       "rounds": "rundy",
-      "withVoice": "Z głosem graczy"
+      "withVoice": "Z głosem graczy",
+      "rename": "Zmień nazwę"
     }
   },
   "viewer": {
@@ -378,6 +380,15 @@
     "device": "{used} z {quota} użyte na urządzeniu",
     "empty": "Nie przeanalizowano jeszcze żadnej demki.",
     "uploadCta": "Przeanalizuj demo",
-    "allMaps": "Wszystkie mapy"
+    "allMaps": "Wszystkie mapy",
+    "removeTitle": "Usunąć demo?",
+    "removeBody": "{name} zostanie usunięte z lokalnej historii. Tej operacji nie można cofnąć.",
+    "removeConfirm": "Usuń",
+    "removeCancel": "Anuluj",
+    "preview": {
+      "watch": "Oglądaj",
+      "round": "Runda {n}",
+      "desc": "Migawka rundy przed pierwszym zabójstwem."
+    }
   }
 }

@@ -146,9 +146,11 @@
     "menu": {
       "open": "Abrir replay",
       "copyName": "Copiar nome do arquivo",
-      "remove": "Remover do histórico",
+      "export": "Exportar",
+      "remove": "Excluir",
       "rounds": "rounds",
-      "withVoice": "Com voz dos jogadores"
+      "withVoice": "Com voz dos jogadores",
+      "rename": "Renomear"
     }
   },
   "viewer": {
@@ -378,6 +380,15 @@
     "device": "{used} de {quota} usados no dispositivo",
     "empty": "Nenhuma demo analisada ainda.",
     "uploadCta": "Analisar uma demo",
-    "allMaps": "Todos os mapas"
+    "allMaps": "Todos os mapas",
+    "removeTitle": "Remover demo?",
+    "removeBody": "{name} será removida do seu histórico local. Esta ação não pode ser desfeita.",
+    "removeConfirm": "Remover",
+    "removeCancel": "Cancelar",
+    "preview": {
+      "watch": "Assistir",
+      "round": "Round {n}",
+      "desc": "Snapshot do round antes da primeira eliminação."
+    }
   }
 }

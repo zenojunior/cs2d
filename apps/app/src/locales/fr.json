@@ -146,9 +146,11 @@
     "menu": {
       "open": "Ouvrir le replay",
       "copyName": "Copier le nom du fichier",
-      "remove": "Retirer de l’historique",
+      "export": "Exporter",
+      "remove": "Supprimer",
       "rounds": "rounds",
-      "withVoice": "Avec la voix des joueurs"
+      "withVoice": "Avec la voix des joueurs",
+      "rename": "Renommer"
     }
   },
   "viewer": {
@@ -378,6 +380,15 @@
     "device": "{used} sur {quota} utilisés sur l’appareil",
     "empty": "Aucune demo analysée pour l’instant.",
     "uploadCta": "Analyser une demo",
-    "allMaps": "Toutes les cartes"
+    "allMaps": "Toutes les cartes",
+    "removeTitle": "Supprimer la démo ?",
+    "removeBody": "{name} sera supprimée de votre historique local. Cette action est irréversible.",
+    "removeConfirm": "Supprimer",
+    "removeCancel": "Annuler",
+    "preview": {
+      "watch": "Regarder",
+      "round": "Round {n}",
+      "desc": "Aperçu du round avant le premier kill."
+    }
   }
 }
