@@ -194,6 +194,7 @@
     "zoomOut": "Dézoomer",
     "zoomReset": "Recentrer",
     "muteComms": "Couper les comms",
+    "loadingComms": "Chargement de l’audio…",
     "enableComms": "Activer les comms",
     "volumeAria": "Volume général des comms",
     "balance": "Balance CT / T",

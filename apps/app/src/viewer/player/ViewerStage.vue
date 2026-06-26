@@ -1077,6 +1077,7 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
           :speed="r.speed.value"
           :show-voice="hasVoice && audio.supported"
           :muted="audio.muted.value"
+          :voice-loading="audio.decoding.value"
           :master-volume="audio.masterVolume.value"
           :balance="audio.balance.value"
           :waveform="audio.roundWaveform.value"

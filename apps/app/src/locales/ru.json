@@ -194,6 +194,7 @@
     "zoomOut": "Отдалить",
     "zoomReset": "Центрировать",
     "muteComms": "Заглушить войс",
+    "loadingComms": "Загрузка аудио…",
     "enableComms": "Включить войс",
     "volumeAria": "Общая громкость войса",
     "balance": "Баланс CT / T",

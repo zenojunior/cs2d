@@ -67,8 +67,13 @@ const currentId = ref<string | null>(null)
 const currentSrc = ref<string | null>(null)
 // `?skipFreeze=1` opens the replay past the freeze time (Major clips set it).
 const skipFreeze = computed(() => route.query.skipFreeze === '1' || route.query.skipFreeze === 'true')
-// `?autoplay=1` starts playback as soon as the replay loads (Major clips set it).
-const autoplay = computed(() => route.query.autoplay === '1' || route.query.autoplay === 'true')
+// Playback starts on open by default for a fluid first experience; an explicit
+// `?autoplay=0` (or `false`) opts out, and `?autoplay=1` is still honored.
+const autoplay = computed(() => {
+  const q = route.query.autoplay
+  if (q === undefined) return true
+  return q === '1' || q === 'true'
+})
 type Tab = 'viewer' | 'heatmap' | 'utilities' | 'economy' | 'duels'
 // The active tab is driven by the URL: `/:id` is the 2D stage, `/:id/heatmaps`
 // the heatmap, `/:id/utilities` the utilities page, `/:id/economy` the economy

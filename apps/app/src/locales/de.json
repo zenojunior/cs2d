@@ -194,6 +194,7 @@
     "zoomOut": "Verkleinern",
     "zoomReset": "Zentrieren",
     "muteComms": "Comms stummschalten",
+    "loadingComms": "Audio wird geladen…",
     "enableComms": "Comms aktivieren",
     "volumeAria": "Gesamtlautstärke der Comms",
     "balance": "CT / T Balance",

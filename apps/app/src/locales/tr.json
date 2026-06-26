@@ -194,6 +194,7 @@
     "zoomOut": "Uzaklaştır",
     "zoomReset": "Yeniden ortala",
     "muteComms": "comms'u sustur",
+    "loadingComms": "Ses yükleniyor…",
     "enableComms": "comms'u etkinleştir",
     "volumeAria": "Genel comms ses düzeyi",
     "balance": "CT / T dengesi",

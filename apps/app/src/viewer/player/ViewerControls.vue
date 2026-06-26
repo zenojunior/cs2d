@@ -26,6 +26,8 @@ const props = defineProps<{
   showVoice?: boolean
   /** Comms muted (audio off or volume at zero). */
   muted?: boolean
+  /** Comms audio still decoding for the current round (not yet playable). */
+  voiceLoading?: boolean
   /** Master comms volume (0 to 1). */
   masterVolume?: number
   /** CT<->T balance (-1 = CT only, 0 = both, +1 = T only). */
@@ -419,12 +421,23 @@ onMounted(() => centerCurrent('auto'))
         @mouseleave="volHover = false"
       >
         <button
-          v-tooltip="muted ? t('viewer.enableComms') : t('viewer.muteComms')"
+          v-tooltip="
+            voiceLoading && !muted
+              ? t('viewer.loadingComms')
+              : muted
+                ? t('viewer.enableComms')
+                : t('viewer.muteComms')
+          "
           class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors duration-150 hover:bg-white/10"
           :class="muted ? 'text-ink-500 hover:text-white' : 'text-ink-200 hover:text-white'"
           @click="emit('toggleMute')"
         >
-          <UiIcon :name="muted ? 'volume-x' : 'volume-2'" class="h-4 w-4" />
+          <UiIcon
+            v-if="voiceLoading && !muted"
+            name="loader"
+            class="h-4 w-4 animate-spin"
+          />
+          <UiIcon v-else :name="muted ? 'volume-x' : 'volume-2'" class="h-4 w-4" />
         </button>
 
         <!-- Hover panel: volume (left) and CT/T balance (right). The outer pb-2

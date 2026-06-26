@@ -242,15 +242,20 @@ export function useReplay() {
     pause()
     clip.value = null
     replay.value = r
-    // Open on the first round that actually has frames. Some platforms (Gamers
-    // Club) emit a leading frameless "result" round for the knife; starting
-    // there would show an empty map.
-    const startIdx = r.rounds.findIndex((rd) => rd.frames.length > 0)
+    // Land on the first real round (the pistol), skipping any leading pre-game
+    // knife rounds: their freeze + side-pick is noise for a first view. Some
+    // platforms (Gamers Club) also emit a frameless "result" round for the
+    // knife, so we look for the first round with frames at or after the
+    // pre-game block. Fall back to the first round with frames at all.
+    const pre = preGameRoundCount(r.rounds)
+    let startIdx = r.rounds.findIndex((rd, i) => i >= pre && rd.frames.length > 0)
+    if (startIdx < 0) startIdx = r.rounds.findIndex((rd) => rd.frames.length > 0)
     roundIndex.value = startIdx < 0 ? 0 : startIdx
-    // With skipFreeze on, open past that round's freeze (the freeze stays
-    // scrubbable to the left); otherwise start at frame 0 so it plays too.
+    // Always open past that round's freeze so the first experience is fast: the
+    // freeze stays scrubbable to the left. (The skipFreeze toggle still governs
+    // every round the user navigates to afterwards.)
     const first = r.rounds[roundIndex.value]
-    frameIndex.value = first && skipFreeze.value ? liveFrame(first) : 0
+    frameIndex.value = first ? liveFrame(first) : 0
     frac.value = 0
   }
 

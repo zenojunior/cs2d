@@ -85,6 +85,9 @@ export function useVoicePlayback(opts: VoicePlaybackOptions) {
   const sampleRate = computed(() => voice.value?.sampleRate ?? 48000)
   const tickRate = computed(() => voice.value?.tickRate ?? 64)
 
+  /** True while the current round's voice is being decoded (audio not yet
+   *  playable). Drives a loading indicator on the comms control. */
+  const decoding = ref(false)
   const roundVoices = shallowRef<PlayerVoice[]>([])
   const sources = new Map<string, AudioBufferSourceNode>()
   // Sync anchor: audio position = anchorT + (ctx.now - anchorCtx)*speed.
@@ -232,8 +235,23 @@ export function useVoicePlayback(opts: VoicePlaybackOptions) {
     const token = ++decodeToken
     stopSources()
     roundVoices.value = []
-    if (!supported || !anyAudible() || !r || !voice.value) return
+    if (!supported || !anyAudible() || !r || !voice.value) {
+      decoding.value = false
+      return
+    }
+    decoding.value = true
+    try {
+      await decodeRound(r, token)
+    } finally {
+      // Only clear when this is still the active decode; a newer one owns the flag.
+      if (token === decodeToken) decoding.value = false
+    }
+  }
 
+  /** Decodes one round's packets into per-speaker buffers (the heavy work). */
+  async function decodeRound(r: Round, token: number) {
+    const v = voice.value
+    if (!v) return
     const audio = ensureCtx()
     const tr = tickRate.value
     const sr = sampleRate.value
@@ -246,7 +264,7 @@ export function useVoicePlayback(opts: VoicePlaybackOptions) {
     const totalSamples = Math.ceil(durSec * sr)
 
     const result: PlayerVoice[] = []
-    for (const track of voice.value.tracks) {
+    for (const track of v.tracks) {
       const pkts = track.packets.filter((p) => p.tick >= fs && p.tick <= pe)
       if (!pkts.length) continue
 
@@ -302,7 +320,14 @@ export function useVoicePlayback(opts: VoicePlaybackOptions) {
     }
     if (token !== decodeToken) return
     roundVoices.value = result
-    if (playing.value) resync(true)
+    // Engage playback if the replay is already running. This covers autoplay on
+    // open, where `playing` is set before this composable mounts (so the
+    // `watch(playing)` transition never fires): resume the context (allowed via
+    // the page's sticky activation) and start the sources.
+    if (playing.value) {
+      ctx?.resume().catch(() => {})
+      resync(true)
+    }
   }
 
   // ---------------------------------------------------------- transporte (sync)
@@ -364,7 +389,9 @@ export function useVoicePlayback(opts: VoicePlaybackOptions) {
     if (ctx && playing.value && anyAudible()) resync()
   })
 
-  watch(round, (r) => buildRound(r))
+  // Immediate so the round open at mount is decoded even when playback was
+  // started before this composable existed (autoplay on open).
+  watch(round, (r) => buildRound(r), { immediate: true })
 
   watch(balance, () => applyVolumes())
 
@@ -428,6 +455,7 @@ export function useVoicePlayback(opts: VoicePlaybackOptions) {
     supported,
     enabled,
     muted,
+    decoding,
     balance,
     masterVolume,
     mutedSides,
