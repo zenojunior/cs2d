@@ -432,6 +432,7 @@ function onImportInput(e: Event) {
           :file-name="parser.fileName.value"
           :skip-freeze="skipFreeze"
           :autoplay="autoplay && activeTab === 'viewer'"
+          :active="activeTab === 'viewer'"
         />
       </div>
       <HeatmapView

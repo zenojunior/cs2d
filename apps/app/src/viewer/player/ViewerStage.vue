@@ -74,6 +74,11 @@ const props = defineProps<{
   skipFreeze?: boolean
   /** Start playing as soon as the replay loads (e.g. Major clips). */
   autoplay?: boolean
+  /** Whether the stage is the visible tab. The stage stays mounted (via v-show)
+   *  on other tabs, so keyboard shortcuts must stand down unless it's active, or
+   *  e.g. Space would toggle playback (and audio) from the heatmap. Default true
+   *  for standalone uses (the sample demo viewer). */
+  active?: boolean
 }>()
 
 const r = useReplay()
@@ -641,20 +646,26 @@ function isTyping(e: KeyboardEvent) {
   return el.tagName === 'INPUT' && TEXT_INPUT_TYPES.includes((el as HTMLInputElement).type)
 }
 
+/** Shortcuts are inert while the stage isn't the active tab (it stays mounted
+ *  via v-show on other tabs) or while typing in a field. */
+function shortcutsBlocked(e: KeyboardEvent) {
+  return props.active === false || isTyping(e)
+}
+
 // Playback shortcuts are disabled in coach mode: the board is frozen on the tick
 // the coach entered, so play/pause and seeking would break it.
 onKeyStroke(' ', (e) => {
-  if (isTyping(e) || coachMode.value) return
+  if (shortcutsBlocked(e) || coachMode.value) return
   e.preventDefault()
   r.toggle()
 })
 onKeyStroke('ArrowRight', (e) => {
-  if (isTyping(e) || coachMode.value) return
+  if (shortcutsBlocked(e) || coachMode.value) return
   e.preventDefault()
   r.seekBySeconds(5)
 })
 onKeyStroke('ArrowLeft', (e) => {
-  if (isTyping(e) || coachMode.value) return
+  if (shortcutsBlocked(e) || coachMode.value) return
   e.preventDefault()
   r.seekBySeconds(-5)
 })
@@ -662,13 +673,13 @@ onKeyStroke('ArrowLeft', (e) => {
 // Undo/redo on the tactical board (coach mode only). Ctrl/Cmd+Z undoes,
 // Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y redoes.
 onKeyStroke(['z', 'Z'], (e) => {
-  if (!coachMode.value || isTyping(e) || !(e.ctrlKey || e.metaKey)) return
+  if (!coachMode.value || shortcutsBlocked(e) || !(e.ctrlKey || e.metaKey)) return
   e.preventDefault()
   if (e.shiftKey) board.redo()
   else board.undo()
 })
 onKeyStroke(['y', 'Y'], (e) => {
-  if (!coachMode.value || isTyping(e) || !(e.ctrlKey || e.metaKey)) return
+  if (!coachMode.value || shortcutsBlocked(e) || !(e.ctrlKey || e.metaKey)) return
   e.preventDefault()
   board.redo()
 })
@@ -678,7 +689,7 @@ const scoreboardOpen = ref(false)
 onKeyStroke(
   'Tab',
   (e) => {
-    if (isTyping(e)) return
+    if (shortcutsBlocked(e)) return
     e.preventDefault()
     scoreboardOpen.value = true
   },
@@ -687,6 +698,7 @@ onKeyStroke(
 onKeyStroke(
   'Tab',
   (e) => {
+    if (props.active === false) return
     e.preventDefault()
     scoreboardOpen.value = false
   },
@@ -697,7 +709,7 @@ useEventListener(window, 'blur', () => (scoreboardOpen.value = false))
 
 // Esc stops following the current player.
 onKeyStroke('Escape', (e) => {
-  if (isTyping(e) || !followSteamId.value) return
+  if (shortcutsBlocked(e) || !followSteamId.value) return
   e.preventDefault()
   followSteamId.value = null
 })
