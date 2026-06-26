@@ -146,9 +146,11 @@
     "menu": {
       "open": "Tekrarı aç",
       "copyName": "Dosya adını kopyala",
-      "remove": "Geçmişten kaldır",
+      "export": "Dışa aktar",
+      "remove": "Sil",
       "rounds": "raunt",
-      "withVoice": "Oyuncu sesiyle"
+      "withVoice": "Oyuncu sesiyle",
+      "rename": "Yeniden adlandır"
     }
   },
   "viewer": {
@@ -378,6 +380,15 @@
     "device": "cihazda {quota} alanın {used} kullanılıyor",
     "empty": "Henüz demo analiz edilmedi.",
     "uploadCta": "Demo analiz et",
-    "allMaps": "Tüm haritalar"
+    "allMaps": "Tüm haritalar",
+    "removeTitle": "Demo kaldırılsın mı?",
+    "removeBody": "{name} yerel geçmişinizden kaldırılacak. Bu işlem geri alınamaz.",
+    "removeConfirm": "Kaldır",
+    "removeCancel": "İptal",
+    "preview": {
+      "watch": "İzle",
+      "round": "Raund {n}",
+      "desc": "İlk ölümden önceki raund anlık görüntüsü."
+    }
   }
 }

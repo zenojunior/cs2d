@@ -146,9 +146,11 @@
     "menu": {
       "open": "Replay öffnen",
       "copyName": "Dateinamen kopieren",
-      "remove": "Aus Verlauf entfernen",
+      "export": "Exportieren",
+      "remove": "Löschen",
       "rounds": "Runden",
-      "withVoice": "Mit Spielerstimmen"
+      "withVoice": "Mit Spielerstimmen",
+      "rename": "Umbenennen"
     }
   },
   "viewer": {
@@ -378,6 +380,15 @@
     "device": "{used} von {quota} auf dem Gerät belegt",
     "empty": "Noch keine Demo analysiert.",
     "uploadCta": "Demo analysieren",
-    "allMaps": "Alle Karten"
+    "allMaps": "Alle Karten",
+    "removeTitle": "Demo entfernen?",
+    "removeBody": "{name} wird aus deinem lokalen Verlauf entfernt. Diese Aktion kann nicht rückgängig gemacht werden.",
+    "removeConfirm": "Entfernen",
+    "removeCancel": "Abbrechen",
+    "preview": {
+      "watch": "Ansehen",
+      "round": "Runde {n}",
+      "desc": "Momentaufnahme der Runde vor dem ersten Kill."
+    }
   }
 }

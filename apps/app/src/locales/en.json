@@ -146,9 +146,11 @@
     "menu": {
       "open": "Open replay",
       "copyName": "Copy file name",
-      "remove": "Remove from history",
+      "export": "Export",
+      "remove": "Delete",
       "rounds": "rounds",
-      "withVoice": "With player voice"
+      "withVoice": "With player voice",
+      "rename": "Rename"
     }
   },
   "viewer": {
@@ -378,6 +380,15 @@
     "device": "{used} of {quota} used on device",
     "empty": "No demos analyzed yet.",
     "uploadCta": "Analyze a demo",
-    "allMaps": "All maps"
+    "allMaps": "All maps",
+    "removeTitle": "Remove demo?",
+    "removeBody": "{name} will be removed from your local history. This action cannot be undone.",
+    "removeConfirm": "Remove",
+    "removeCancel": "Cancel",
+    "preview": {
+      "watch": "Watch",
+      "round": "Round {n}",
+      "desc": "Round snapshot before the first kill."
+    }
   }
 }

@@ -18,6 +18,8 @@ import { exportArchive } from '@/viewer/ingest/demoArchive'
 export interface RecentDemo {
   id: string
   fileName: string
+  /** User-set display title. Falls back to `fileName` when unset. */
+  title?: string
   /**
    * Bytes of the parsed `.cs2dv` archive (replay + voice), which is what we
    * actually keep locally, NOT the raw `.dem` the user dropped in. Matches the
@@ -45,12 +47,11 @@ const INDEX_KEY = 'cs2dv:recent-demos'
 const DB_NAME = 'cs2dv-demos'
 const STORE = 'payloads'
 const STORE_COMMENTS = 'comments'
+// History is unbounded: demos persist until the user deletes them explicitly.
 // v3: forces onupgradeneeded to run again for databases that reached v2 without
 // the `comments` store (an interrupted/intermediate dev upgrade left some without
 // it), recreating any missing store via the idempotent guards below.
 const DB_VERSION = 3
-/** How many demos to keep in history (the oldest are dropped). */
-const MAX = 6
 
 // -------------------------------------------------------------- raw IndexedDB
 
@@ -250,15 +251,9 @@ export function useRecentDemos() {
       }
     }
 
-    const next = [meta, ...list.value].slice(0, MAX)
-    // Delete from IndexedDB the payloads + comments of demos that fell off the list.
-    const kept = new Set(next.map((d) => d.id))
-    for (const old of list.value) {
-      if (!kept.has(old.id)) {
-        void idbDelete(old.id)
-        void idbDeleteComments(old.id)
-      }
-    }
+    // History grows without bound: demos are only ever removed when the user
+    // explicitly deletes them (see `remove`), never auto-dropped.
+    const next = [meta, ...list.value]
     list.value = next
     writeIndex(next)
     return id
@@ -272,6 +267,18 @@ export function useRecentDemos() {
     } catch {
       return null
     }
+  }
+
+  /**
+   * Renames a demo. An empty title clears the override so the display falls
+   * back to the original file name.
+   */
+  function rename(id: string, title: string): void {
+    const trimmed = title.trim()
+    list.value = list.value.map((d) =>
+      d.id === id ? { ...d, title: trimmed || undefined } : d,
+    )
+    writeIndex(list.value)
   }
 
   /** Removes a demo from history (index + payload + comments). */
@@ -302,5 +309,5 @@ export function useRecentDemos() {
     }
   }
 
-  return { list, save, load, remove, loadComments, saveComments }
+  return { list, save, load, rename, remove, loadComments, saveComments }
 }
