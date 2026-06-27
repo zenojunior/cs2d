@@ -119,14 +119,15 @@ function goTab(tab: Tab) {
   if (id) router.push(`/${id}${TAB_SEGMENT[tab]}`)
 }
 
-// The heatmap's own pages (presence/kills/deaths/grenades), each a separate URL:
-// history demos carry it as a path segment (/:id/heatmaps/kills), external
-// replays as `?h=` (presence is the default, so it has no segment/param).
-type HeatmapSource = 'presence' | 'kills' | 'deaths' | 'grenades'
+// The heatmap's own pages (presence/grenades), each a separate URL: history demos
+// carry it as a path segment (/:id/heatmaps/grenades), external replays as `?h=`
+// (presence is the default, so it has no segment/param). Kills/deaths moved to the
+// Duels tab (see `duelSub`).
+type HeatmapSource = 'presence' | 'grenades'
 const heatmapSource = computed<HeatmapSource>(() => {
   const raw = route.params.sub || route.query.h
   const s = Array.isArray(raw) ? raw[0] : raw
-  return s === 'kills' || s === 'deaths' || s === 'grenades' ? s : 'presence'
+  return s === 'grenades' ? 'grenades' : 'presence'
 })
 function goHeatmapSource(src: HeatmapSource) {
   if (currentSrc.value) {
@@ -159,25 +160,58 @@ function goUtilitySub(sub: UtilitySub) {
   if (id) router.push(`/${id}/utilities${sub === 'throws' ? '' : `/${sub}`}`)
 }
 
-// The duels tab's own pages (matrix/opening/opening-map), each a separate URL:
-// history demos carry it as a path segment (/:id/duels/opening), external replays
-// as `?d=` (matrix is the default, so it has no segment/param).
-type DuelSub = 'matrix' | 'opening' | 'opening-map'
+// The duels tab's own pages (kills/deaths/stats/opening-map), each a separate URL:
+// history demos carry it as a path segment (/:id/duels/stats), external replays as
+// `?d=` (kills is the default, so it has no segment/param).
+type DuelSub = 'kills' | 'deaths' | 'stats' | 'opening-map'
 const duelSub = computed<DuelSub>(() => {
   const raw = route.params.sub || route.query.d
   const s = Array.isArray(raw) ? raw[0] : raw
-  return s === 'opening' || s === 'opening-map' ? s : 'matrix'
+  return s === 'deaths' || s === 'stats' || s === 'opening-map' ? s : 'kills'
 })
 function goDuelSub(sub: DuelSub) {
   if (currentSrc.value) {
-    const query = { ...route.query, tab: 'duels', d: sub === 'matrix' ? undefined : sub }
+    const query = { ...route.query, tab: 'duels', d: sub === 'kills' ? undefined : sub }
     if (!query.d) delete query.d
     router.push({ path: '/', query })
     return
   }
   const id = currentId.value
-  if (id) router.push(`/${id}/duels${sub === 'matrix' ? '' : `/${sub}`}`)
+  if (id) router.push(`/${id}/duels${sub === 'kills' ? '' : `/${sub}`}`)
 }
+
+// Legacy links: kills/deaths moved from the heatmap tab to Duels, and the duel
+// matrix + opening stats merged into the Duels "stats" page. Redirect old URLs so
+// shared links keep working.
+const seg1 = (v: unknown) => (Array.isArray(v) ? v[0] : v)
+watch(
+  () => [route.params.tab, route.params.sub, route.query.tab, route.query.h, route.query.d] as const,
+  () => {
+    const tabSeg = seg1(route.params.tab)
+    const sub = seg1(route.params.sub)
+    const id = seg1(route.params.id)
+    if (tabSeg === 'heatmaps' && (sub === 'kills' || sub === 'deaths')) {
+      if (id) void router.replace(`/${id}/duels/${sub}`)
+      return
+    }
+    if (tabSeg === 'duels' && (sub === 'matrix' || sub === 'opening')) {
+      if (id) void router.replace(`/${id}/duels/stats`)
+      return
+    }
+    const qTab = seg1(route.query.tab)
+    const h = seg1(route.query.h)
+    if (qTab === 'heatmaps' && (h === 'kills' || h === 'deaths')) {
+      const { h: _h, ...rest } = route.query
+      void router.replace({ path: '/', query: { ...rest, tab: 'duels', d: h } })
+      return
+    }
+    const d = seg1(route.query.d)
+    if (qTab === 'duels' && (d === 'matrix' || d === 'opening')) {
+      void router.replace({ path: '/', query: { ...route.query, tab: 'duels', d: 'stats' } })
+    }
+  },
+  { immediate: true },
+)
 
 // Landing-page ambient preview: rotates through a few maps, switching to the
 // next once each round finishes playing (see DemoPreviewLoop `@ended`). The
@@ -432,6 +466,7 @@ function onImportInput(e: Event) {
           :file-name="parser.fileName.value"
           :skip-freeze="skipFreeze"
           :autoplay="autoplay && activeTab === 'viewer'"
+          :active="activeTab === 'viewer'"
         />
       </div>
       <HeatmapView
@@ -488,18 +523,18 @@ function onImportInput(e: Event) {
           <button
             type="button"
             class="shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors"
-            :class="activeTab === 'economy' ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:text-ink-100'"
-            @click="goTab('economy')"
-          >
-            {{ t('tabs.economy') }}
-          </button>
-          <button
-            type="button"
-            class="shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors"
             :class="activeTab === 'duels' ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:text-ink-100'"
             @click="goTab('duels')"
           >
             {{ t('tabs.duels') }}
+          </button>
+          <button
+            type="button"
+            class="shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors"
+            :class="activeTab === 'economy' ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:text-ink-100'"
+            @click="goTab('economy')"
+          >
+            {{ t('tabs.economy') }}
           </button>
         </div>
       </Teleport>

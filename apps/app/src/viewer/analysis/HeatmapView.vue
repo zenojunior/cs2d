@@ -11,6 +11,7 @@ import { isKnifeRound, roundSides } from '@/viewer/analysis/utilityStats'
 import UiSelect from '@/ui/UiSelect.vue'
 import RoundTimeRange from '@/viewer/analysis/RoundTimeRange.vue'
 import RoundStrip from '@/viewer/analysis/RoundStrip.vue'
+import { freezeSeconds, maxLiveRoundTime } from '@/viewer/analysis/roundTime'
 import { useI18n } from '@/i18n'
 
 const { t } = useI18n()
@@ -25,13 +26,18 @@ type Source = 'kills' | 'deaths' | 'presence' | 'grenades'
 
 const props = defineProps<{
   replay: Replay
-  /** Active heatmap page (presence/kills/deaths/grenades), driven by the URL. */
+  /** Active page. Presence/grenades are the heatmap tab's own pages; kills/deaths
+   *  are reused from the Duels tab (`embedded`), where they live as point maps. */
   source: Source
+  /** When embedded in another tab (Duels), hide the internal sub-navigation: the
+   *  host tab provides its own. */
+  embedded?: boolean
 }>()
 
 const emit = defineEmits<{
-  /** Switch heatmap page (the parent maps it to a URL). */
-  (e: 'update:source', value: Source): void
+  /** Switch heatmap page (the parent maps it to a URL). Only the tab's own pages
+   *  (presence/grenades) are emitted; kills/deaths are driven by the Duels tab. */
+  (e: 'update:source', value: 'presence' | 'grenades'): void
   /** Seek the replay to a kill (clicked on a kill/death marker). */
   (e: 'jump', payload: { roundIndex: number; t: number }): void
 }>()
@@ -70,14 +76,10 @@ watch(teamFilter, (team) => {
 // Round-time window (live seconds, i.e. since the round went live), so the
 // heatmap can be narrowed to a moment of the round (e.g. the last X seconds).
 const timeRange = ref<number[]>([0, 0])
-/** Freeze-time duration of a round, in seconds (event/frame `t` is since freeze). */
-function freezeSeconds(round: Round): number {
-  return (round.startTick - round.freezeStartTick) / props.replay.demoTickRate
-}
 // Absolute tick ranges of match pauses (tactical timeouts / tech pauses). While
 // paused, every player stands frozen at spawn, so those frames would pile
 // hundreds of samples onto a handful of base spots and dwarf the real positions.
-// They are dropped from the presence heatmap (and from the slider's range below).
+// They are dropped from the presence heatmap.
 const pauseRanges = computed(() =>
   (props.replay.pauses ?? []).map((p) => [p.startTick, p.endTick] as const),
 )
@@ -85,22 +87,20 @@ function isPaused(tick: number): boolean {
   for (const [start, end] of pauseRanges.value) if (tick >= start && tick <= end) return true
   return false
 }
-/** Longest live round time across the match (excluding pauses): the slider's
- *  upper bound. The last frame can fall inside a pause, so scan for the latest
- *  non-paused frame rather than just taking `frames.at(-1)`. */
-const maxRoundTime = computed(() => {
-  let max = 0
-  for (const round of props.replay.rounds) {
-    const fz = freezeSeconds(round)
-    for (const f of round.frames) {
-      if (isPaused(f.tick)) continue
-      max = Math.max(max, f.t - fz)
-    }
-  }
-  return Math.ceil(max)
+// Slider's upper bound: longest live round time across the match (pauses excluded).
+const maxRoundTime = computed(() => maxLiveRoundTime(props.replay))
+// Default window per page: kills/deaths span the whole round (those events land
+// late, not just in the opening), so they start at the full range; presence and
+// grenades default to the first 30 live seconds (mostly opening positioning).
+const defaultMaxTime = computed(() =>
+  props.source === 'kills' || props.source === 'deaths'
+    ? maxRoundTime.value
+    : Math.min(30, maxRoundTime.value),
+)
+// Start (and reset on demo change or page switch) at that page's natural window.
+watch([maxRoundTime, () => props.source], () => (timeRange.value = [0, defaultMaxTime.value]), {
+  immediate: true,
 })
-// Start (and reset, if the demo changes) with the first 30 live seconds selected.
-watch(maxRoundTime, (m) => (timeRange.value = [0, Math.min(30, m)]), { immediate: true })
 const isFullRange = computed(
   () => timeRange.value[0] <= 0 && timeRange.value[1] >= maxRoundTime.value,
 )
@@ -116,6 +116,9 @@ const SOURCE_META: Record<Source, { labelKey: string; identity: boolean }> = {
 // Identity (side/player) only exists when the point carries who it is. Grenade
 // detonations do not carry the thrower, so the filter is ignored for them.
 const hasIdentity = computed(() => SOURCE_META[props.source].identity)
+// Pages owned by the heatmap tab's own sub-nav. Kills/deaths are reached from the
+// Duels tab instead (they are point maps, not density), so they are not listed.
+const NAV_SOURCES: ('presence' | 'grenades')[] = ['presence', 'grenades']
 
 /** A player's side in that round, from the live frames (so the pistol round's
  *  post-knife side swap doesn't invert CT/T; see `roundSides`). Cached per round. */
@@ -148,6 +151,8 @@ interface Pt {
   z: number
   side: Side | null
   steamId: string | null
+  /** Index of the round this point came from (for the coverage dedupe). */
+  roundIndex: number
   /** Live round time of the point, in seconds (since the round went live). */
   t: number
   /** Kill description (kills/deaths sources), for the click popover + jump. */
@@ -195,7 +200,7 @@ const rawPoints = computed<Pt[]>(() => {
     if (roundFilter.value !== 'all' && idx !== roundFilter.value) return
     // The knife round has no meaningful positions to map, so skip it entirely.
     if (isKnifeRound(round)) return
-    const fz = freezeSeconds(round)
+    const fz = freezeSeconds(round, props.replay.demoTickRate)
     if (props.source === 'deaths') {
       for (const ev of round.events) {
         if (ev.type !== 'kill') continue
@@ -205,6 +210,7 @@ const rawPoints = computed<Pt[]>(() => {
           z: ev.z,
           steamId: ev.victimSteamId,
           side: sideInRound(round, idx, ev.victimSteamId),
+          roundIndex: idx,
           t: Math.max(0, ev.t - fz),
           kill: killInfo(round, idx, ev),
         })
@@ -222,6 +228,7 @@ const rawPoints = computed<Pt[]>(() => {
           z: pos.z,
           steamId: ev.attackerSteamId,
           side: sideInRound(round, idx, ev.attackerSteamId),
+          roundIndex: idx,
           t: Math.max(0, ev.t - fz),
           kill: killInfo(round, idx, ev),
         })
@@ -236,7 +243,7 @@ const rawPoints = computed<Pt[]>(() => {
         if (isPaused(f.tick)) continue
         for (const p of f.players) {
           if (!p.alive) continue
-          out.push({ x: p.x, y: p.y, z: p.z, side: p.side, steamId: p.steamId, t: Math.max(0, f.t - fz) })
+          out.push({ x: p.x, y: p.y, z: p.z, side: p.side, steamId: p.steamId, roundIndex: idx, t: Math.max(0, f.t - fz) })
         }
       }
     }
@@ -261,8 +268,34 @@ interface Plot {
   key: string
   label?: string
   radar: string
-  points: { x: number; y: number; side: Side | null; kill?: KillInfo }[]
+  points: { x: number; y: number; side: Side | null; steamId: string | null; roundIndex: number; kill?: KillInfo }[]
 }
+
+// Presence weighting (presence page only): 'coverage' counts each spot a player
+// visited once per round, so holding an angle for a long time doesn't dominate
+// "all rounds"; 'time' keeps the raw per-frame dwell weighting. See HeatmapPlot.
+const presenceWeight = ref<'coverage' | 'time'>('coverage')
+
+// Kills/deaths pages list every engagement below the filters (like the throws
+// page). Hovering a row emphasizes its path on the plot (`highlight`); clicking
+// opens the kill popover there (`openKill`). Keyed by round + instant, which the
+// plot matches against its points.
+const hoverKill = ref<{ roundIndex: number; t: number } | null>(null)
+const openKill = ref<{ roundIndex: number; t: number } | null>(null)
+const hasKillList = computed(() => props.source === 'kills' || props.source === 'deaths')
+/** The filtered engagements, in chronological order, for the side list. */
+const killList = computed(() => (hasKillList.value ? points.value.filter((p) => p.kill) : []))
+watch([() => props.source, () => points.value], () => {
+  hoverKill.value = null
+  openKill.value = null
+})
+
+function fmtTime(secs: number): string {
+  const s = Math.max(0, Math.floor(secs))
+  return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`
+}
+const isActiveKill = (p: Pt) =>
+  !!openKill.value && p.kill?.roundIndex === openKill.value.roundIndex && p.kill?.t === openKill.value.t
 
 // Discrete events (kills/deaths) read better as individual colored dots than as
 // a density blob; presence stays a heatmap.
@@ -306,18 +339,19 @@ const rangeColor = computed(() => {
 
 <template>
   <div class="flex h-full w-full flex-col">
-    <!-- Sub-navigation: Presence / Kills / Deaths / Grenades. Scrolls sideways
-         on narrow viewports instead of overflowing. -->
-    <div class="flex shrink-0 items-center justify-start gap-0.5 overflow-x-auto border-b border-ink-800 px-3 py-2 scrollbar-none sm:justify-center">
+    <!-- Sub-navigation: Presence / Grenades. Scrolls sideways on narrow viewports
+         instead of overflowing. Hidden when embedded (the Duels tab for kills/
+         deaths provides its own). -->
+    <div v-if="!embedded" class="flex shrink-0 items-center justify-start gap-0.5 overflow-x-auto border-b border-ink-800 px-3 py-2 scrollbar-none sm:justify-center">
       <button
-        v-for="(meta, key) in SOURCE_META"
+        v-for="key in NAV_SOURCES"
         :key="key"
         type="button"
         class="shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors"
         :class="source === key ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:text-ink-100'"
-        @click="emit('update:source', key as Source)"
+        @click="emit('update:source', key)"
       >
-        {{ t(meta.labelKey) }}
+        {{ t(SOURCE_META[key].labelKey) }}
       </button>
     </div>
 
@@ -326,10 +360,20 @@ const rangeColor = computed(() => {
 
     <div v-else class="flex min-h-0 flex-1 flex-col sm:flex-row">
     <!-- Filters panel: full width on top on mobile, fixed side column from sm up. -->
-    <aside class="flex max-h-[40vh] w-full shrink-0 flex-col gap-4 overflow-y-auto border-b border-ink-800 bg-ink-900/40 p-4 sm:max-h-none sm:w-64 sm:border-b-0 sm:border-r">
+    <aside
+      class="flex max-h-[40vh] w-full shrink-0 flex-col overflow-hidden border-b border-ink-800 bg-ink-900/40 sm:max-h-none sm:border-b-0 sm:border-r"
+      :class="embedded ? 'sm:w-96' : 'sm:w-64'"
+    >
+      <!-- Filters column. On kills/deaths a scrollable engagement list sits below,
+           so the filters keep their natural height; otherwise they take the whole
+           column. -->
+      <div
+        class="flex flex-col gap-4 p-4"
+        :class="hasKillList ? 'shrink-0 border-b border-ink-800' : 'min-h-0 flex-1 overflow-y-auto'"
+      >
       <!-- Filters: a compact grid on mobile (Side full width, Team/Player side by
            side) to save vertical space; a stacked column from sm up, where
-           sm:contents dissolves this wrapper back into the aside's flex column. -->
+           sm:contents dissolves this wrapper back into the filters column. -->
       <div class="grid grid-cols-2 gap-2 sm:contents">
       <!-- Side -->
       <div class="col-span-2" :class="{ 'pointer-events-none opacity-40': !hasIdentity }">
@@ -362,9 +406,77 @@ const rangeColor = computed(() => {
       </div>
       </div>
 
+      <!-- Presence weighting: coverage (each spot once per round) vs dwell time
+           (raw per-frame). Only meaningful for the presence heatmap. -->
+      <div v-if="source === 'presence'">
+        <label class="mb-1.5 block text-xs font-medium text-ink-300">{{ t('heatmap.weight') }}</label>
+        <div class="flex overflow-hidden rounded-md border border-ink-700">
+          <button
+            v-for="w in (['coverage', 'time'] as const)"
+            :key="w"
+            type="button"
+            class="flex-1 cursor-pointer px-2 py-1.5 text-xs transition-colors"
+            :class="presenceWeight === w ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:bg-ink-800'"
+            @click="presenceWeight = w"
+          >
+            {{ w === 'coverage' ? t('heatmap.coverage') : t('heatmap.dwellTime') }}
+          </button>
+        </div>
+        <p class="mt-1.5 text-xs text-ink-600">
+          {{ presenceWeight === 'coverage' ? t('heatmap.coverageHint') : t('heatmap.dwellTimeHint') }}
+        </p>
+      </div>
+
       <p v-if="levels" class="text-xs text-ink-600">
         {{ t('heatmap.multiLevelNote', { map: replay.map.replace(/^de_/, '') }) }}
       </p>
+      </div>
+
+      <!-- Engagement list (kills/deaths): hovering a row emphasizes its path on
+           the plot, clicking opens the kill popover there. Mirrors the throws page. -->
+      <ul v-if="hasKillList" class="min-h-0 flex-1 overflow-y-auto p-1">
+        <li v-if="!killList.length" class="px-3 py-6 text-center text-xs text-ink-500">
+          {{ t('heatmap.empty') }}
+        </li>
+        <li v-for="(p, i) in killList" :key="i">
+          <button
+            type="button"
+            class="flex w-full cursor-pointer items-center gap-1.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-ink-800"
+            :class="{ 'bg-ink-800': isActiveKill(p) }"
+            @click="openKill = { roundIndex: p.kill!.roundIndex, t: p.kill!.t }"
+            @mouseenter="hoverKill = { roundIndex: p.kill!.roundIndex, t: p.kill!.t }"
+            @mouseleave="hoverKill = null"
+          >
+            <span class="min-w-0 flex-1 truncate text-xs" :style="{ color: p.kill!.attackerColor }">{{
+              p.kill!.attackerName || '—'
+            }}</span>
+            <img
+              v-if="p.kill!.assistedFlash"
+              src="/weapons/flash.svg"
+              alt="flash"
+              class="h-3 w-3 shrink-0 object-contain"
+            />
+            <img
+              v-if="p.kill!.weaponIcon"
+              :src="p.kill!.weaponIcon"
+              :alt="p.kill!.weapon"
+              class="h-2.5 w-6 shrink-0 object-contain"
+            />
+            <img
+              v-if="p.kill!.headshot"
+              src="/weapons/headshot.svg"
+              alt="hs"
+              class="h-3 w-3 shrink-0 object-contain"
+            />
+            <span class="min-w-0 flex-1 truncate text-right text-xs" :style="{ color: p.kill!.victimColor }">{{
+              p.kill!.victimName
+            }}</span>
+            <span class="shrink-0 font-mono text-[11px] text-ink-500"
+              >R{{ p.kill!.roundNumber }} · {{ fmtTime(p.t) }}</span
+            >
+          </button>
+        </li>
+      </ul>
     </aside>
 
     <!-- Plots: one per floor (side by side) or a single one -->
@@ -380,8 +492,11 @@ const rangeColor = computed(() => {
           :subject="source === 'kills' ? 'attacker' : source === 'deaths' ? 'victim' : undefined"
           :label="plot.label"
           :mode="plotMode"
+          :weight="source === 'presence' ? presenceWeight : undefined"
           :marker="plotMarker"
           :marker-scale="0.6"
+          :highlight="hoverKill"
+          :open-kill="openKill"
           @jump="(p) => emit('jump', p)"
         />
       </div>

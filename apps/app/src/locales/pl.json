@@ -97,9 +97,12 @@
   },
   "duels": {
     "tabs": {
+      "stats": "Statystyki",
       "matrix": "Macierz pojedynków",
       "opening": "Statystyki pierwszego pojedynku",
-      "opening-map": "Mapa pierwszego pojedynku"
+      "opening-map": "Pierwszy pojedynek",
+      "kills": "Zabójstwa",
+      "deaths": "Śmierci"
     },
     "matrix": {
       "cell": "{killer} zabił {victim} {count} razy"
@@ -345,7 +348,13 @@
     "close": "Zamknij",
     "time": "Czas rundy",
     "multiLevelNote": "{map} ma dwa piętra: każdy wykres pokazuje jeden poziom.",
-    "team": "Drużyna"
+    "team": "Drużyna",
+    "empty": "Brak wyników",
+    "weight": "Ważenie",
+    "coverage": "Pokrycie",
+    "dwellTime": "Czas postoju",
+    "coverageHint": "Każde miejsce liczy się raz na rundę: stanie w miejscu nie dominuje mapy.",
+    "dwellTimeHint": "Im dłużej w danym miejscu, tym bardziej się rozgrzewa."
   },
   "economy": {
     "outcomesTitle": "Wyniki rund według typu ekonomii",

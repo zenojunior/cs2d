@@ -23,7 +23,7 @@ const CLIP_TAIL = 2
  * independent); zoom/pan just redraws that buffer with a transform.
  */
 const props = defineProps<{
-  points: { x: number; y: number; side?: Side | null; kill?: KillInfo }[]
+  points: { x: number; y: number; side?: Side | null; steamId?: string | null; roundIndex?: number; kill?: KillInfo }[]
   calibration: MapCalibration
   /** Radar image of this floor. */
   radar: string
@@ -34,6 +34,11 @@ const props = defineProps<{
   label?: string
   /** 'heat' (density blobs) or 'dots' (one marker per point). Defaults to heat. */
   mode?: 'heat' | 'dots'
+  /** How presence samples are weighted (heat mode):
+   *  - 'time' (default): every frame counts, so a spot held longer burns hotter.
+   *  - 'coverage': each (round, player) counts once per cell, so standing still
+   *    doesn't pile up samples; "was here" weighs the same as a brief pass. */
+  weight?: 'time' | 'coverage'
   /** Marker shape in dots mode: a filled circle or a skull (e.g. for deaths). */
   marker?: 'dot' | 'skull'
   /** Draw a faint shooter -> victim line for every point that carries a kill
@@ -129,6 +134,16 @@ function blur(grid: Float32Array, w: number, h: number, r: number, passes: numbe
   }
 }
 
+/** The p-th percentile (0..1) of the grid's non-zero cells. Used as the heat
+ *  normalization divisor so outliers saturate instead of crushing everything. */
+function heatPercentile(grid: Float32Array, p: number): number {
+  const nz: number[] = []
+  for (let i = 0; i < grid.length; i++) if (grid[i] > 0) nz.push(grid[i])
+  if (!nz.length) return 0
+  nz.sort((a, b) => a - b)
+  return nz[Math.min(nz.length - 1, Math.floor(nz.length * p))]
+}
+
 function buildHeat() {
   const pts = props.points
   const hctx = heatCanvas.getContext('2d')!
@@ -141,25 +156,37 @@ function buildHeat() {
   }
 
   const grid = new Float32Array(HEAT * HEAT)
+  // Coverage: count each (round, player) only once per cell, so holding one spot
+  // for a long time doesn't pile up samples and dominate the map.
+  const seen = props.weight === 'coverage' ? new Set<string>() : null
   for (const p of pts) {
     const { fx, fy } = worldToFraction(props.calibration, p.x, p.y)
     if (fx < 0 || fx >= 1 || fy < 0 || fy >= 1) continue
     const gx = Math.min(HEAT - 1, Math.floor(fx * HEAT))
     const gy = Math.min(HEAT - 1, Math.floor(fy * HEAT))
-    grid[gy * HEAT + gx] += 1
+    const cell = gy * HEAT + gx
+    if (seen) {
+      const key = `${p.roundIndex}:${p.steamId}:${cell}`
+      if (seen.has(key)) continue
+      seen.add(key)
+    }
+    grid[cell] += 1
   }
   blur(grid, HEAT, HEAT, BLUR_RADIUS, BLUR_PASSES)
 
-  let max = 0
-  for (let i = 0; i < grid.length; i++) if (grid[i] > max) max = grid[i]
-  if (max <= 0) {
+  // Normalize against a high percentile, not the absolute max: a single very hot
+  // spot (e.g. a player who held one angle for most of a round) would otherwise
+  // become the divisor and wash the rest of the map down to nothing. Anything
+  // above the percentile just saturates at full intensity.
+  const denom = heatPercentile(grid, 0.99)
+  if (denom <= 0) {
     render()
     return
   }
 
   const img = hctx.createImageData(HEAT, HEAT)
   for (let i = 0; i < grid.length; i++) {
-    const v = Math.sqrt(grid[i] / max)
+    const v = Math.sqrt(Math.min(1, grid[i] / denom))
     if (v <= 0.02) continue
     const [r, g, b] = heatColor(v)
     const o = i * 4
@@ -662,7 +689,7 @@ watch(
     radarImg.src = src
   },
 )
-watch([() => props.points, () => props.mode, () => props.marker], () => {
+watch([() => props.points, () => props.mode, () => props.marker, () => props.weight], () => {
   selected.value = null
   hovered.value = null
   buildHeat()

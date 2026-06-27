@@ -97,9 +97,12 @@
   },
   "duels": {
     "tabs": {
+      "stats": "Statistiken",
       "matrix": "Duell-Matrix",
       "opening": "Eröffnungsduell-Statistik",
-      "opening-map": "Eröffnungsduell-Karte"
+      "opening-map": "Eröffnungsduell",
+      "kills": "Kills",
+      "deaths": "Tode"
     },
     "matrix": {
       "cell": "{killer} tötete {victim} {count}-mal"
@@ -345,7 +348,13 @@
     "close": "Schließen",
     "time": "Rundenzeit",
     "multiLevelNote": "{map} hat zwei Etagen: jeder Plot zeigt eine Ebene.",
-    "team": "Team"
+    "team": "Team",
+    "empty": "Keine Ergebnisse",
+    "weight": "Gewichtung",
+    "coverage": "Abdeckung",
+    "dwellTime": "Verweildauer",
+    "coverageHint": "Jeder Ort zählt einmal pro Runde: Stillstehen dominiert die Karte nicht.",
+    "dwellTimeHint": "Je länger an einem Ort, desto heißer wird er."
   },
   "economy": {
     "outcomesTitle": "Rundenergebnisse nach Economy-Typ",

@@ -403,10 +403,11 @@ function onLeave() {
       />
 
       <!-- Floor selector (multi-level maps only, e.g. Nuke): over the radar,
-           top-centered. Swaps the background radar and the shown throws. -->
+           bottom-centered like the 2D replay. Swaps the background radar and the
+           shown throws. -->
       <div
         v-if="mapLevels"
-        class="absolute inset-x-0 top-3 flex justify-center"
+        class="absolute inset-x-0 bottom-3 flex justify-center"
       >
         <div
           class="flex w-fit items-center gap-0.5 rounded-md border border-ink-700 bg-ink-900/80 p-0.5 backdrop-blur"
@@ -424,8 +425,10 @@ function onLeave() {
         </div>
       </div>
 
+      <!-- Hidden on multi-level maps, where the bottom-centered floor selector
+           would otherwise overlap it. -->
       <p
-        v-if="!previewPath"
+        v-if="!previewPath && !mapLevels"
         class="pointer-events-none absolute inset-x-0 bottom-4 text-center text-xs text-ink-500"
       >
         {{ tr('grenades.hint') }}

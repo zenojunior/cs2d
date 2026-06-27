@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import type { Replay } from '@/viewer/domain/schema'
-import DuelMatrixView from '@/viewer/analysis/DuelMatrixView.vue'
-import OpeningDuelsView from '@/viewer/analysis/OpeningDuelsView.vue'
+import DuelStatsView from '@/viewer/analysis/DuelStatsView.vue'
 import OpeningDuelMapView from '@/viewer/analysis/OpeningDuelMapView.vue'
+import HeatmapView from '@/viewer/analysis/HeatmapView.vue'
 import { useI18n } from '@/i18n'
 
 const { t } = useI18n()
 
 /**
  * Duels tab: groups the player-vs-player analysis under one tab, split by a
- * sub-navigation into "Matrix" (the duel matrix), "Opening" (first-duel stats)
- * and "Opening map" (first-duel positions on the radar).
+ * sub-navigation into the kills/deaths point maps (reused from HeatmapView, point
+ * overlays rather than density), "Stats" (the duel matrix + opening-duel stats
+ * stacked) and "Opening duel" (first-duel positions on the radar).
  */
-type Sub = 'matrix' | 'opening' | 'opening-map'
+type Sub = 'kills' | 'deaths' | 'stats' | 'opening-map'
 
 const props = defineProps<{
   replay: Replay
@@ -27,7 +28,7 @@ const emit = defineEmits<{
   (e: 'jump', payload: { roundIndex: number; t: number }): void
 }>()
 
-const SUBS: Sub[] = ['matrix', 'opening', 'opening-map']
+const SUBS: Sub[] = ['kills', 'deaths', 'opening-map', 'stats']
 </script>
 
 <template>
@@ -49,9 +50,16 @@ const SUBS: Sub[] = ['matrix', 'opening', 'opening-map']
 
     <!-- Active sub-view -->
     <div class="min-h-0 flex-1">
-      <DuelMatrixView v-if="sub === 'matrix'" :replay="props.replay" />
-      <OpeningDuelsView v-else-if="sub === 'opening'" :replay="props.replay" @jump="(p) => emit('jump', p)" />
-      <OpeningDuelMapView v-else :replay="props.replay" @jump="(p) => emit('jump', p)" />
+      <DuelStatsView v-if="sub === 'stats'" :replay="props.replay" @jump="(p) => emit('jump', p)" />
+      <OpeningDuelMapView v-else-if="sub === 'opening-map'" :replay="props.replay" @jump="(p) => emit('jump', p)" />
+      <!-- Kills/deaths point maps, reused from the heatmap tab (embedded: no own nav). -->
+      <HeatmapView
+        v-else
+        :replay="props.replay"
+        :source="(sub as 'kills' | 'deaths')"
+        embedded
+        @jump="(p) => emit('jump', p)"
+      />
     </div>
   </div>
 </template>

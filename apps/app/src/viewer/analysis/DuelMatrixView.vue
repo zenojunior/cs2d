@@ -38,7 +38,9 @@ function kills(killer: string, victim: string): number {
 </script>
 
 <template>
-  <div class="h-full w-full overflow-auto [scrollbar-gutter:stable]">
+  <!-- No own vertical scroll: stacked inside the Stats page, which scrolls. Keeps
+       horizontal scroll for wide matrices (many players). -->
+  <div class="w-full overflow-x-auto">
     <div class="mx-auto w-fit px-6 py-8">
       <table class="border-separate border-spacing-1">
         <thead>

@@ -97,9 +97,12 @@
   },
   "duels": {
     "tabs": {
+      "stats": "İstatistikler",
       "matrix": "Düello matrisi",
       "opening": "İlk düello istatistikleri",
-      "opening-map": "İlk düello haritası"
+      "opening-map": "İlk düello",
+      "kills": "Öldürmeler",
+      "deaths": "Ölümler"
     },
     "matrix": {
       "cell": "{killer}, {victim} oyuncusunu {count} kez öldürdü"
@@ -345,7 +348,13 @@
     "close": "Kapat",
     "time": "Tur süresi",
     "multiLevelNote": "{map} iki katlıdır: her grafik bir katı gösterir.",
-    "team": "Takım"
+    "team": "Takım",
+    "empty": "Sonuç yok",
+    "weight": "Ağırlıklandırma",
+    "coverage": "Kapsama",
+    "dwellTime": "Bekleme süresi",
+    "coverageHint": "Her nokta tur başına bir kez sayılır: sabit durmak haritaya hâkim olmaz.",
+    "dwellTimeHint": "Bir noktada ne kadar uzun kalınırsa o kadar ısınır."
   },
   "economy": {
     "outcomesTitle": "Ekonomi türüne göre raunt sonuçları",

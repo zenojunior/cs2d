@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { GrenadeEvent, GrenadeKind, Replay, Round, Side } from '@/viewer/domain/schema'
 import { MAP_CALIBRATION } from '@/viewer/domain/calibration'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
 import { KIND_ORDER, grenadeIconStyle } from '@/viewer/domain/grenades'
 import HeatmapPlot from '@/viewer/analysis/HeatmapPlot.vue'
-import { groupTeams, isKnifeRound, roundSides } from '@/viewer/analysis/utilityStats'
+import RoundStrip from '@/viewer/analysis/RoundStrip.vue'
+import RoundTimeRange from '@/viewer/analysis/RoundTimeRange.vue'
+import { freezeSeconds, maxLiveRoundTime } from '@/viewer/analysis/roundTime'
+import { groupTeams, isKnifeRound } from '@/viewer/analysis/utilityStats'
 import { useI18n } from '@/i18n'
 
 const { t } = useI18n()
 
 /**
  * Heatmap of grenade detonations, as a sub-tab of the Utilities page. Filterable
- * by grenade type, team and a multi-select of rounds. On multi-floor maps (e.g.
- * Nuke) it renders one plot per level.
+ * by grenade type, team and round (a single round or all, via the shared
+ * RoundStrip timeline). On multi-floor maps (e.g. Nuke) one plot per level.
  *
  * Detonation events carry the position (x/y/z) but not the thrower, so the team
  * is recovered by matching each detonation to the grenade arc (`grenadePaths`,
@@ -39,39 +42,16 @@ const startSideById = computed(() => {
   return m
 })
 
-// --- Round multi-select (checkboxes) ---
-// Knife rounds carry no real utility and don't count on the scoreboard, so they
-// are not offered as a filter option.
-const selectableRounds = computed(() =>
-  props.replay.rounds
-    .map((round, index) => ({ round, index }))
-    .filter(({ round }) => !isKnifeRound(round)),
-)
-const selectableIndices = computed(() => selectableRounds.value.map((r) => r.index))
-const selectedRounds = ref<Set<number>>(new Set(selectableIndices.value))
-const allSelected = computed(() => selectedRounds.value.size === selectableIndices.value.length)
-function toggleAllRounds() {
-  selectedRounds.value = allSelected.value ? new Set() : new Set(selectableIndices.value)
-}
-function toggleRound(i: number) {
-  const next = new Set(selectedRounds.value)
-  next.has(i) ? next.delete(i) : next.add(i)
-  selectedRounds.value = next
-}
+// Round filter: a single round or all of them, via the shared RoundStrip
+// timeline (matching the kills/deaths heatmaps). Knife rounds are hidden there
+// and skipped below.
+const roundFilter = ref<number | 'all'>('all')
 
-/** Side the selected team played in a round (a team plays both sides over the
- *  match), or null when no team is selected. Drives the round checkbox color. */
-const sideCache = new Map<number, Map<string, Side>>()
-function teamSideInRound(idx: number): Side | null {
-  if (teamFilter.value === 'all') return null
-  let sides = sideCache.get(idx)
-  if (!sides) sideCache.set(idx, (sides = roundSides(props.replay.rounds[idx])))
-  for (const p of teams.value[teamFilter.value].players) {
-    const s = sides.get(p.steamId)
-    if (s) return s
-  }
-  return null
-}
+// Round-time window (live seconds), to narrow detonations to a moment of the
+// round (e.g. only execute-time smokes). Defaults to the whole round.
+const maxRoundTime = computed(() => maxLiveRoundTime(props.replay))
+const timeRange = ref<number[]>([0, 0])
+watch(maxRoundTime, (m) => (timeRange.value = [0, m]), { immediate: true })
 
 /** Thrower's team for a detonation (0/1), or null when it can't be resolved. */
 function teamOfDetonation(round: Round, det: GrenadeEvent): 0 | 1 | null {
@@ -98,13 +78,23 @@ interface Pt {
   z: number
 }
 
-/** Grenade detonations matching the kind/team/round filters (before the per-plot level filter). */
+/** Grenade detonations matching the kind/team/round/time filters (before the per-plot level filter). */
 const points = computed<Pt[]>(() => {
   const out: Pt[] = []
+  const [lo, hi] = timeRange.value
   props.replay.rounds.forEach((round, idx) => {
-    if (!selectedRounds.value.has(idx)) return
+    if (roundFilter.value !== 'all' && idx !== roundFilter.value) return
+    // Knife rounds carry no real utility, so they're excluded from "all" too.
+    if (isKnifeRound(round)) return
+    const fz = freezeSeconds(round, props.replay.demoTickRate)
     for (const ev of round.events) {
       if (ev.type !== 'grenade') continue
+      // Keep the grenade if its active window (detonation -> effect end, in live
+      // seconds) overlaps the selected one: a smoke/molotov that lingers into the
+      // window counts even if it went off earlier. HE/flash are ~instant.
+      const start = Math.max(0, ev.t - fz)
+      const end = Math.max(0, ev.endT - fz)
+      if (end < lo || start > hi) continue
       if (kindFilter.value !== 'all' && ev.kind !== kindFilter.value) continue
       if (teamFilter.value !== 'all' && teamOfDetonation(round, ev) !== teamFilter.value) continue
       out.push({ x: ev.x, y: ev.y, z: ev.z })
@@ -191,38 +181,14 @@ const plots = computed<Plot[]>(() => {
         </div>
       </div>
 
-      <!-- Rounds (multi-select) -->
-      <div class="flex min-h-0 flex-col">
-        <label class="mb-1.5 block text-xs font-medium text-ink-300">{{ t('heatmap.round') }}</label>
-        <label class="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-xs text-ink-200 hover:bg-ink-800">
-          <input type="checkbox" :checked="allSelected" class="accent-surge-500" @change="toggleAllRounds" />
-          {{ t('heatmap.allRounds') }}
-        </label>
-        <div class="mt-1 grid grid-cols-2 gap-0.5">
-          <label
-            v-for="{ round, index } in selectableRounds"
-            :key="index"
-            class="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-xs text-ink-300 hover:bg-ink-800"
-          >
-            <input
-              type="checkbox"
-              :checked="selectedRounds.has(index)"
-              class="accent-surge-500"
-              :style="teamSideInRound(index) ? { accentColor: SIDE_COLOR[teamSideInRound(index)!] } : undefined"
-              @change="toggleRound(index)"
-            />
-            {{ round.number }}
-          </label>
-        </div>
-      </div>
-
       <p v-if="levels" class="text-xs text-ink-600">
         {{ t('heatmap.multiLevelNote', { map: replay.map.replace(/^de_/, '') }) }}
       </p>
     </aside>
 
     <!-- Plots: one per floor (side by side) or a single one -->
-    <div class="flex min-h-0 min-w-0 flex-1 divide-x divide-ink-800">
+    <div class="relative min-h-0 min-w-0 flex-1">
+      <div class="flex h-full divide-x divide-ink-800">
       <HeatmapPlot
         v-for="plot in plots"
         :key="plot.key"
@@ -231,6 +197,26 @@ const plots = computed<Plot[]>(() => {
         :radar="plot.radar"
         :label="plot.label"
       />
+      </div>
+
+      <!-- Round timeline: floats over the heatmap, matching the kills/deaths
+           pages. Hovering reveals the round bubbles above the bar. -->
+      <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-center bg-gradient-to-t from-ink-950/80 to-transparent p-4">
+        <div class="group pointer-events-auto w-full max-w-xl rounded-lg border border-ink-700 bg-ink-900/80 px-3 py-2 backdrop-blur">
+          <RoundStrip
+            v-model="roundFilter"
+            :rounds="replay.rounds"
+            :demo-tick-rate="replay.demoTickRate"
+            allow-all
+            hide-knife
+          />
+          <div class="mb-1 flex items-center justify-between">
+            <label class="text-xs font-medium text-ink-300">{{ t('heatmap.time') }}</label>
+            <span class="font-mono text-xs text-ink-400">{{ timeRange[0] }}s – {{ timeRange[1] }}s</span>
+          </div>
+          <RoundTimeRange v-model="timeRange" :max="maxRoundTime" />
+        </div>
+      </div>
     </div>
   </div>
 </template>

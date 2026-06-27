@@ -97,9 +97,12 @@
   },
   "duels": {
     "tabs": {
+      "stats": "Statistiques",
       "matrix": "Matrice des duels",
       "opening": "Statistiques du premier duel",
-      "opening-map": "Carte du premier duel"
+      "opening-map": "Premier duel",
+      "kills": "Frags",
+      "deaths": "Morts"
     },
     "matrix": {
       "cell": "{killer} a tué {victim} {count} fois"
@@ -345,7 +348,13 @@
     "close": "Fermer",
     "time": "Temps de manche",
     "multiLevelNote": "{map} a deux étages : chaque graphique montre un niveau.",
-    "team": "Équipe"
+    "team": "Équipe",
+    "empty": "Aucun résultat",
+    "weight": "Pondération",
+    "coverage": "Couverture",
+    "dwellTime": "Présence",
+    "coverageHint": "Chaque endroit compte une fois par round : rester immobile ne domine pas la carte.",
+    "dwellTimeHint": "Plus on reste longtemps à un endroit, plus il chauffe."
   },
   "economy": {
     "outcomesTitle": "Résultats des rounds par type d'économie",

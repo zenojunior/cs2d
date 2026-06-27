@@ -97,9 +97,12 @@
   },
   "duels": {
     "tabs": {
+      "stats": "Estadísticas",
       "matrix": "Matriz de duelos",
       "opening": "Estadísticas de primer duelo",
-      "opening-map": "Mapa de primer duelo"
+      "opening-map": "Primer duelo",
+      "kills": "Bajas",
+      "deaths": "Muertes"
     },
     "matrix": {
       "cell": "{killer} mató a {victim} {count} veces"
@@ -345,7 +348,13 @@
     "close": "Cerrar",
     "time": "Tiempo de ronda",
     "multiLevelNote": "{map} tiene dos pisos: cada plot muestra un nivel.",
-    "team": "Equipo"
+    "team": "Equipo",
+    "empty": "Sin resultados",
+    "weight": "Ponderación",
+    "coverage": "Cobertura",
+    "dwellTime": "Permanencia",
+    "coverageHint": "Cada lugar cuenta una vez por ronda: quedarse quieto no domina el mapa.",
+    "dwellTimeHint": "Cuanto más tiempo en un lugar, más caliente se vuelve."
   },
   "economy": {
     "outcomesTitle": "Resultados por tipo de economía",

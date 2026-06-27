@@ -186,7 +186,8 @@ function winRate(p: { won: number; total: number }): number {
 </script>
 
 <template>
-  <div class="h-full w-full overflow-y-auto [scrollbar-gutter:stable]">
+  <!-- No own scroll: stacked inside the Stats page, which scrolls. -->
+  <div class="w-full">
     <div class="mx-auto max-w-5xl px-6 py-6">
       <!-- Filters -->
       <div class="mb-6 flex flex-wrap items-center gap-x-8 gap-y-3">

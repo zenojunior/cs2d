@@ -97,9 +97,12 @@
   },
   "duels": {
     "tabs": {
+      "stats": "Stats",
       "matrix": "Duel matrix",
       "opening": "Opening duel stats",
-      "opening-map": "Opening duel map"
+      "opening-map": "Opening duel",
+      "kills": "Kills",
+      "deaths": "Deaths"
     },
     "matrix": {
       "cell": "{killer} killed {victim} {count} times"
@@ -345,7 +348,13 @@
     "close": "Close",
     "time": "Round time",
     "multiLevelNote": "{map} has two floors: each plot shows one level.",
-    "team": "Team"
+    "team": "Team",
+    "empty": "No results",
+    "weight": "Weighting",
+    "coverage": "Coverage",
+    "dwellTime": "Dwell time",
+    "coverageHint": "Each spot counts once per round: standing still doesn't dominate the map.",
+    "dwellTimeHint": "The longer spent in a spot, the hotter it burns."
   },
   "economy": {
     "outcomesTitle": "Round outcomes by economy type",
