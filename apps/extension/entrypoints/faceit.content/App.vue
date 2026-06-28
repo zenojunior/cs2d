@@ -191,7 +191,7 @@ function chooseLocale(code: LocaleCode) {
 }
 
 // --- footer links -----------------------------------------------------------
-const GITHUB = 'https://github.com/zenojunior/cs-demo-analyzer'
+const GITHUB = 'https://github.com/zenojunior/cs2d'
 const version = chrome.runtime.getManifest?.().version ?? ''
 
 // --- panel position: anchored to the top-right corner -----------------------

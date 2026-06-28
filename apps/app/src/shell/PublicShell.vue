@@ -28,7 +28,7 @@ const { t, locale, setLocale, LOCALES } = useI18n()
 // with the active route and locale.
 useSeoHead()
 
-const GITHUB_URL = 'https://github.com/zenojunior/cs-demo-analyzer'
+const GITHUB_URL = 'https://github.com/zenojunior/cs2d'
 
 // The Chrome extension isn't publicly installable yet, so its entry point shows
 // only in development; the production build hides it.
