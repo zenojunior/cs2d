@@ -7,7 +7,7 @@ import { useI18n } from '@/i18n'
 // translatable lives in i18n; the tech/credits lists are data (names + links).
 const { t } = useI18n()
 
-const GITHUB_URL = 'https://github.com/zenojunior/cs-demo-analyzer'
+const GITHUB_URL = 'https://github.com/zenojunior/cs2d'
 const AUTHOR_NAME = 'Zeno Junior'
 const AUTHOR_URL = 'https://zenojunior.com'
 
@@ -110,7 +110,7 @@ const RELATED: { name: string; url: string; desc: string }[] = [
           class="mt-4 inline-flex items-center gap-1.5 rounded-md border border-ink-700 bg-ink-900/60 px-2.5 py-1.5 text-xs text-ink-200 transition-colors hover:bg-ink-800"
         >
           <UiIcon name="github" class="h-3.5 w-3.5 text-ink-400" />
-          <span class="font-medium">zenojunior/cs-demo-analyzer</span>
+          <span class="font-medium">zenojunior/cs2d</span>
         </a>
       </section>
 

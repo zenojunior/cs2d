@@ -17,7 +17,7 @@ import { importArchive } from '@/viewer/ingest/demoArchive'
 import type { Replay, ReplayComment, VoiceData } from '@/viewer/domain/schema'
 
 const RAW_BASE =
-  'https://raw.githubusercontent.com/zenojunior/cs-demo-analyzer/main/replays/'
+  'https://raw.githubusercontent.com/zenojunior/cs2d/main/replays/'
 
 /** Base every relative replay ref is resolved against (dev serves from disk). */
 export const REPLAY_BASE = import.meta.env.DEV ? '/_replays/' : RAW_BASE
