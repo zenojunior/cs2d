@@ -102,6 +102,22 @@
     color: #fff;
   }
 
+  /* The app is a tool, not a document: text selection is disabled on the
+     analyzer/library/major screens (this class is toggled per route). The
+     document-like pages (About, Privacy, the upload home) keep selection.
+     Form fields and editable comments always stay selectable so typing,
+     copying and editing keep working. */
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .no-select input,
+  .no-select textarea,
+  .no-select [contenteditable='true'] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
   /* Subtle scrollbar in the brand tone */
   ::-webkit-scrollbar {
     width: 10px;

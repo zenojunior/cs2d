@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { onClickOutside } from '@vueuse/core'
-import type { Pause, ReplayComment, Round, Side } from '@/viewer/domain/schema'
+import type { Pause, PlayerMeta, ReplayComment, Round, Side } from '@/viewer/domain/schema'
 import UiIcon from '@/ui/UiIcon.vue'
 import UiSwitch from '@/ui/UiSwitch.vue'
 import ViewerTimeline from '@/viewer/player/ViewerTimeline.vue'
@@ -42,6 +42,8 @@ const props = defineProps<{
   advancedOptions?: { key: string; label: string; description?: string; enabled: boolean }[]
   /** User comments anchored to the current round (drives the timeline markers). */
   comments?: ReplayComment[]
+  /** Player metadata by Steam ID, for the kill markers' tooltip names. */
+  playersById?: Map<string, PlayerMeta>
   /** Round indices that have at least one comment (drives the round badge). */
   commentedRounds?: Set<number>
   /** Whether comment mode (drop/edit pins on the map) is active. */
@@ -103,7 +105,7 @@ const postStartT = computed(() => {
 /** Freeze duration (s), for the badge — only when there is a real freeze. */
 const freezeSeconds = computed(() => liveStartT.value)
 
-const markers = computed(() => buildTimelineMarkers(props.round, props.comments))
+const markers = computed(() => buildTimelineMarkers(props.round, props.comments, props.playersById))
 
 /**
  * Round indices where the teams switched sides versus the previous round

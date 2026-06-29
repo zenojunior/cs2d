@@ -31,6 +31,8 @@ const { t } = useI18n()
  *  '1' = started-T team). Team identity is stable across the side swap, unlike a
  *  raw CT/T filter. */
 const teamFilter = ref<string>('all')
+/** Filter by the side that won the opening ('all' / 'CT' / 'T'). */
+const sideFilter = ref<Side | 'all'>('all')
 /** The engagement whose path is emphasized on the map (hovered list row). */
 const highlight = ref<{ roundIndex: number; t: number } | null>(null)
 /** The engagement whose kill popover (mini-clip) is open, from a clicked row. A
@@ -88,6 +90,7 @@ const points = computed<DuelPoint[]>(() => {
   const out: DuelPoint[] = []
   for (const d of computeOpeningDuels(props.replay)) {
     if (teamFilter.value !== 'all' && teamOf.value.get(d.winnerSteamId) !== teamFilter.value) continue
+    if (sideFilter.value !== 'all' && d.winnerSide !== sideFilter.value) continue
     const round = props.replay.rounds[d.roundIndex]
     const aPos = playerPosAt(round, d.winnerSteamId, d.tick)
     out.push({
@@ -169,27 +172,50 @@ const rows = computed(() =>
     <!-- Team filter + opening-duel list: full width on top on mobile (capped
          height, the list scrolls), fixed side column from sm up. -->
     <aside class="flex max-h-[45vh] w-full shrink-0 flex-col border-b border-ink-800 bg-ink-900/40 sm:max-h-none sm:w-96 sm:border-b-0 sm:border-r">
-      <div class="border-b border-ink-800 p-3">
-        <div class="flex overflow-hidden rounded border border-ink-700 text-xs">
-          <button
-            type="button"
-            class="shrink-0 cursor-pointer px-2.5 py-1 transition-colors"
-            :class="teamFilter === 'all' ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:bg-ink-800'"
-            @click="teamFilter = 'all'"
-          >
-            {{ t('heatmap.both') }}
-          </button>
-          <button
-            v-for="tm in teams"
-            :key="tm.id"
-            type="button"
-            class="min-w-0 flex-1 cursor-pointer truncate border-l border-ink-700 px-2 py-1 transition-colors"
-            :class="teamFilter === String(tm.id) ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:bg-ink-800'"
-            :title="tm.name"
-            @click="teamFilter = String(tm.id)"
-          >
-            {{ tm.name }}
-          </button>
+      <div class="flex flex-col gap-4 border-b border-ink-800 p-4">
+        <!-- Side that won the opening (Both / CT / T), matching the kills/deaths
+             point maps and the heatmap. -->
+        <div>
+          <label class="mb-1.5 block text-xs font-medium text-ink-300">{{ t('heatmap.side') }}</label>
+          <div class="flex overflow-hidden rounded-md border border-ink-700">
+            <button
+              v-for="s in (['all', 'CT', 'T'] as const)"
+              :key="s"
+              type="button"
+              class="flex-1 cursor-pointer px-2 py-1.5 text-xs transition-colors"
+              :class="sideFilter === s ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:bg-ink-800'"
+              :style="sideFilter === s && s !== 'all' ? { color: SIDE_COLOR[s] } : undefined"
+              @click="sideFilter = s"
+            >
+              {{ s === 'all' ? t('heatmap.both') : s }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Team that won the opening (stable across the side swap). -->
+        <div>
+          <label class="mb-1.5 block text-xs font-medium text-ink-300">{{ t('heatmap.team') }}</label>
+          <div class="flex overflow-hidden rounded-md border border-ink-700">
+            <button
+              type="button"
+              class="min-w-0 flex-1 cursor-pointer truncate px-2 py-1.5 text-xs transition-colors"
+              :class="teamFilter === 'all' ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:bg-ink-800'"
+              @click="teamFilter = 'all'"
+            >
+              {{ t('heatmap.all') }}
+            </button>
+            <button
+              v-for="tm in teams"
+              :key="tm.id"
+              type="button"
+              class="min-w-0 flex-1 cursor-pointer truncate border-l border-ink-700 px-2 py-1.5 text-xs transition-colors"
+              :class="teamFilter === String(tm.id) ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:bg-ink-800'"
+              :title="tm.name"
+              @click="teamFilter = String(tm.id)"
+            >
+              {{ tm.name }}
+            </button>
+          </div>
         </div>
       </div>
 

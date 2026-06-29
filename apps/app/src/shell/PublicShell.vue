@@ -67,6 +67,16 @@ const inDemo = computed(
   () => route.name === 'demoviewer' && Boolean(route.params.id || route.query.replay),
 )
 
+// Text selection is allowed only on the document-like pages: the About/project
+// page, the Privacy page and the upload home (the analyzer route with no demo
+// loaded). Everywhere else the app behaves like a tool, so selection is off.
+const allowSelect = computed(
+  () =>
+    route.name === 'about' ||
+    route.name === 'privacy' ||
+    (route.name === 'demoviewer' && !route.params.id && !route.query.replay),
+)
+
 // Leaving a demo always lands on a non-demo hub: the Major bracket for external
 // replays, the Library for everything else.
 function exitDemo() {
@@ -81,7 +91,7 @@ provide(appFullscreenKey, { isFullscreen, toggle })
 </script>
 
 <template>
-  <div ref="shellRoot" class="flex h-dvh overflow-hidden bg-ink-950">
+  <div ref="shellRoot" class="flex h-dvh overflow-hidden bg-ink-950" :class="{ 'no-select': !allowSelect }">
     <AppSidebar v-show="!isFullscreen && !inDemo" />
 
     <!-- Mobile drawer backdrop: taps outside the open sidebar close it. -->
