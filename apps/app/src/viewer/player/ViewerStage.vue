@@ -1096,6 +1096,7 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
           :demo-tick-rate="r.replay.value.demoTickRate"
           :pauses="r.replay.value.pauses ?? []"
           :comments="roundComments"
+          :players-by-id="r.playersById.value"
           :commented-rounds="commentedRounds"
           :comment-mode="commentMode"
           :fullscreen="isFullscreen"

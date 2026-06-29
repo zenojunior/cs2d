@@ -13,6 +13,10 @@ const props = defineProps<{
   step?: number
   /** Accent color (any CSS color) for the window fill, edges and handles. */
   color?: string
+  /** Event ticks drawn on the track (e.g. kills), each at `value` on the
+   *  [min, max] scale, in its own color. Purely decorative — they don't affect
+   *  the window or capture pointer events. */
+  markers?: { value: number; color: string }[]
 }>()
 
 const model = defineModel<number[]>({ required: true })
@@ -39,6 +43,10 @@ const lo = computed(() => model.value[0] ?? min.value)
 const hi = computed(() => model.value[1] ?? props.max)
 const loPct = computed(() => ((lo.value - min.value) / span.value) * 100)
 const hiPct = computed(() => ((hi.value - min.value) / span.value) * 100)
+/** A value's position on the track, as a clamped 0–100% offset. */
+function pct(value: number): number {
+  return clamp(((value - min.value) / span.value) * 100, 0, 100)
+}
 
 const track = ref<HTMLElement | null>(null)
 // Active drag: which part was grabbed, plus (for 'move') the pointer's offset
@@ -123,6 +131,15 @@ function trackDown(e: PointerEvent) {
       <div class="absolute inset-y-0 left-0 w-px" :style="edgeStyle" />
       <div class="absolute inset-y-0 right-0 w-px" :style="edgeStyle" />
     </div>
+
+    <!-- Event ticks (e.g. kills): thin lines at their time, in their own color.
+         Non-interactive, so they never get in the way of dragging the window. -->
+    <div
+      v-for="(m, i) in markers ?? []"
+      :key="i"
+      class="pointer-events-none absolute inset-y-1 w-0.5 -translate-x-1/2 rounded-full opacity-80"
+      :style="{ left: pct(m.value) + '%', backgroundColor: m.color }"
+    />
 
     <!-- Edge handles: drag to resize the window. -->
     <div

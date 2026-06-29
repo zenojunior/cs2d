@@ -4,6 +4,7 @@ import type { Replay, Round, Side } from '@/viewer/domain/schema'
 import { MAP_CALIBRATION } from '@/viewer/domain/calibration'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
 import HeatmapPlot from '@/viewer/analysis/HeatmapPlot.vue'
+import KillfeedRow from '@/viewer/player/KillfeedRow.vue'
 import UtilityHeatmapView from '@/viewer/analysis/UtilityHeatmapView.vue'
 import type { KillInfo } from '@/viewer/analysis/heatmapTypes'
 import { killWeaponIcon } from '@/viewer/domain/weaponIcons'
@@ -251,16 +252,20 @@ const rawPoints = computed<Pt[]>(() => {
   return out
 })
 
+/** Side/team/player filters (the time window is applied separately). */
+function matchesIdentity(p: Pt): boolean {
+  if (!hasIdentity.value) return true
+  if (sideFilter.value !== 'all' && p.side !== sideFilter.value) return false
+  if (teamFilter.value !== 'all' && (!p.steamId || teamOf.value.get(p.steamId) !== teamFilter.value)) return false
+  if (playerFilter.value !== 'all' && p.steamId !== playerFilter.value) return false
+  return true
+}
+
 /** Points after side/player/time (the level filter happens per plot). */
 const points = computed<Pt[]>(() =>
   rawPoints.value.filter((p) => {
     if (!isFullRange.value && (p.t < timeRange.value[0] || p.t > timeRange.value[1])) return false
-    if (hasIdentity.value) {
-      if (sideFilter.value !== 'all' && p.side !== sideFilter.value) return false
-      if (teamFilter.value !== 'all' && (!p.steamId || teamOf.value.get(p.steamId) !== teamFilter.value)) return false
-      if (playerFilter.value !== 'all' && p.steamId !== playerFilter.value) return false
-    }
-    return true
+    return matchesIdentity(p)
   }),
 )
 
@@ -285,6 +290,16 @@ const openKill = ref<{ roundIndex: number; t: number } | null>(null)
 const hasKillList = computed(() => props.source === 'kills' || props.source === 'deaths')
 /** The filtered engagements, in chronological order, for the side list. */
 const killList = computed(() => (hasKillList.value ? points.value.filter((p) => p.kill) : []))
+/** Kill ticks for the round-time bar, ignoring the time window so every kill is
+ *  visible (only side/team/player filters apply). Colored by the subject's side
+ *  (the killer on the kills page, the victim on the deaths page). */
+const killMarkers = computed(() =>
+  hasKillList.value
+    ? rawPoints.value
+        .filter((p) => p.kill && matchesIdentity(p))
+        .map((p) => ({ value: p.t, color: p.side ? SIDE_COLOR[p.side] : '#cbd5e1' }))
+    : [],
+)
 watch([() => props.source, () => points.value], () => {
   hoverKill.value = null
   openKill.value = null
@@ -393,14 +408,27 @@ const rangeColor = computed(() => {
         </div>
       </div>
 
-      <!-- Team -->
-      <div :class="{ 'pointer-events-none opacity-40': !hasIdentity }">
+      <!-- Team: a segmented group button (Both / started-CT team / started-T team),
+           matching the Side control above and the opening-duel map. -->
+      <div class="col-span-2" :class="{ 'pointer-events-none opacity-40': !hasIdentity }">
         <label class="mb-1.5 block text-xs font-medium text-ink-300">{{ t('heatmap.team') }}</label>
-        <UiSelect v-model="teamFilter" :options="teamOptions" class="w-full" />
+        <div class="flex overflow-hidden rounded-md border border-ink-700">
+          <button
+            v-for="opt in teamOptions"
+            :key="opt.value"
+            type="button"
+            class="min-w-0 flex-1 cursor-pointer truncate px-2 py-1.5 text-xs transition-colors"
+            :class="teamFilter === opt.value ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:bg-ink-800'"
+            :title="opt.label"
+            @click="teamFilter = opt.value as Side | 'all'"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
       </div>
 
       <!-- Player -->
-      <div :class="{ 'pointer-events-none opacity-40': !hasIdentity }">
+      <div class="col-span-2" :class="{ 'pointer-events-none opacity-40': !hasIdentity }">
         <label class="mb-1.5 block text-xs font-medium text-ink-300">{{ t('heatmap.player') }}</label>
         <UiSelect v-model="playerFilter" :options="playerOptions" class="w-full" />
       </div>
@@ -441,39 +469,25 @@ const rangeColor = computed(() => {
         <li v-for="(p, i) in killList" :key="i">
           <button
             type="button"
-            class="flex w-full cursor-pointer items-center gap-1.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-ink-800"
+            class="flex w-full cursor-pointer items-center gap-2 overflow-hidden rounded px-2 py-1.5 text-left transition-colors hover:bg-ink-800"
             :class="{ 'bg-ink-800': isActiveKill(p) }"
             @click="openKill = { roundIndex: p.kill!.roundIndex, t: p.kill!.t }"
             @mouseenter="hoverKill = { roundIndex: p.kill!.roundIndex, t: p.kill!.t }"
             @mouseleave="hoverKill = null"
           >
-            <span class="min-w-0 flex-1 truncate text-xs" :style="{ color: p.kill!.attackerColor }">{{
-              p.kill!.attackerName || '—'
-            }}</span>
-            <img
-              v-if="p.kill!.assistedFlash"
-              src="/weapons/flash.svg"
-              alt="flash"
-              class="h-3 w-3 shrink-0 object-contain"
+            <span class="w-7 shrink-0 font-mono text-[11px] text-ink-500">R{{ p.kill!.roundNumber }}</span>
+            <KillfeedRow
+              class="min-w-0 flex-1"
+              truncate-names
+              :attacker-name="p.kill!.attackerName"
+              :attacker-color="p.kill!.attackerColor"
+              :assisted-flash="p.kill!.assistedFlash"
+              :weapon="p.kill!.weapon"
+              :headshot="p.kill!.headshot"
+              :victim-name="p.kill!.victimName"
+              :victim-color="p.kill!.victimColor"
             />
-            <img
-              v-if="p.kill!.weaponIcon"
-              :src="p.kill!.weaponIcon"
-              :alt="p.kill!.weapon"
-              class="h-2.5 w-6 shrink-0 object-contain"
-            />
-            <img
-              v-if="p.kill!.headshot"
-              src="/weapons/headshot.svg"
-              alt="hs"
-              class="h-3 w-3 shrink-0 object-contain"
-            />
-            <span class="min-w-0 flex-1 truncate text-right text-xs" :style="{ color: p.kill!.victimColor }">{{
-              p.kill!.victimName
-            }}</span>
-            <span class="shrink-0 font-mono text-[11px] text-ink-500"
-              >R{{ p.kill!.roundNumber }} · {{ fmtTime(p.t) }}</span
-            >
+            <span class="shrink-0 font-mono text-[11px] text-ink-500">{{ fmtTime(p.t) }}</span>
           </button>
         </li>
       </ul>
@@ -517,7 +531,7 @@ const rangeColor = computed(() => {
             <label class="text-xs font-medium text-ink-300">{{ t('heatmap.time') }}</label>
             <span class="font-mono text-xs text-ink-400">{{ timeRange[0] }}s – {{ timeRange[1] }}s</span>
           </div>
-          <RoundTimeRange v-model="timeRange" :max="maxRoundTime" :color="rangeColor" />
+          <RoundTimeRange v-model="timeRange" :max="maxRoundTime" :color="rangeColor" :markers="killMarkers" />
         </div>
       </div>
     </div>
