@@ -484,7 +484,7 @@ function onImportInput(e: Event) {
         @update:sub="goUtilitySub"
         @jump="onGrenadeJump"
       />
-      <EconomyView v-if="activeTab === 'economy'" :replay="parser.replay.value" />
+      <EconomyView v-if="activeTab === 'economy'" :replay="parser.replay.value" @jump="onGrenadeJump" />
       <DuelsView
         v-if="activeTab === 'duels'"
         :replay="parser.replay.value"
@@ -493,7 +493,7 @@ function onImportInput(e: Event) {
         @jump="onGrenadeJump"
       />
 
-      <!-- Tabs (2D / Heatmaps / Utilities / Economy / Duels) in the center of the appbar -->
+      <!-- Tabs (2D / Duels / Heatmaps / Utilities / Economy) in the center of the appbar -->
       <Teleport to="#publicbar-center">
         <div class="flex items-center gap-0.5 rounded-lg border border-ink-700 bg-ink-900/60 p-0.5">
           <button
@@ -503,6 +503,14 @@ function onImportInput(e: Event) {
             @click="goTab('viewer')"
           >
             {{ t('tabs.replay') }}
+          </button>
+          <button
+            type="button"
+            class="shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors"
+            :class="activeTab === 'duels' ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:text-ink-100'"
+            @click="goTab('duels')"
+          >
+            {{ t('tabs.duels') }}
           </button>
           <button
             type="button"
@@ -519,14 +527,6 @@ function onImportInput(e: Event) {
             @click="goTab('utilities')"
           >
             {{ t('tabs.utilities') }}
-          </button>
-          <button
-            type="button"
-            class="shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors"
-            :class="activeTab === 'duels' ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:text-ink-100'"
-            @click="goTab('duels')"
-          >
-            {{ t('tabs.duels') }}
           </button>
           <button
             type="button"

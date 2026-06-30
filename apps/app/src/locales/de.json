@@ -375,6 +375,19 @@
       "semi": "Semi",
       "forceBuy": "Force-Buy",
       "full": "Full Buy"
+    },
+    "buys": {
+      "title": "Käufe",
+      "watchRound": "Runde ansehen",
+      "noData": "Kaufdaten sind für dieses Replay nicht verfügbar. Öffne die ursprüngliche .dem-Datei erneut, um sie zu sehen.",
+      "eco": "Keine Käufe",
+      "spent": "Ausgegeben",
+      "remaining": "Übrig",
+      "passedTip": "An {name} weitergegeben",
+      "receivedTip": "Von {name} erhalten",
+      "equip": "Ausrüstung",
+      "carried": "Bereits dabei",
+      "droppedTip": "Gekauft, dann fallen gelassen (oder beim Tod verloren)"
     }
   },
   "scoreboard": {

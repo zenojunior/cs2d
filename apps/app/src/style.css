@@ -285,3 +285,28 @@
     }
   }
 }
+
+/* ============================================================================
+   Overlay / bottom-sheet transitions (reka-ui DialogContent data-state)
+   ============================================================================ */
+
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes overlay-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes sheet-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes sheet-slide-down {
+  to {
+    transform: translateY(100%);
+  }
+}

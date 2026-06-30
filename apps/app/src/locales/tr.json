@@ -375,6 +375,19 @@
       "semi": "Yarı eco",
       "forceBuy": "Force buy",
       "full": "Full buy"
+    },
+    "buys": {
+      "title": "Satın alımlar",
+      "watchRound": "Raundu izle",
+      "noData": "Bu tekrar için satın alma verileri mevcut değil. Görmek için orijinal .dem dosyasını yeniden açın.",
+      "eco": "Satın alım yok",
+      "spent": "Harcanan",
+      "remaining": "Kalan",
+      "passedTip": "{name} oyuncusuna verildi",
+      "receivedTip": "{name} oyuncusundan alındı",
+      "equip": "Teçhizat",
+      "carried": "Zaten vardı",
+      "droppedTip": "Satın alındı, sonra düşürüldü (veya ölünce kaybedildi)"
     }
   },
   "scoreboard": {

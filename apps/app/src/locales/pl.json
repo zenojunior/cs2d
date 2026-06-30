@@ -375,6 +375,19 @@
       "semi": "Pół-eco",
       "forceBuy": "Force buy",
       "full": "Pełny zakup"
+    },
+    "buys": {
+      "title": "Zakupy",
+      "watchRound": "Zobacz rundę",
+      "noData": "Dane o zakupach nie są dostępne dla tej powtórki. Otwórz ponownie oryginalny plik .dem, aby je zobaczyć.",
+      "eco": "Brak zakupów",
+      "spent": "Wydano",
+      "remaining": "Pozostało",
+      "passedTip": "Przekazana {name}",
+      "receivedTip": "Otrzymana od {name}",
+      "equip": "Wyposażenie",
+      "carried": "Już miał",
+      "droppedTip": "Kupiona i upuszczona (lub utracona po śmierci)"
     }
   },
   "scoreboard": {

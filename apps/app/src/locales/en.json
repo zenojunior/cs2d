@@ -375,6 +375,19 @@
       "semi": "Semi",
       "forceBuy": "Force-buy",
       "full": "Full buy"
+    },
+    "buys": {
+      "title": "Buys",
+      "watchRound": "Watch round",
+      "noData": "Purchase data isn't available for this replay. Reopen the original .dem file to see it.",
+      "eco": "No buys",
+      "spent": "Spent",
+      "remaining": "Remaining",
+      "passedTip": "Dropped to {name}",
+      "receivedTip": "Received from {name}",
+      "equip": "Equipment",
+      "carried": "Already had",
+      "droppedTip": "Bought, then dropped (or lost on death)"
     }
   },
   "scoreboard": {

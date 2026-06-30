@@ -3,24 +3,24 @@ import { computed, ref } from 'vue'
 import type { Replay, Side } from '@/viewer/domain/schema'
 import { buildMatchEconomy, buyStats, BUY_COLOR, type BuyType } from '@/viewer/analysis/roundEconomy'
 import { roundOutcome } from '@/viewer/domain/roundOutcome'
-import { SIDE_COLOR } from '@/viewer/domain/colors'
-import UiIcon from '@/ui/UiIcon.vue'
+import { TEAM_COLOR } from '@/viewer/domain/colors'
+import RoundEquipBar from '@/viewer/analysis/RoundEquipBar.vue'
+import RoundBuysSheet from '@/viewer/analysis/RoundBuysSheet.vue'
 import { useI18n } from '@/i18n'
 
 /**
- * Economy page, mirroring CS Demo Manager's Economy tab: round outcomes by buy
+ * Economy tab, mirroring CS Demo Manager's Economy tab: round outcomes by buy
  * type (win/loss bars per team, filterable by side), the team start money per
  * round (the chart CSDM labels "Equipment value") and a per-round breakdown of
- * each team's equipment value. Built from `roundEconomy.buildMatchEconomy`.
+ * each team's equipment value. Clicking an equipment-value bar opens a bottom
+ * sheet with that round's full buy breakdown. Built from `buildMatchEconomy`.
  */
 const props = defineProps<{ replay: Replay }>()
+const emit = defineEmits<{ jump: [{ roundIndex: number; t: number }] }>()
 
 const { t } = useI18n()
 
 const economy = computed(() => buildMatchEconomy(props.replay.rounds, props.replay.demoTickRate))
-
-/** Stable team colors (identity, not side): applied via :style as data colors. */
-const TEAM_COLOR = ['#e0b341', '#6b78e0'] as const
 
 /** Total / won / lost bar colors (match CSDM's blue-700 / green-700 / red-700). */
 const BAR_TOTAL = '#1d4ed8'
@@ -159,21 +159,6 @@ function outcomeIcon(reason: string | null): OutcomeIcon {
   }
 }
 
-/** Inline CSS mask style: paints the single-color weapon svg in `color`. */
-function maskStyle(src: string, color: string) {
-  return {
-    maskImage: `url(${src})`,
-    WebkitMaskImage: `url(${src})`,
-    maskSize: 'contain',
-    WebkitMaskSize: 'contain',
-    maskRepeat: 'no-repeat',
-    WebkitMaskRepeat: 'no-repeat',
-    maskPosition: 'center',
-    WebkitMaskPosition: 'center',
-    backgroundColor: color,
-  }
-}
-
 /** Rounds zipped across both teams, in chronological order. */
 const breakdown = computed(() => {
   const [a, b] = economy.value.teams
@@ -181,6 +166,7 @@ const breakdown = computed(() => {
     const rb = b.rounds[i]
     const reason = roundReason(ra.roundIndex)
     return {
+      roundIndex: ra.roundIndex,
       roundNumber: ra.roundNumber,
       left: ra,
       right: rb,
@@ -194,11 +180,13 @@ function fmtMoney(v: number): string {
   return `$${v.toLocaleString('pt-BR')}`
 }
 
-/** Bar width as a percentage of the richest team-round equipment value. */
+/** Richest team-round equipment value, so every bar shares one scale. */
 const maxBreakdownEquip = computed(() => Math.max(1, ...series.value.flat(), ...breakdown.value.flatMap((r) => [r.left.equipValue, r.right.equipValue])))
-function barWidth(v: number): string {
-  return `${Math.max(4, (v / maxBreakdownEquip.value) * 100)}%`
-}
+
+/** Round whose buy breakdown the bottom sheet shows (replay round index), or null. */
+const sheetRound = ref<number | null>(null)
+/** The clicked equipment-value row, echoed in the sheet header. */
+const sheetRow = computed(() => (sheetRound.value === null ? null : breakdown.value.find((r) => r.roundIndex === sheetRound.value) ?? null))
 </script>
 
 <template>
@@ -220,7 +208,6 @@ function barWidth(v: number): string {
               {{ s === 'all' ? t('economy.bothSides') : s }}
             </button>
           </div>
-          <!-- Legend -->
           <div class="ml-auto flex items-center gap-3 text-[11px] text-ink-400">
             <span class="flex items-center gap-1"><span class="h-2.5 w-4 rounded-sm" :style="{ backgroundColor: BAR_TOTAL }" />{{ t('economy.total') }}</span>
             <span class="flex items-center gap-1"><span class="h-2.5 w-4 rounded-sm" :style="{ backgroundColor: BAR_WON }" />{{ t('economy.won') }}</span>
@@ -243,7 +230,6 @@ function barWidth(v: number): string {
                 <span class="text-center font-display text-base font-bold tabular-nums text-ink-50">
                   {{ row.winRate === null ? '–' : `${Math.round(row.winRate * 100)}%` }}
                 </span>
-                <!-- Total / Won / Lost bars -->
                 <div class="mt-2 flex h-24 items-end justify-center gap-1">
                   <div
                     v-for="bar in [
@@ -285,7 +271,8 @@ function barWidth(v: number): string {
 
         <div class="rounded-lg border border-ink-800 bg-ink-900/40 p-4">
           <div class="relative h-64 w-full" @mousemove="onChartMove" @mouseleave="onChartLeave">
-            <!-- Grid lines + Y labels (HTML overlay, no axis distortion) -->
+            <!-- Grid lines + Y labels: HTML overlay, so the non-uniform svg scale
+                 doesn't distort the text. -->
             <div
               v-for="g in gridLines"
               :key="g.label"
@@ -299,7 +286,6 @@ function barWidth(v: number): string {
               :style="{ top: `${g.yPct}%` }"
             >{{ g.label }}</span>
 
-            <!-- Lines -->
             <svg
               :viewBox="`0 0 ${CHART_W} ${CHART_H}`"
               preserveAspectRatio="none"
@@ -317,14 +303,12 @@ function barWidth(v: number): string {
               />
             </svg>
 
-            <!-- Crosshair on the hovered round -->
             <div
               v-if="hover"
               class="pointer-events-none absolute inset-y-0 w-px bg-ink-500"
               :style="{ left: `${xPct(hover.index)}%` }"
             />
 
-            <!-- One point per round, per team (enlarged on the hovered round) -->
             <template v-for="(s, ti) in series" :key="`pts-${ti}`">
               <span
                 v-for="(v, i) in s"
@@ -340,7 +324,6 @@ function barWidth(v: number): string {
               />
             </template>
 
-            <!-- Tooltip comparing both teams for the hovered round -->
             <div
               v-if="hover"
               class="pointer-events-none absolute top-1 z-10 min-w-32 rounded-md border border-ink-700 bg-ink-900/95 p-2 text-xs shadow-lg backdrop-blur"
@@ -367,7 +350,6 @@ function barWidth(v: number): string {
           <p class="text-xs text-ink-500">{{ t('economy.equipValueHint') }}</p>
         </div>
 
-        <!-- Header: a "Round" label over each of the two round-number columns -->
         <div class="mb-1 flex items-center gap-2 text-[11px] text-ink-500">
           <div class="flex-1" />
           <div class="flex w-32 shrink-0 justify-between px-1">
@@ -378,70 +360,27 @@ function barWidth(v: number): string {
         </div>
 
         <div class="space-y-1">
-          <div v-for="row in breakdown" :key="row.roundNumber" class="flex items-center gap-2 text-xs">
-            <!-- Left team bar (grows right-to-left) -->
-            <div class="flex flex-1 justify-end">
-              <div
-                class="flex min-w-[4.5rem] items-center justify-end whitespace-nowrap rounded px-2 py-1 font-mono tabular-nums text-white"
-                :style="{ width: barWidth(row.left.equipValue), backgroundColor: BUY_COLOR[row.left.buyType] }"
-              >
-                {{ fmtMoney(row.left.equipValue) }}
-              </div>
-            </div>
-
-            <!-- Center: round number | left outcome | right outcome | round number.
-                 The outcome icon shows in the winning side's column, colored by side. -->
-            <div class="flex w-32 shrink-0 items-center">
-              <span class="w-6 text-right font-mono tabular-nums text-ink-400">{{ row.roundNumber }}</span>
-              <span class="flex w-10 justify-center">
-                <template v-if="row.left.won && row.icon">
-                  <span
-                    v-if="'mask' in row.icon"
-                    v-tooltip="row.labelKey ? t(row.labelKey) : undefined"
-                    class="inline-block h-4 w-4"
-                    :style="maskStyle(row.icon.mask, SIDE_COLOR[row.left.side])"
-                  />
-                  <UiIcon
-                    v-else
-                    v-tooltip="row.labelKey ? t(row.labelKey) : undefined"
-                    :name="row.icon.glyph"
-                    class="h-3.5 w-3.5"
-                    :style="{ color: SIDE_COLOR[row.left.side] }"
-                  />
-                </template>
-              </span>
-              <span class="flex w-10 justify-center">
-                <template v-if="row.right.won && row.icon">
-                  <span
-                    v-if="'mask' in row.icon"
-                    v-tooltip="row.labelKey ? t(row.labelKey) : undefined"
-                    class="inline-block h-4 w-4"
-                    :style="maskStyle(row.icon.mask, SIDE_COLOR[row.right.side])"
-                  />
-                  <UiIcon
-                    v-else
-                    v-tooltip="row.labelKey ? t(row.labelKey) : undefined"
-                    :name="row.icon.glyph"
-                    class="h-3.5 w-3.5"
-                    :style="{ color: SIDE_COLOR[row.right.side] }"
-                  />
-                </template>
-              </span>
-              <span class="w-6 text-left font-mono tabular-nums text-ink-400">{{ row.roundNumber }}</span>
-            </div>
-
-            <!-- Right team bar (grows left-to-right) -->
-            <div class="flex flex-1 justify-start">
-              <div
-                class="flex min-w-[4.5rem] items-center justify-start whitespace-nowrap rounded px-2 py-1 font-mono tabular-nums text-white"
-                :style="{ width: barWidth(row.right.equipValue), backgroundColor: BUY_COLOR[row.right.buyType] }"
-              >
-                {{ fmtMoney(row.right.equipValue) }}
-              </div>
-            </div>
-          </div>
+          <!-- Each row opens that round's buy breakdown in the bottom sheet. -->
+          <button
+            v-for="row in breakdown"
+            :key="row.roundNumber"
+            type="button"
+            class="block w-full cursor-pointer rounded-md px-1 py-0.5 transition-colors hover:bg-ink-800/60"
+            @click="sheetRound = row.roundIndex"
+          >
+            <RoundEquipBar :row="row" :max-equip="maxBreakdownEquip" />
+          </button>
         </div>
       </section>
     </div>
+
+    <RoundBuysSheet
+      :replay="props.replay"
+      :round-index="sheetRound"
+      :bar="sheetRow"
+      :bar-max="maxBreakdownEquip"
+      @close="sheetRound = null"
+      @jump="emit('jump', $event)"
+    />
   </div>
 </template>
