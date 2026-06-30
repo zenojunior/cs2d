@@ -375,6 +375,19 @@
       "semi": "Semi",
       "forceBuy": "Force-buy",
       "full": "Achat complet"
+    },
+    "buys": {
+      "title": "Achats",
+      "watchRound": "Voir le round",
+      "noData": "Les données d'achat ne sont pas disponibles pour cette démo. Rouvrez le fichier .dem original pour les voir.",
+      "eco": "Aucun achat",
+      "spent": "Dépensé",
+      "remaining": "Restant",
+      "passedTip": "Donnée à {name}",
+      "receivedTip": "Reçue de {name}",
+      "equip": "Équipement",
+      "carried": "Déjà en main",
+      "droppedTip": "Achetée puis lâchée (ou perdue à la mort)"
     }
   },
   "scoreboard": {

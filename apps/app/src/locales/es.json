@@ -375,6 +375,19 @@
       "semi": "Media compra",
       "forceBuy": "Forzada",
       "full": "Compra total"
+    },
+    "buys": {
+      "title": "Compras",
+      "watchRound": "Ver la ronda",
+      "noData": "Los datos de compra no están disponibles en esta repetición. Vuelve a abrir el archivo .dem original para verlos.",
+      "eco": "Sin compras",
+      "spent": "Gastado",
+      "remaining": "Restante",
+      "passedTip": "Pasada a {name}",
+      "receivedTip": "Recibida de {name}",
+      "equip": "Equipamiento",
+      "carried": "Ya tenía",
+      "droppedTip": "Comprada y soltada (o perdida al morir)"
     }
   },
   "scoreboard": {

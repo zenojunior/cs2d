@@ -143,6 +143,12 @@ pub(crate) struct Collector {
     pub(crate) userid_to_steam: HashMap<i32, String>,
     pub(crate) frames: Vec<RawFrame>,
     pub(crate) events: Vec<RawEvent>,
+    /// `buytime_ended` ticks, used to bound each round's buy window.
+    pub(crate) buytime_ends: Vec<u32>,
+    /// Raw `item_pickup` acquisitions (tick, steamId, item label), filtered to the
+    /// buy window at assemble time. GOTV demos lack `item_purchase`, so a buy and a
+    /// pickup look alike here; the buy view reconciles them against the cash delta.
+    pub(crate) purchases: Vec<(u32, String, String)>,
     /// Pawn entity index -> steamId, refreshed every tick.
     pub(crate) pawn_to_steam: HashMap<u32, String>,
     pub(crate) last_cap: u32,
@@ -358,13 +364,19 @@ impl Collector {
             };
 
             // Metadata (name + starting side) the first time we see the player.
+            let comp_color = prop_i32(ctrl, "m_iCompTeammateColor");
             if !self.meta.contains_key(&steam_id) {
                 let name = ev_name(ctrl);
                 self.meta_order.push(steam_id.clone());
                 self.meta.insert(
                     steam_id.clone(),
-                    PlayerMeta { steam_id: steam_id.clone(), name, start_side: side.into() },
+                    PlayerMeta { steam_id: steam_id.clone(), name, start_side: side.into(), comp_color },
                 );
+            } else if let Some(m) = self.meta.get_mut(&steam_id) {
+                // Color is assigned a bit after connect; keep the last valid value.
+                if comp_color >= 0 {
+                    m.comp_color = comp_color;
+                }
             }
 
             players.push(PlayerState {
@@ -633,6 +645,25 @@ impl Collector {
                         let x = round1(world_coord(p, "CBodyComponent.m_cellX", "CBodyComponent.m_vecX"));
                         let y = round1(world_coord(p, "CBodyComponent.m_cellY", "CBodyComponent.m_vecY"));
                         self.shots.push((tick, x, y, round1(pawn_yaw(p))));
+                    }
+                }
+            }
+            "buytime_ended" => {
+                if !in_warmup(ctx) {
+                    self.buytime_ends.push(tick);
+                }
+            }
+            // Warmup pickups (deathmatch guns) are skipped so they don't leak into
+            // round 1; the bomb and knife are never buys.
+            "item_pickup" if !in_warmup(ctx) => {
+                let buyer = ev_i32(ge, "userid_pawn")
+                    .and_then(|h| steam_from_pawn_handle(self, ctx, h))
+                    .or_else(|| ev_i32(ge, "userid").and_then(|u| self.userid_to_steam.get(&u).cloned()));
+                if let Some(steam) = buyer {
+                    let raw = ev_str(ge, "item").unwrap_or_default();
+                    let label = weapon_label(&raw);
+                    if !label.is_empty() && label != "C4" && label != "Faca" {
+                        self.purchases.push((tick, steam, label));
                     }
                 }
             }

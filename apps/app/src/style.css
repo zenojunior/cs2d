@@ -98,24 +98,8 @@
   }
 
   ::selection {
-    background: var(--color-surge-500);
-    color: #fff;
-  }
-
-  /* The app is a tool, not a document: text selection is disabled on the
-     analyzer/library/major screens (this class is toggled per route). The
-     document-like pages (About, Privacy, the upload home) keep selection.
-     Form fields and editable comments always stay selectable so typing,
-     copying and editing keep working. */
-  .no-select {
-    -webkit-user-select: none;
-    user-select: none;
-  }
-  .no-select input,
-  .no-select textarea,
-  .no-select [contenteditable='true'] {
-    -webkit-user-select: text;
-    user-select: text;
+    background: var(--color-ink-500);
+    color: var(--color-ink-50);
   }
 
   /* Subtle scrollbar in the brand tone */
@@ -283,5 +267,30 @@
       transition: opacity 120ms ease;
       transform: none;
     }
+  }
+}
+
+/* ============================================================================
+   Overlay / bottom-sheet transitions (reka-ui DialogContent data-state)
+   ============================================================================ */
+
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes overlay-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes sheet-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes sheet-slide-down {
+  to {
+    transform: translateY(100%);
   }
 }

@@ -375,6 +375,19 @@
       "semi": "Meia compra",
       "forceBuy": "Forçado",
       "full": "Compra total"
+    },
+    "buys": {
+      "title": "Compras",
+      "watchRound": "Assistir o round",
+      "noData": "Dados de compra indisponíveis neste replay. Reabra o arquivo .dem original para vê-los.",
+      "eco": "Sem compras",
+      "spent": "Gasto",
+      "remaining": "Restante",
+      "passedTip": "Repassada a {name}",
+      "receivedTip": "Recebida de {name}",
+      "equip": "Equipamento",
+      "carried": "Já tinha",
+      "droppedTip": "Comprada e dropada (ou perdida ao morrer)"
     }
   },
   "scoreboard": {
