@@ -44,6 +44,7 @@ pub(crate) struct PlayerMeta {
     pub(crate) steam_id: String,
     pub(crate) name: String,
     pub(crate) start_side: String,
+    pub(crate) comp_color: i32,
 }
 
 #[derive(Serialize)]
@@ -83,6 +84,20 @@ pub(crate) struct Round {
     pub(crate) chat: Vec<ChatMsg>,
     pub(crate) defuses: Vec<Defuse>,
     pub(crate) ground_weapons: Vec<GroundWeapon>,
+    /// Items picked up during the buy window. Omitted when empty (older replays).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub(crate) purchases: Vec<Purchase>,
+}
+
+/// An item picked up during the buy window (a buy, a ground pickup, or a
+/// teammate's drop). `t` is seconds since `freeze_start_tick` (clamped to >= 0).
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct Purchase {
+    pub(crate) tick: u32,
+    pub(crate) t: f64,
+    pub(crate) steam_id: String,
+    pub(crate) item: String,
 }
 
 /// A weapon/grenade dropped on the ground, shown as its icon on the map while it

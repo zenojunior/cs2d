@@ -54,6 +54,10 @@ export interface PlayerMeta {
   name: string
   /** Side the player started on (sides swap at halftime). */
   startSide: Side
+  /** CS2 competitive teammate color index (`m_iCompTeammateColor`): 0 green,
+   *  1 yellow, 2 orange, 3 purple, 4 blue; -1 (or absent on older replays) when
+   *  the player has no assigned color. */
+  compColor?: number
 }
 
 export interface Round {
@@ -103,6 +107,24 @@ export interface Round {
   defuses: Defuse[]
   /** Weapons/grenades lying on the ground during the round (dropped items). */
   groundWeapons: GroundWeapon[]
+  /** Items picked up during the buy window. Absent on replays parsed before this
+   *  existed (old recents / `.cs2dv`), so guard with `?? []`. */
+  purchases?: Purchase[]
+}
+
+/**
+ * An item a player picked up during the buy window — a buy, a ground pickup, or a
+ * teammate's drop. GOTV demos don't emit `item_purchase`, so buy and pickup look
+ * alike; the buy view tells them apart via the per-frame money delta. Armor/kit
+ * aren't here (no weapon label) — derive those from the inventory.
+ */
+export interface Purchase {
+  tick: number
+  /** Seconds since the round `freezeStartTick` (clamped to >= 0). */
+  t: number
+  steamId: string
+  /** Same vocabulary as `PlayerState.weapon` (e.g. "AK-47", "Smoke"). */
+  item: string
 }
 
 /**

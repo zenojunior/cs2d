@@ -53,6 +53,7 @@ pub(crate) fn build_replay(c: &Collector) -> Replay {
             chat: Vec::new(),
             defuses: Vec::new(),
             ground_weapons: Vec::new(),
+            purchases: Vec::new(),
         }
     };
 
@@ -209,6 +210,7 @@ pub(crate) fn build_replay(c: &Collector) -> Replay {
                 chat: Vec::new(),
                 defuses: Vec::new(),
                 ground_weapons: Vec::new(),
+                purchases: Vec::new(),
             },
         );
     }
@@ -670,7 +672,37 @@ pub(crate) fn build_replay(c: &Collector) -> Replay {
         flush(&mut rounds, &rlabel, rx, ry, rz, rstart, rlast);
     }
 
+    // Bucket pickups into their round, keeping only those within the buy window
+    // [freeze_start, deadline] so post-round and next-spawn pickups are excluded.
+    let mut buyends = c.buytime_ends.clone();
+    buyends.sort_unstable();
+    for (tick, steam, item) in &c.purchases {
+        let idx = match round_of(*tick, &rounds) {
+            Some(i) => i,
+            None => continue,
+        };
+        let start = rounds[idx].freeze_start_tick;
+        // First buytime_ended at/after freeze start; without one (older demos /
+        // final round), fall back to live start + a grace for late buyers.
+        let deadline = buyends
+            .iter()
+            .copied()
+            .find(|&e| e >= start)
+            .unwrap_or_else(|| rounds[idx].start_tick + 5 * DEMO_TICK_RATE as u32);
+        if *tick > deadline {
+            continue;
+        }
+        let t = round1((*tick as f64 - start as f64) / DEMO_TICK_RATE).max(0.0);
+        rounds[idx].purchases.push(Purchase {
+            tick: *tick,
+            t,
+            steam_id: steam.clone(),
+            item: item.clone(),
+        });
+    }
+
     for r in &mut rounds {
+        r.purchases.sort_by_key(|p| p.tick);
         r.events.sort_by_key(|e| match e {
             Event::Kill { tick, .. } => *tick,
             Event::BombPlanted { tick, .. } => *tick,
@@ -759,6 +791,7 @@ pub(crate) fn build_replay(c: &Collector) -> Replay {
             steam_id: m.steam_id.clone(),
             name: m.name.clone(),
             start_side: m.start_side.clone(),
+            comp_color: m.comp_color,
         })
         .collect();
 
