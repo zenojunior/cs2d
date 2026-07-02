@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import type { Round, Side } from '@/viewer/domain/schema'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
-import { roundDisplayLabels } from '@/viewer/analysis/utilityStats'
+import { roundDisplayLabels } from '@/viewer/domain/rounds'
 import UiIcon from '@/ui/UiIcon.vue'
 import { useI18n } from '@/i18n'
 

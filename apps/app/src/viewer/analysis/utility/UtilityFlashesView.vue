@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Replay } from '@/viewer/domain/schema'
-import { computeFlashStats, groupTeams, type CellDetail, type FlashPlay } from '@/viewer/analysis/utilityStats'
-import UtilityTeamGrid from '@/viewer/analysis/UtilityTeamGrid.vue'
+import { computeFlashStats, type CellDetail, type FlashPlay } from '@/viewer/analysis/utility/utilityStats'
+import { groupTeams } from '@/viewer/domain/teams'
+import UtilityTeamGrid from '@/viewer/analysis/utility/UtilityTeamGrid.vue'
 import UiIcon from '@/ui/UiIcon.vue'
 import { useI18n } from '@/i18n'
 

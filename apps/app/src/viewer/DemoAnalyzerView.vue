@@ -8,10 +8,10 @@ import UiIcon from '@/ui/UiIcon.vue'
 // landing chunk stays small: the dropzone hero is all the first paint needs.
 import type ViewerStageType from '@/viewer/player/ViewerStage.vue'
 const ViewerStage = defineAsyncComponent(() => import('@/viewer/player/ViewerStage.vue'))
-const HeatmapView = defineAsyncComponent(() => import('@/viewer/analysis/HeatmapView.vue'))
-const UtilitiesView = defineAsyncComponent(() => import('@/viewer/analysis/UtilitiesView.vue'))
-const EconomyView = defineAsyncComponent(() => import('@/viewer/analysis/EconomyView.vue'))
-const DuelsView = defineAsyncComponent(() => import('@/viewer/analysis/DuelsView.vue'))
+const HeatmapView = defineAsyncComponent(() => import('@/viewer/analysis/heatmap/HeatmapView.vue'))
+const UtilitiesView = defineAsyncComponent(() => import('@/viewer/analysis/utility/UtilitiesView.vue'))
+const EconomyView = defineAsyncComponent(() => import('@/viewer/analysis/economy/EconomyView.vue'))
+const DuelsView = defineAsyncComponent(() => import('@/viewer/analysis/duels/DuelsView.vue'))
 const DemoPreviewLoop = defineAsyncComponent(() => import('@/viewer/player/DemoPreviewLoop.vue'))
 import { useDemoParser } from '@/viewer/ingest/useDemoParser'
 import { useRecentDemos } from '@/viewer/ingest/useRecentDemos'

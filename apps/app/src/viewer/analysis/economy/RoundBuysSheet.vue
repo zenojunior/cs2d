@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Replay, Side } from '@/viewer/domain/schema'
-import type { TeamRoundEconomy } from '@/viewer/analysis/roundEconomy'
-import { buildRoundBuys } from '@/viewer/analysis/buyBreakdown'
+import type { TeamRoundEconomy } from '@/viewer/analysis/economy/roundEconomy'
+import { buildRoundBuys } from '@/viewer/analysis/economy/buyBreakdown'
 import { SIDE_COLOR, TEAM_COLOR } from '@/viewer/domain/colors'
-import RoundEquipBar from '@/viewer/analysis/RoundEquipBar.vue'
+import RoundEquipBar from '@/viewer/analysis/economy/RoundEquipBar.vue'
 import UiBottomSheet from '@/ui/UiBottomSheet.vue'
 import UiIcon from '@/ui/UiIcon.vue'
 import { useI18n } from '@/i18n'

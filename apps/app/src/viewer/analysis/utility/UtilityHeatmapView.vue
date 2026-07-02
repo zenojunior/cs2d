@@ -4,11 +4,12 @@ import type { GrenadeEvent, GrenadeKind, Replay, Round, Side } from '@/viewer/do
 import { MAP_CALIBRATION } from '@/viewer/domain/calibration'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
 import { KIND_ORDER, grenadeIconStyle } from '@/viewer/domain/grenades'
-import HeatmapPlot from '@/viewer/analysis/HeatmapPlot.vue'
-import RoundStrip from '@/viewer/analysis/RoundStrip.vue'
-import RoundTimeRange from '@/viewer/analysis/RoundTimeRange.vue'
-import { freezeSeconds, maxLiveRoundTime } from '@/viewer/analysis/roundTime'
-import { groupTeams, isKnifeRound } from '@/viewer/analysis/utilityStats'
+import HeatmapPlot from '@/viewer/analysis/shared/HeatmapPlot.vue'
+import RoundStrip from '@/viewer/analysis/shared/RoundStrip.vue'
+import RoundTimeRange from '@/viewer/analysis/shared/RoundTimeRange.vue'
+import { freezeSeconds, maxLiveRoundTime } from '@/viewer/analysis/shared/roundTime'
+import { groupTeams } from '@/viewer/domain/teams'
+import { isKnifeRound } from '@/viewer/domain/rounds'
 import { useI18n } from '@/i18n'
 
 const { t } = useI18n()

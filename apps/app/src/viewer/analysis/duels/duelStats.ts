@@ -3,7 +3,7 @@
 // round) breakdown. Everything is derived from the kill events already in the
 // replay, so the parser needs no changes.
 import type { Replay, Round, Side } from '@/viewer/domain/schema'
-import { isKnifeRound, roundDisplayLabels, roundSides } from '@/viewer/analysis/utilityStats'
+import { isKnifeRound, roundDisplayLabels, roundSides } from '@/viewer/domain/rounds'
 
 /**
  * killer steamId -> victim steamId -> kill count across the whole match.

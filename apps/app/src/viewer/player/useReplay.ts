@@ -1,7 +1,7 @@
 import { computed, onUnmounted, ref, shallowRef } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 import type { PlayerMeta, PlayerState, Replay, Round, Side } from '@/viewer/domain/schema'
-import { preGameRoundCount, roundDisplayLabels, roundSides } from '@/viewer/analysis/utilityStats'
+import { preGameRoundCount, roundDisplayLabels, roundSides } from '@/viewer/domain/rounds'
 
 /** Playback speeds offered in the controls. */
 export const SPEEDS = [1, 2, 4, 8] as const

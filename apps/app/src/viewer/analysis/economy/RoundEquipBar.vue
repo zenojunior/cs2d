@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { TeamRoundEconomy } from '@/viewer/analysis/roundEconomy'
-import { BUY_COLOR } from '@/viewer/analysis/roundEconomy'
+import type { TeamRoundEconomy } from '@/viewer/analysis/economy/roundEconomy'
+import { BUY_COLOR } from '@/viewer/analysis/economy/roundEconomy'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
 import UiIcon from '@/ui/UiIcon.vue'
 import { useI18n } from '@/i18n'

@@ -15,7 +15,8 @@
  *    overview); the settled inventory gives the held loadout.
  */
 import type { Replay, Round, Side } from '@/viewer/domain/schema'
-import { groupTeams, preGameRoundCount, roundSides } from '@/viewer/analysis/utilityStats'
+import { preGameRoundCount, roundSides } from '@/viewer/domain/rounds'
+import { groupTeams } from '@/viewer/domain/teams'
 import { weaponIconPath } from '@/viewer/domain/weaponIcons'
 import { playerColor } from '@/viewer/domain/colors'
 
