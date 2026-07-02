@@ -2,7 +2,7 @@
 import { computed, inject, ref, watch } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 import { appFullscreenKey } from '@/shell/appFullscreen'
-import type { CommentAnchor, CommentKind, GrenadeKind, Replay, VoiceData } from '@/viewer/domain/schema'
+import type { GrenadeKind, Replay, VoiceData } from '@/viewer/domain/schema'
 import ViewerMap from '@/viewer/player/ViewerMap.vue'
 import ViewerControls from '@/viewer/player/ViewerControls.vue'
 import CoachToolbar from '@/viewer/player/CoachToolbar.vue'
@@ -38,7 +38,8 @@ import { useCoachBoard } from '@/viewer/player/useCoachBoard'
 import { useReplayExport } from '@/viewer/player/useReplayExport'
 import { useMapLevels } from '@/viewer/player/useMapLevels'
 import { useViewerShortcuts } from '@/viewer/player/useViewerShortcuts'
-import { commentDuration } from '@/viewer/comments/commentAnchor'
+import { useCommentFlow } from '@/viewer/player/useCommentFlow'
+import { useContextMenu } from '@/viewer/player/useContextMenu'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
 import { roundOutcome } from '@/viewer/domain/roundOutcome'
 import { useI18n } from '@/i18n'
@@ -128,141 +129,55 @@ const comments = useComments()
 const board = useCoachBoard()
 const coachMode = ref(false)
 
-type Popover = {
-  mode: 'create' | 'edit'
-  /** Reference rect in viewport coords (vx,vy = top-left, vw,vh = size); floating-ui
-   *  places the card above/below it. */
-  vx: number
-  vy: number
-  vw: number
-  vh: number
-  /** create: world anchor + the moment + the detected target. */
-  wx?: number
-  wy?: number
-  roundIndex?: number
-  t?: number
-  anchor?: CommentAnchor
-  /** edit: the comment being changed. */
-  id?: string
-  text?: string
-  author?: string
-  duration?: number
-  kind?: CommentKind
-  isArea?: boolean
-  textInside?: boolean
-  /** Resolved target badge shown in the popover. */
-  anchorLabel?: string
-  anchorIcon?: string
-}
-const popover = ref<Popover | null>(null)
+// Comment interaction: the create/edit popover lifecycle, comment mode + panel,
+// and the seek-to-comment helpers. Declared early so the demo-switch watch and
+// coach mode below can reset `popover`/`commentMode`.
+const commentFlow = useCommentFlow({ r, comments, t })
+const {
+  popover,
+  commentMode,
+  panelOpen,
+  pendingArea,
+  onPopoverKind,
+  popoverAnchor,
+  onPopoverMoved,
+  anchorLabel,
+  anchorIcon,
+  onDropComment,
+  jumpToComment,
+  onSelectComment,
+  onPopoverSave,
+  onPopoverRemove,
+  selectRound,
+  onPanelUpdate,
+  roundComments,
+  commentedRounds,
+  toggleCommentMode,
+} = commentFlow
 
-/** While creating an area comment, the rectangle being drawn (world coords), so
- *  the map keeps it visible and connected to the open popover. */
-const pendingArea = computed(() => {
-  const p = popover.value
-  if (p?.mode === 'create' && p.anchor?.kind === 'area' && p.wx != null && p.wy != null) {
-    return { x: p.wx, y: p.wy, x2: p.anchor.x2, y2: p.anchor.y2, kind: p.kind }
-  }
-  return null
+// Right-click context menu: comment/target under the cursor + its actions. The
+// edit/create actions delegate to the comment flow; follow is owned by the stage.
+const {
+  contextComment,
+  onContextComment,
+  editContextComment,
+  deleteContextComment,
+  onResizeArea,
+  contextTarget,
+  onContextTarget,
+  addContextComment,
+  contextPlayerId,
+  followContextPlayer,
+  toast,
+  copyContextSetpos,
+} = useContextMenu({
+  comments,
+  t,
+  onSelectComment: commentFlow.onSelectComment,
+  onDropComment: commentFlow.onDropComment,
+  toggleFollow,
 })
 
-/** Live kind change from the popover, so the pending area recolors as you pick. */
-function onPopoverKind(k: CommentKind) {
-  if (popover.value) popover.value.kind = k
-}
-
-/** While the popover is open, its anchor (world coords + kind) so the map can keep
- *  the popover pinned to it as the view (zoom/pan) or the anchored player moves. */
-const popoverAnchor = computed(() => {
-  const p = popover.value
-  if (!p || !p.anchor || p.wx == null || p.wy == null) return null
-  return { anchor: p.anchor, wx: p.wx, wy: p.wy }
-})
-/** The map recomputed the anchor's screen rect; re-pin the popover to it. */
-function onPopoverMoved(rect: { vx: number; vy: number; vw: number; vh: number }) {
-  const p = popover.value
-  if (!p) return
-  p.vx = rect.vx
-  p.vy = rect.vy
-  p.vw = rect.vw
-  p.vh = rect.vh
-}
-
-// Right-click context menu actions, keyed to the comment under the cursor (set on
-// contextmenu by the map; null when the right-click missed every comment).
-const contextComment = ref<{ id: string; vx: number; vy: number; vw: number; vh: number } | null>(null)
-function onContextComment(p: { id: string; vx: number; vy: number; vw: number; vh: number } | null) {
-  contextComment.value = p
-}
-function editContextComment() {
-  if (contextComment.value) onSelectComment(contextComment.value)
-}
-function deleteContextComment() {
-  if (contextComment.value) comments.remove(contextComment.value.id)
-}
-
-/** An area comment was resized by dragging a corner handle on the map. */
-function onResizeArea(p: { id: string; x: number; y: number; x2: number; y2: number }) {
-  comments.setArea(p.id, p.x, p.y, p.x2, p.y2)
-}
-
-// Right-click target for a new comment (a player under the cursor), for the
-// "add a comment" context-menu action.
-const contextTarget = ref<{
-  x: number
-  y: number
-  z: number
-  yaw: number
-  anchor: CommentAnchor
-  vx: number
-  vy: number
-} | null>(null)
-function onContextTarget(
-  p: { x: number; y: number; z: number; yaw: number; anchor: CommentAnchor; vx: number; vy: number } | null,
-) {
-  contextTarget.value = p
-}
-function addContextComment() {
-  const tgt = contextTarget.value
-  if (tgt) onDropComment({ x: tgt.x, y: tgt.y, anchor: tgt.anchor, vx: tgt.vx, vy: tgt.vy, vw: 0, vh: 0 })
-}
-// steamId of the player under the right-click (null when it's not a player), so
-// the context menu can offer "follow / stop following".
-const contextPlayerId = computed(() => {
-  const a = contextTarget.value?.anchor
-  return a?.kind === 'player' ? a.steamId : null
-})
-function followContextPlayer() {
-  if (contextPlayerId.value) toggleFollow(contextPlayerId.value)
-}
-
-// Brief confirmation toast (auto-hides), used when copying a position to the clipboard.
-const toast = ref('')
-let toastTimer: ReturnType<typeof setTimeout> | undefined
-function showToast(msg: string) {
-  toast.value = msg
-  clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => (toast.value = ''), 1800)
-}
-
-/**
- * Copies a CS2 console teleport command for the right-clicked player, mirroring
- * the in-game `getpos` output: `setpos x y z;setang pitch yaw roll`. We only know
- * the yaw, so pitch and roll are left at 0.
- */
-async function copyContextSetpos() {
-  const tgt = contextTarget.value
-  if (!tgt) return
-  const cmd = `setpos ${tgt.x.toFixed(2)} ${tgt.y.toFixed(2)} ${tgt.z.toFixed(2)};setang 0 ${tgt.yaw.toFixed(2)} 0`
-  try {
-    await navigator.clipboard.writeText(cmd)
-    showToast(t('viewer.copyPosDone'))
-  } catch {
-    showToast(cmd)
-  }
-}
-const commentMode = ref(false)
-const lastAuthor = useLocalStorage('viewer.comment.author', '')
 const stageEl = ref<HTMLElement | null>(null)
 
 // Load this demo's comments (and clear when switching demos).
@@ -277,31 +192,6 @@ watch(
   },
   { immediate: true },
 )
-
-/** Comments anchored to the round in view (drives the pins + timeline markers). */
-const roundComments = computed(() =>
-  comments.comments.value.filter((c) => c.roundIndex === r.roundIndex.value),
-)
-
-/** Round indices that have at least one comment (drives the round badge). */
-const commentedRounds = computed(() => {
-  const s = new Set<number>()
-  for (const c of comments.comments.value) s.add(c.roundIndex)
-  return s
-})
-
-function toggleCommentMode() {
-  commentMode.value = !commentMode.value
-  if (commentMode.value) {
-    // Pause on entering so the map (and the bubbles) stays still while annotating,
-    // and open the comments sidebar (the side rosters are hidden to make room).
-    r.pause()
-    panelOpen.value = true
-  } else {
-    popover.value = null
-    panelOpen.value = false
-  }
-}
 
 // --- Coach mode --------------------------------------------------------------
 // A tactical-board overlay: the game HUD (killfeed, chat, rosters, scoreboard)
@@ -380,143 +270,8 @@ function clearCoachDrawings() {
   board.clearRound(r.roundIndex.value)
 }
 
-/** Human label for what a comment is anchored to (player name / grenade / point). */
-function anchorLabel(anchor: CommentAnchor): string {
-  if (anchor.kind === 'player') {
-    return r.playersById.value.get(anchor.steamId)?.name ?? t('viewer.comment.targetPlayer')
-  }
-  if (anchor.kind === 'grenade') return t(`grenadeKind.${anchor.grenadeKind}`)
-  if (anchor.kind === 'area') return t('viewer.comment.targetArea')
-  return t('viewer.comment.targetPoint')
-}
-function anchorIcon(anchor: CommentAnchor): string {
-  if (anchor.kind === 'player') return 'user'
-  if (anchor.kind === 'grenade') return 'flame'
-  if (anchor.kind === 'area') return 'square'
-  return 'map-pin'
-}
 
-function onDropComment(p: {
-  x: number
-  y: number
-  anchor: CommentAnchor
-  vx: number
-  vy: number
-  vw: number
-  vh: number
-}) {
-  r.pause()
-  popover.value = {
-    mode: 'create',
-    vx: p.vx,
-    vy: p.vy,
-    vw: p.vw,
-    vh: p.vh,
-    wx: p.x,
-    wy: p.y,
-    roundIndex: r.roundIndex.value,
-    t: r.currentT.value,
-    anchor: p.anchor,
-    author: lastAuthor.value,
-    duration: 5,
-    kind: 'note',
-    isArea: p.anchor.kind === 'area',
-    textInside: false,
-    anchorLabel: anchorLabel(p.anchor),
-    anchorIcon: anchorIcon(p.anchor),
-  }
-}
 
-function jumpToComment(c: { roundIndex: number; t: number }) {
-  r.pause()
-  r.selectRound(c.roundIndex)
-  r.seekBySeconds(c.t - r.currentT.value)
-}
-
-function onSelectComment(p: { id: string; vx: number; vy: number; vw: number; vh: number }) {
-  const c = comments.comments.value.find((x) => x.id === p.id)
-  if (!c) return
-  jumpToComment(c)
-  popover.value = {
-    mode: 'edit',
-    vx: p.vx,
-    vy: p.vy,
-    vw: p.vw,
-    vh: p.vh,
-    anchor: c.anchor,
-    wx: c.x,
-    wy: c.y,
-    id: c.id,
-    text: c.text,
-    author: c.author ?? '',
-    duration: commentDuration(c),
-    kind: c.kind ?? 'note',
-    isArea: c.anchor.kind === 'area',
-    textInside: c.textInside ?? false,
-    anchorLabel: anchorLabel(c.anchor),
-    anchorIcon: anchorIcon(c.anchor),
-  }
-}
-
-function onPopoverSave({
-  text,
-  author,
-  duration,
-  kind,
-  textInside,
-}: {
-  text: string
-  author: string
-  duration: number
-  kind: CommentKind
-  textInside: boolean
-}) {
-  const p = popover.value
-  if (!p) return
-  lastAuthor.value = author
-  if (p.mode === 'create') {
-    comments.add({
-      roundIndex: p.roundIndex ?? r.roundIndex.value,
-      t: p.t ?? r.currentT.value,
-      duration,
-      x: p.wx ?? 0,
-      y: p.wy ?? 0,
-      anchor: p.anchor ?? { kind: 'point' },
-      kind,
-      textInside,
-      text,
-      author,
-    })
-  } else if (p.id) {
-    comments.update(p.id, { text, author, duration, kind, textInside })
-  }
-  popover.value = null
-}
-
-function onPopoverRemove() {
-  if (popover.value?.id) comments.remove(popover.value.id)
-  popover.value = null
-}
-
-// Switching rounds from the controls dismisses an open popover (its pin is
-// round-scoped); jump-to-comment stays on the same round, so it is unaffected.
-function selectRound(i: number) {
-  popover.value = null
-  r.selectRound(i)
-}
-
-// --- Comments panel (side drawer) --------------------------------------------
-const panelOpen = ref(false)
-function onPanelUpdate(patch: {
-  id: string
-  text?: string
-  author?: string
-  duration?: number
-  kind?: CommentKind
-  textInside?: boolean
-}) {
-  comments.update(patch.id, patch)
-}
 
 // --- Export ------------------------------------------------------------------
 const { exporting, exportError, exportReplay } = useReplayExport({
