@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Replay } from '@/viewer/domain/schema'
-import { groupTeams } from '@/viewer/analysis/utilityStats'
-import { computeDuelMatrix } from '@/viewer/analysis/duelStats'
+import { groupTeams } from '@/viewer/domain/teams'
+import { computeDuelMatrix } from '@/viewer/analysis/duels/duelStats'
 import { useI18n } from '@/i18n'
 
 /**

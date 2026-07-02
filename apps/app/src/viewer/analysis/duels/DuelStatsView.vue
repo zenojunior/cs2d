@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Replay } from '@/viewer/domain/schema'
-import DuelMatrixView from '@/viewer/analysis/DuelMatrixView.vue'
-import OpeningDuelsView from '@/viewer/analysis/OpeningDuelsView.vue'
+import DuelMatrixView from '@/viewer/analysis/duels/DuelMatrixView.vue'
+import OpeningDuelsView from '@/viewer/analysis/duels/OpeningDuelsView.vue'
 import { useI18n } from '@/i18n'
 
 const { t } = useI18n()

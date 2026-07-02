@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { Replay, Side } from '@/viewer/domain/schema'
-import { buildMatchEconomy, buyStats, BUY_COLOR, type BuyType } from '@/viewer/analysis/roundEconomy'
+import { buildMatchEconomy, buyStats, BUY_COLOR, type BuyType } from '@/viewer/analysis/economy/roundEconomy'
 import { roundOutcome } from '@/viewer/domain/roundOutcome'
 import { TEAM_COLOR } from '@/viewer/domain/colors'
-import RoundEquipBar from '@/viewer/analysis/RoundEquipBar.vue'
-import RoundBuysSheet from '@/viewer/analysis/RoundBuysSheet.vue'
+import RoundEquipBar from '@/viewer/analysis/economy/RoundEquipBar.vue'
+import RoundBuysSheet from '@/viewer/analysis/economy/RoundBuysSheet.vue'
 import { useI18n } from '@/i18n'
 
 /**

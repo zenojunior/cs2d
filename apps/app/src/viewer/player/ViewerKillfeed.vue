@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import type { GameEvent, PlayerMeta, Round, Side } from '@/viewer/domain/schema'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
-import { flashSetupForKill, roundSides } from '@/viewer/analysis/utilityStats'
+import { flashSetupForKill, roundSides } from '@/viewer/domain/rounds'
 import KillfeedRow from '@/viewer/player/KillfeedRow.vue'
 
 type Kill = Extract<GameEvent, { type: 'kill' }>

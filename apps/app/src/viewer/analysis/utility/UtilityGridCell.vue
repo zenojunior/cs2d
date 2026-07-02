@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from 'reka-ui'
 import type { Replay } from '@/viewer/domain/schema'
-import type { CellDetail } from '@/viewer/analysis/utilityStats'
+import type { CellDetail } from '@/viewer/analysis/utility/utilityStats'
 import ReplayClipPopover from '@/viewer/player/ReplayClipPopover.vue'
 
 /**

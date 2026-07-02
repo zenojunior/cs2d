@@ -14,7 +14,7 @@
  * swaps, so a team's rounds can be grouped even though its side (CT/T) flips.
  */
 import type { Round, Side } from '@/viewer/domain/schema'
-import { preGameRoundCount } from '@/viewer/analysis/utilityStats'
+import { preGameRoundCount } from '@/viewer/domain/rounds'
 
 export type BuyType = 'pistol' | 'eco' | 'semi' | 'force-buy' | 'full'
 

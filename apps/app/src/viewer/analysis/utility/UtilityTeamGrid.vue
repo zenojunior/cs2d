@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Replay } from '@/viewer/domain/schema'
-import type { CellDetail, Team } from '@/viewer/analysis/utilityStats'
-import UtilityGridCell from '@/viewer/analysis/UtilityGridCell.vue'
+import type { CellDetail } from '@/viewer/analysis/utility/utilityStats'
+import type { Team } from '@/viewer/domain/teams'
+import UtilityGridCell from '@/viewer/analysis/utility/UtilityGridCell.vue'
 import { useI18n } from '@/i18n'
 
 const { t } = useI18n()

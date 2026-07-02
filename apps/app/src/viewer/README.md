@@ -20,6 +20,9 @@ router.ts
        ├─ domain/                the parsed data, as pure types/constants
        │    schema.ts            Replay, Round, PlayerState, VoiceData, comments…
        │    calibration.ts       MAP_CALIBRATION + world↔radar coordinate math
+       │    rounds.ts            round-structure helpers (sides, knife/pre-game
+       │                           detection, display numbering, flash-assist)
+       │    teams.ts             groupTeams: split players into the two teams
        │    colors / weaponIcons / roundOutcome
        │
        ├─ player/                play the Replay back
@@ -30,10 +33,14 @@ router.ts
        │    useReplay            playback clock, tick state, speed
        │    useVoicePlayback / voiceCodec   in-game comms audio
        │
-       ├─ analysis/              stat tabs computed from the Replay
-       │    EconomyView (roundEconomy) · HeatmapView (HeatmapPlot)
-       │    UtilitiesView (sub-nav) → UtilityThrowsView · UtilityFlashesView · UtilityDamageView
-       │      flashes/damage share UtilityTeamGrid + utilityStats (pure aggregation)
+       ├─ analysis/              stat tabs computed from the Replay, one folder
+       │    │                     per top-level tab + shared/ for cross-tab parts
+       │    economy/             EconomyView → RoundBuysSheet/RoundEquipBar (roundEconomy, buyBreakdown)
+       │    utility/             UtilitiesView (sub-nav) → UtilityThrowsView · UtilityFlashesView · UtilityDamageView
+       │      │                    flashes/damage share UtilityTeamGrid + utilityStats (pure aggregation)
+       │    duels/               DuelsView → DuelStatsView/DuelMatrixView · OpeningDuelsView/OpeningDuelMapView (duelStats)
+       │    heatmap/             HeatmapView
+       │    shared/              HeatmapPlot (+heatmapTypes) · RoundStrip · RoundTimeRange · roundTime
        │
        └─ comments/              replay annotations
             CommentsPanel / CommentPopover · useComments · commentAnchor / commentKinds

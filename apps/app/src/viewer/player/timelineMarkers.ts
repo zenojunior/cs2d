@@ -1,6 +1,6 @@
 import type { PlayerMeta, ReplayComment, Round } from '@/viewer/domain/schema'
 import { commentDuration } from '@/viewer/comments/commentAnchor'
-import { roundSides } from '@/viewer/analysis/utilityStats'
+import { roundSides } from '@/viewer/domain/rounds'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
 
 /**
