@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
-import { onKeyStroke, useEventListener, useLocalStorage } from '@vueuse/core'
+import { useLocalStorage } from '@vueuse/core'
 import { appFullscreenKey } from '@/shell/appFullscreen'
 import type { CommentAnchor, CommentKind, GrenadeKind, Replay, VoiceData } from '@/viewer/domain/schema'
 import ViewerMap from '@/viewer/player/ViewerMap.vue'
@@ -35,9 +35,10 @@ import {
   COACH_DEFAULT_THICKNESS,
 } from '@/viewer/player/coachTools'
 import { useCoachBoard } from '@/viewer/player/useCoachBoard'
+import { useReplayExport } from '@/viewer/player/useReplayExport'
+import { useMapLevels } from '@/viewer/player/useMapLevels'
+import { useViewerShortcuts } from '@/viewer/player/useViewerShortcuts'
 import { commentDuration } from '@/viewer/comments/commentAnchor'
-import { exportArchive, archiveFileName } from '@/viewer/ingest/demoArchive'
-import { MAP_CALIBRATION } from '@/viewer/domain/calibration'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
 import { roundOutcome } from '@/viewer/domain/roundOutcome'
 import { useI18n } from '@/i18n'
@@ -518,35 +519,13 @@ function onPanelUpdate(patch: {
 }
 
 // --- Export ------------------------------------------------------------------
-const exporting = ref(false)
-const exportError = ref<string | null>(null)
-async function exportReplay() {
-  if (exporting.value) return
-  exporting.value = true
-  exportError.value = null
-  try {
-    const name = props.fileName || props.sourceLabel || props.replay.map
-    const blob = await exportArchive({
-      fileName: props.fileName || props.sourceLabel || `${props.replay.map}.dem`,
-      replay: props.replay,
-      voice: props.voice ?? null,
-      comments: comments.comments.value,
-    })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = archiveFileName(name)
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(url)
-  } catch (err) {
-    exportError.value = err instanceof Error ? err.message : String(err)
-    console.error('Replay export failed:', err)
-  } finally {
-    exporting.value = false
-  }
-}
+const { exporting, exportError, exportReplay } = useReplayExport({
+  fileName: () => props.fileName,
+  sourceLabel: () => props.sourceLabel,
+  replay: () => props.replay,
+  voice: () => props.voice ?? null,
+  comments: () => comments.comments.value,
+})
 
 // Player advanced options ("Advanced" menu). Extensible: each item toggles a
 // behavior. For now: auto zoom that frames the players.
@@ -601,23 +580,11 @@ function toggleAdvanced(key: string) {
   else if (key === 'skipFreeze') r.skipFreeze.value = !r.skipFreeze.value
 }
 
-const calibration = computed(() => {
-  const map = r.replay.value?.map
-  return (map && MAP_CALIBRATION[map]) || MAP_CALIBRATION.de_dust2
-})
-
-// Two-floor maps (e.g. Nuke): level selector that swaps the background radar and
-// fades the players on the other floor. Manual and predictable (no auto-flip).
-const mapLevels = computed(() => calibration.value.levels ?? null)
-const activeLevel = ref(0)
-watch(mapLevels, () => (activeLevel.value = 0))
-const activeLevelRadar = computed(
-  () => mapLevels.value?.[activeLevel.value]?.radar ?? calibration.value.radar,
+// Map calibration + the two-floor level selector (e.g. Nuke): swaps the radar
+// and the Z range that dims players on the other floor.
+const { calibration, mapLevels, activeLevel, activeLevelRadar, activeLevelRange } = useMapLevels(
+  () => r.replay.value?.map,
 )
-const activeLevelRange = computed(() => {
-  const lvl = mapLevels.value?.[activeLevel.value]
-  return lvl ? { minZ: lvl.minZ, maxZ: lvl.maxZ } : null
-})
 
 function fmtClock(s: number) {
   // Ceil the total seconds so the clock holds the upper whole second and only
@@ -636,82 +603,16 @@ const clockAlert = computed(
     (r.clock.value.phase === 'round' && r.clock.value.seconds <= 10),
 )
 
-// Keyboard shortcuts: space toggles play/pause, arrows seek +/-5s in the round.
-// Ignored when focus is in a text field.
-const TEXT_INPUT_TYPES = ['text', 'search', 'email', 'url', 'tel', 'password', 'number']
-function isTyping(e: KeyboardEvent) {
-  const el = e.target as HTMLElement | null
-  if (!el) return false
-  if (el.isContentEditable || el.tagName === 'TEXTAREA') return true
-  return el.tagName === 'INPUT' && TEXT_INPUT_TYPES.includes((el as HTMLInputElement).type)
-}
-
-/** Shortcuts are inert while the stage isn't the active tab (it stays mounted
- *  via v-show on other tabs) or while typing in a field. */
-function shortcutsBlocked(e: KeyboardEvent) {
-  return props.active === false || isTyping(e)
-}
-
-// Playback shortcuts are disabled in coach mode: the board is frozen on the tick
-// the coach entered, so play/pause and seeking would break it.
-onKeyStroke(' ', (e) => {
-  if (shortcutsBlocked(e) || coachMode.value) return
-  e.preventDefault()
-  r.toggle()
-})
-onKeyStroke('ArrowRight', (e) => {
-  if (shortcutsBlocked(e) || coachMode.value) return
-  e.preventDefault()
-  r.seekBySeconds(5)
-})
-onKeyStroke('ArrowLeft', (e) => {
-  if (shortcutsBlocked(e) || coachMode.value) return
-  e.preventDefault()
-  r.seekBySeconds(-5)
-})
-
-// Undo/redo on the tactical board (coach mode only). Ctrl/Cmd+Z undoes,
-// Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y redoes.
-onKeyStroke(['z', 'Z'], (e) => {
-  if (!coachMode.value || shortcutsBlocked(e) || !(e.ctrlKey || e.metaKey)) return
-  e.preventDefault()
-  if (e.shiftKey) board.redo()
-  else board.undo()
-})
-onKeyStroke(['y', 'Y'], (e) => {
-  if (!coachMode.value || shortcutsBlocked(e) || !(e.ctrlKey || e.metaKey)) return
-  e.preventDefault()
-  board.redo()
-})
-
-// Scoreboard (TAB style): shown while the key is held.
-const scoreboardOpen = ref(false)
-onKeyStroke(
-  'Tab',
-  (e) => {
-    if (shortcutsBlocked(e)) return
-    e.preventDefault()
-    scoreboardOpen.value = true
-  },
-  { eventName: 'keydown' },
-)
-onKeyStroke(
-  'Tab',
-  (e) => {
-    if (props.active === false) return
-    e.preventDefault()
-    scoreboardOpen.value = false
-  },
-  { eventName: 'keyup' },
-)
-// Lost focus (e.g. alt-tab) with TAB held: make sure the scoreboard closes.
-useEventListener(window, 'blur', () => (scoreboardOpen.value = false))
-
-// Esc stops following the current player.
-onKeyStroke('Escape', (e) => {
-  if (shortcutsBlocked(e) || !followSteamId.value) return
-  e.preventDefault()
-  followSteamId.value = null
+// Keyboard shortcuts (space/arrows/undo-redo/Tab scoreboard/Esc). Owns the
+// held-Tab scoreboard state; play/seek and board undo/redo are wired in.
+const { scoreboardOpen } = useViewerShortcuts({
+  active: () => props.active,
+  coachMode,
+  followSteamId,
+  toggle: () => r.toggle(),
+  seek: (s) => r.seekBySeconds(s),
+  undo: () => board.undo(),
+  redo: () => board.redo(),
 })
 
 // Color of the side that won the round (for the Rounds menu); neutral if none.
