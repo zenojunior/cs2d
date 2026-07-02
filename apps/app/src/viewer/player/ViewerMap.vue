@@ -17,6 +17,7 @@ import {
 import type { GrenadeKind } from '@/viewer/domain/schema'
 import { createGrenadeEffects, paintSimpleSmoke, paintSimpleFire } from '@/viewer/player/grenadeEffects'
 import { useGrenadeRendering } from '@/viewer/player/useGrenadeRendering'
+import { useMapCamera } from '@/viewer/player/useMapCamera'
 import { clamp, drawKill, roundRect, wrapText } from '@/viewer/player/canvasUtils'
 import { useViewerAssets } from '@/viewer/player/useViewerAssets'
 import { useI18n } from '@/i18n'
@@ -1604,140 +1605,25 @@ function drawWatermark() {
   ctx.restore()
 }
 
-// --- auto zoom: frames all players, easing in/out ---
-const AUTO_PAD = 0.22 // padding (fraction of the screen) around the players bbox
-const AUTO_EASE = 0.1 // smoothing per frame (higher is faster)
-const AUTO_MIN_SPAN = 0.045 // min bbox (fraction) to avoid blowing up the zoom on a cluster
-const AUTO_ZOOM_MAX = 2.4 // zoom-in cap: does not get too close to the players
-const FOCUS_ZOOM_MAX = 4.5 // tighter cap when framing a focused subset (e.g. a kill)
-const FOCUS_POINT_ZOOM = 3.8 // zoom held while tracking a moving world point (tight, so it reads)
-const FOCUS_POINT_EASE = 0.3 // snappier easing so a fast point (a grenade) stays centered at that zoom
-
-/** Whether the auto-zoom loop should run: tracking a world point, framing all
- *  players or a focused subset, unless a single-player follow takes precedence. */
-function autoActive(): boolean {
-  return (
-    !props.followSteamId &&
-    (!!props.autoZoom || !!props.focusSteamIds?.length || !!props.focusWorld)
-  )
-}
-
-/** Alvo de zoom/pan: o ponto do mundo rastreado (`focusWorld`, prioridade), ou os
- *  jogadores vivos (fallback: todos), ou apenas o subconjunto em foco. */
-function autoTarget(): { zoom: number; panX: number; panY: number } | null {
-  if (props.focusWorld) {
-    if (L === 0) return null
-    const { fx, fy } = worldToFraction(props.calibration, props.focusWorld.x, props.focusWorld.y)
-    const z = FOCUS_POINT_ZOOM
-    return { zoom: z, panX: cw / 2 - fx * L * z, panY: ch / 2 - fy * L * z }
-  }
-  const focus = props.focusSteamIds
-  let pts: PlayerState[]
-  let zoomMax = AUTO_ZOOM_MAX
-  if (focus?.length) {
-    // Framed subset: keep them even when dead, so the death spot stays in view.
-    const set = new Set(focus)
-    pts = props.players.filter((p) => set.has(p.steamId))
-    zoomMax = FOCUS_ZOOM_MAX
-  } else {
-    pts = props.players.filter((p) => p.alive)
-    if (!pts.length) pts = props.players // round ended: use the last positions
-  }
-  if (!pts.length || L === 0) return null
-
-  let fxMin = Infinity
-  let fxMax = -Infinity
-  let fyMin = Infinity
-  let fyMax = -Infinity
-  for (const p of pts) {
-    const { fx, fy } = worldToFraction(props.calibration, p.x, p.y)
-    fxMin = Math.min(fxMin, fx)
-    fxMax = Math.max(fxMax, fx)
-    fyMin = Math.min(fyMin, fy)
-    fyMax = Math.max(fyMax, fy)
-  }
-  const cfx = (fxMin + fxMax) / 2
-  const cfy = (fyMin + fyMax) / 2
-  const dfx = Math.max(fxMax - fxMin, AUTO_MIN_SPAN)
-  const dfy = Math.max(fyMax - fyMin, AUTO_MIN_SPAN)
-  const availW = cw * (1 - AUTO_PAD * 2)
-  const availH = ch * (1 - AUTO_PAD * 2)
-  const z = clamp(Math.min(availW / (dfx * L), availH / (dfy * L)), 0.5, zoomMax)
-  return { zoom: z, panX: cw / 2 - cfx * L * z, panY: ch / 2 - cfy * L * z }
-}
-
-let autoRaf = 0
-function autoStep() {
-  const tgt = autoTarget()
-  if (tgt) {
-    const ease = props.focusWorld ? FOCUS_POINT_EASE : AUTO_EASE
-    zoom.value += (tgt.zoom - zoom.value) * ease
-    panX += (tgt.panX - panX) * ease
-    panY += (tgt.panY - panY) * ease
-  }
-  draw()
-  autoRaf = requestAnimationFrame(autoStep)
-}
-function stopAuto() {
-  cancelAnimationFrame(autoRaf)
-  autoRaf = 0
-}
-watch(
-  [() => props.autoZoom, () => props.focusSteamIds, () => !!props.focusWorld],
-  () => {
-    if (autoActive() && !autoRaf) autoRaf = requestAnimationFrame(autoStep)
-    else if (!autoActive()) stopAuto()
+// Automatic camera (auto-zoom + single-player follow). Owns its rAF loops and
+// drives the shared zoom/pan below; `followZoom` is adjusted by the wheel here.
+const { followZoom, kickIfFocused } = useMapCamera({
+  zoom,
+  getL: () => L,
+  getView: () => ({ cw, ch }),
+  getPan: () => ({ panX, panY }),
+  setPan: (x, y) => {
+    panX = x
+    panY = y
   },
-)
-
-// --- follow player: keep one player centered, zoomed in, easing in/out ---
-const FOLLOW_ZOOM = 2.6 // default closeness; the user can still wheel-zoom
-const FOLLOW_EASE = 0.16 // smoothing per frame
-// Follow zoom level, adjustable with the wheel while following (pan stays locked).
-const followZoom = ref(FOLLOW_ZOOM)
-
-/** Zoom/pan that centers the followed player; null if they aren't in view. */
-function followTarget(): { zoom: number; panX: number; panY: number } | null {
-  const id = props.followSteamId
-  if (!id || L === 0) return null
-  const p = props.players.find((pl) => pl.steamId === id)
-  if (!p) return null
-  const { fx, fy } = worldToFraction(props.calibration, p.x, p.y)
-  const z = followZoom.value
-  return { zoom: z, panX: cw / 2 - fx * L * z, panY: ch / 2 - fy * L * z }
-}
-
-let followRaf = 0
-function followStep() {
-  const tgt = followTarget()
-  if (tgt) {
-    zoom.value += (tgt.zoom - zoom.value) * FOLLOW_EASE
-    panX += (tgt.panX - panX) * FOLLOW_EASE
-    panY += (tgt.panY - panY) * FOLLOW_EASE
-  }
-  draw()
-  followRaf = requestAnimationFrame(followStep)
-}
-function stopFollow() {
-  cancelAnimationFrame(followRaf)
-  followRaf = 0
-}
-watch(
-  () => props.followSteamId,
-  (id, prevId) => {
-    if (id) {
-      stopAuto() // follow overrides auto zoom while active
-      // Starting a fresh follow keeps the current view's zoom; switching between
-      // players preserves whatever follow zoom the user had dialed in.
-      if (!prevId) followZoom.value = clamp(zoom.value, 0.6, 8)
-      if (!followRaf) followRaf = requestAnimationFrame(followStep)
-    } else {
-      stopFollow()
-      // Hand back to auto zoom / focus framing if either is still enabled.
-      if (autoActive() && !autoRaf) autoRaf = requestAnimationFrame(autoStep)
-    }
-  },
-)
+  calibration: () => props.calibration,
+  players: () => props.players,
+  autoZoom: () => props.autoZoom,
+  focusSteamIds: () => props.focusSteamIds,
+  focusWorld: () => props.focusWorld,
+  followSteamId: () => props.followSteamId,
+  draw: () => draw(),
+})
 
 // --- manual interaction: wheel zoom, drag pan (inactive in auto zoom) ---
 function onWheel(e: WheelEvent) {
@@ -2409,17 +2295,12 @@ onMounted(() => {
   ro = new ResizeObserver(resize)
   if (wrap.value) ro.observe(wrap.value)
   resize()
-  // Focus framing is set from the start (e.g. an embedded clip), so kick the
-  // auto-zoom loop on mount: unlike the autoZoom toggle, it has no off->on edge
-  // for the watch above to catch.
-  if ((props.focusSteamIds?.length || props.focusWorld) && !autoRaf) {
-    autoRaf = requestAnimationFrame(autoStep)
-  }
+  // Focus framing may be set from the start (e.g. an embedded clip): kick the
+  // auto-zoom loop now that the canvas has been laid out.
+  kickIfFocused()
 })
 onUnmounted(() => {
   ro?.disconnect()
-  stopAuto()
-  stopFollow()
 })
 </script>
 
