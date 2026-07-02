@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Standalone app: just the demo analyzer, always inside the lean public shell.
 import PublicShell from '@/shell/PublicShell.vue'
-import PwaPrompt from '@/PwaPrompt.vue'
+import PwaPrompt from '@/shell/PwaPrompt.vue'
 </script>
 
 <template>

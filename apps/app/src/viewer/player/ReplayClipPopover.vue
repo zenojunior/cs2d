@@ -7,7 +7,7 @@ import ReplayClip from '@/viewer/player/ReplayClip.vue'
 import { canCopyImage, copyCanvasToClipboard } from '@/viewer/player/useClipRecorder'
 import UiIcon from '@/ui/UiIcon.vue'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/ui/tooltip'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 const { t } = useI18n()
 

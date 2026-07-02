@@ -6,7 +6,7 @@ import Cs2Mark from '@/shell/Cs2Mark.vue'
 import UiIcon from '@/ui/UiIcon.vue'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/ui/tooltip'
 import { useSidebar } from '@/shell/useSidebar'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 // Compact, collapsible primary nav (VS Code activity-bar style). The collapse
 // state is shared (useSidebar) so the top-bar button drives it; when collapsed

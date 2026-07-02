@@ -15,7 +15,7 @@ import { useReplay } from '@/viewer/player/useReplay'
 import { useRecentDemos, type RecentDemo } from '@/viewer/ingest/useRecentDemos'
 import { MAP_CALIBRATION } from '@/viewer/domain/calibration'
 import { mapImage, prettyMap } from '@/viewer/domain/demoMeta'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 import type { Side } from '@/viewer/domain/schema'
 
 /**

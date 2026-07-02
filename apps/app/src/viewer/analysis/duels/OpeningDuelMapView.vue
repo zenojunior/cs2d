@@ -9,7 +9,7 @@ import KillfeedRow from '@/viewer/player/KillfeedRow.vue'
 import type { KillInfo } from '@/viewer/analysis/shared/heatmapTypes'
 import { computeOpeningDuels } from '@/viewer/analysis/duels/duelStats'
 import { groupTeams } from '@/viewer/domain/teams'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 /**
  * Map of the opening duels: the shooter -> victim path of every round's first

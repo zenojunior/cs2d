@@ -5,7 +5,7 @@ import { useFloating, offset, flip, shift, arrow, autoUpdate } from '@floating-u
 import UiIcon from '@/ui/UiIcon.vue'
 import UiSwitch from '@/ui/UiSwitch.vue'
 import { COMMENT_KINDS, type CommentKind } from '@/viewer/comments/commentKinds'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 /**
  * Small card to create or edit a comment, pinned to an anchor point on the map via

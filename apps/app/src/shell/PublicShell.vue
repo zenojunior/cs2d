@@ -16,8 +16,8 @@ import {
 } from '@/ui/menubar'
 import { appFullscreenKey } from '@/shell/appFullscreen'
 import { useSidebar } from '@/shell/useSidebar'
-import { useI18n, type LocaleCode } from '@/i18n'
-import { useSeoHead } from '@/seo'
+import { useI18n, type LocaleCode } from '@/app/i18n'
+import { useSeoHead } from '@/app/seo'
 
 // App chrome: a compact collapsible sidebar for the primary nav (Upload / Major /
 // Library) plus a thin top bar with a desktop-app-style Menubar (Info, Language).

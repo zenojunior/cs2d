@@ -3,7 +3,7 @@ import type { Replay } from '@/viewer/domain/schema'
 import type { CellDetail } from '@/viewer/analysis/utility/utilityStats'
 import type { Team } from '@/viewer/domain/teams'
 import UtilityGridCell from '@/viewer/analysis/utility/UtilityGridCell.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 const { t } = useI18n()
 

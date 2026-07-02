@@ -10,7 +10,7 @@ import RoundTimeRange from '@/viewer/analysis/shared/RoundTimeRange.vue'
 import { freezeSeconds, maxLiveRoundTime } from '@/viewer/analysis/shared/roundTime'
 import { groupTeams } from '@/viewer/domain/teams'
 import { isKnifeRound } from '@/viewer/domain/rounds'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 const { t } = useI18n()
 

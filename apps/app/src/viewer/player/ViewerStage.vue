@@ -2,7 +2,7 @@
 import { computed, inject, ref, watch } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 import { appFullscreenKey } from '@/shell/appFullscreen'
-import type { GrenadeKind, Replay, VoiceData } from '@/viewer/domain/schema'
+import type { Replay, VoiceData } from '@/viewer/domain/schema'
 import ViewerMap from '@/viewer/player/ViewerMap.vue'
 import ViewerControls from '@/viewer/player/ViewerControls.vue'
 import CoachToolbar from '@/viewer/player/CoachToolbar.vue'
@@ -13,36 +13,21 @@ import ViewerScoreboard from '@/viewer/player/ViewerScoreboard.vue'
 import CommentPopover from '@/viewer/comments/CommentPopover.vue'
 import CommentsPanel from '@/viewer/comments/CommentsPanel.vue'
 import UiIcon from '@/ui/UiIcon.vue'
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuShortcut,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
-} from '@/ui/context-menu'
-import { useReplay, SPEEDS } from '@/viewer/player/useReplay'
+import { ContextMenu, ContextMenuTrigger } from '@/ui/context-menu'
+import StageBadges from '@/viewer/player/StageBadges.vue'
+import StageContextMenu from '@/viewer/player/StageContextMenu.vue'
+import { useReplay } from '@/viewer/player/useReplay'
 import { useVoicePlayback } from '@/viewer/player/useVoicePlayback'
 import { useComments } from '@/viewer/comments/useComments'
-import {
-  type CoachTool,
-  type CoachShapeTool,
-  COACH_DEFAULT_TOOL,
-  COACH_DEFAULT_COLOR,
-  COACH_DEFAULT_THICKNESS,
-} from '@/viewer/player/coachTools'
 import { useCoachBoard } from '@/viewer/player/useCoachBoard'
+import { useCoachSession } from '@/viewer/player/useCoachSession'
 import { useReplayExport } from '@/viewer/player/useReplayExport'
 import { useMapLevels } from '@/viewer/player/useMapLevels'
 import { useViewerShortcuts } from '@/viewer/player/useViewerShortcuts'
 import { useCommentFlow } from '@/viewer/player/useCommentFlow'
 import { useContextMenu } from '@/viewer/player/useContextMenu'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
-import { roundOutcome } from '@/viewer/domain/roundOutcome'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 const { t } = useI18n()
 
@@ -193,82 +178,34 @@ watch(
   { immediate: true },
 )
 
-// --- Coach mode --------------------------------------------------------------
-// A tactical-board overlay: the game HUD (killfeed, chat, rosters, scoreboard)
-// is hidden and a Figma-style toolbar replaces the transport's extras so a coach
-// can mark the map up. Drawing onto the map lands in later phases; for now this
-// wires the mode, hides the HUD and selects tools.
-const coachTool = ref<CoachTool>(COACH_DEFAULT_TOOL)
-const coachColor = ref(COACH_DEFAULT_COLOR)
-const coachThickness = ref(COACH_DEFAULT_THICKNESS)
-const coachGrenadeKind = ref<GrenadeKind>('smoke')
-/** Hide the game HUD while coaching, so only the map (and the board) shows. */
-const hudHidden = computed(() => coachMode.value)
-function toggleCoachMode() {
-  coachMode.value = !coachMode.value
-  if (coachMode.value) {
-    // Entering: pause and leave comment mode (its popover would float over the board).
-    r.pause()
-    commentMode.value = false
+// Coach mode: a tactical-board overlay that hides the game HUD and replaces the
+// transport's extras with a Figma-style toolbar so a coach can mark the map up.
+// `coachMode` is owned by the stage (above); the board wiring lives here.
+const {
+  coachTool,
+  coachColor,
+  coachThickness,
+  coachGrenadeKind,
+  hudHidden,
+  toggleCoachMode,
+  roundCoachDrawings,
+  roundCoachOverrides,
+  roundCoachGrenades,
+  onAddDrawing,
+  onSetPlayerPose,
+  onAddGrenade,
+  onMoveGrenade,
+  onRemoveGrenade,
+  clearCoachDrawings,
+} = useCoachSession({
+  r,
+  board,
+  coachMode,
+  commentMode,
+  closePopover: () => {
     popover.value = null
-    seedReplayGrenades()
-  }
-}
-
-/** Imports the grenades active at the current tick (the smokes/molotovs already on
- *  the map) onto the board, so the coach can move or remove them like placed ones.
- *  Once per round (the board keeps them after that). */
-function seedReplayGrenades() {
-  const round = r.round.value
-  if (!round) return
-  const t = r.currentT.value
-  const live = round.events.flatMap((ev) =>
-    ev.type === 'grenade' && t >= ev.t && t <= ev.endT
-      ? [{ id: newDrawingId(), kind: ev.kind, x: ev.x, y: ev.y, z: ev.z }]
-      : [],
-  )
-  board.seedGrenades(r.roundIndex.value, live)
-}
-
-// Tactical board: per-round, editable, with undo/redo (declared above). In-memory
-// for now; IndexedDB persistence (like comments) lands in a later phase.
-/** Drawings on the round in view. */
-const roundCoachDrawings = computed(() => board.boardFor(r.roundIndex.value).drawings)
-/** Player position overrides on the round in view. */
-const roundCoachOverrides = computed(() => board.boardFor(r.roundIndex.value).playerOverrides)
-/** Grenades placed on the round in view. */
-const roundCoachGrenades = computed(() => board.boardFor(r.roundIndex.value).grenades)
-function newDrawingId(): string {
-  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.round(Math.random() * 1e9)}`
-}
-function onAddDrawing(d: {
-  tool: CoachShapeTool
-  points: { x: number; y: number }[]
-  color: string
-  thickness: number
-  z?: number
-}) {
-  const round = r.roundIndex.value
-  board.addDrawing(round, { id: newDrawingId(), roundIndex: round, ...d })
-}
-function onSetPlayerPose(p: { steamId: string; x: number; y: number; yaw: number }) {
-  board.setPlayerPose(r.roundIndex.value, p.steamId, p.x, p.y, p.yaw)
-}
-function onAddGrenade(g: { kind: GrenadeKind; x: number; y: number; z?: number }) {
-  board.addGrenade(r.roundIndex.value, { id: newDrawingId(), ...g })
-}
-function onMoveGrenade(g: { id: string; x: number; y: number }) {
-  board.moveGrenade(r.roundIndex.value, g.id, g.x, g.y)
-}
-function onRemoveGrenade(g: { id: string }) {
-  board.removeGrenade(r.roundIndex.value, g.id)
-}
-/** Clears the board on the round in view (keeps other rounds untouched). */
-function clearCoachDrawings() {
-  board.clearRound(r.roundIndex.value)
-}
+  },
+})
 
 
 
@@ -369,17 +306,6 @@ const { scoreboardOpen } = useViewerShortcuts({
   undo: () => board.undo(),
   redo: () => board.redo(),
 })
-
-// Color of the side that won the round (for the Rounds menu); neutral if none.
-function roundWinnerColor(i: number): string {
-  const winner = r.replay.value?.rounds[i]?.winner
-  return winner ? SIDE_COLOR[winner] : 'var(--color-ink-600)'
-}
-
-// Round outcome icon (bomb, defuse, elimination, time).
-function roundOutcomeFor(i: number) {
-  return roundOutcome(r.replay.value?.rounds[i]?.reason ?? null)
-}
 
 // Container hooks: `pause` stops playback when leaving this tab (the stage stays
 // mounted via v-show); `jumpToThrow` lets the grenades tab seek the replay; and
@@ -562,59 +488,18 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
       </div>
     </div>
 
-    <!-- Comment mode hint -->
-    <div
-      v-if="commentMode && !exportError"
-      class="pointer-events-none absolute inset-x-0 top-20 z-10 flex justify-center"
-    >
-      <span class="rounded-full bg-surge-500/90 px-3 py-1 text-xs font-medium text-white shadow-lg backdrop-blur">
-        {{ t('viewer.comment.modeHint') }}
-      </span>
-    </div>
 
-    <!-- Following a player: badge with an exit button (also via Esc). -->
-    <div
-      v-if="followSteamId && !hudHidden"
-      class="pointer-events-auto absolute inset-x-0 top-20 z-10 flex justify-center"
-    >
-      <button
-        type="button"
-        v-tooltip="t('viewer.follow.exit')"
-        class="flex cursor-pointer items-center gap-2 rounded-full bg-surge-500/90 px-3 py-1 text-xs font-medium text-white shadow-lg backdrop-blur transition-colors hover:bg-surge-500"
-        @click="followSteamId = null"
-      >
-        <UiIcon name="target" class="h-3.5 w-3.5" />
-        {{ t('viewer.follow.following', { name: followName }) }}
-        <UiIcon name="x" class="h-3.5 w-3.5 opacity-80" />
-      </button>
-    </div>
-
-    <!-- Coach mode hint -->
-    <div
-      v-if="coachMode && !exportError"
-      class="pointer-events-none absolute inset-x-0 top-20 z-10 flex justify-center"
-    >
-      <span class="rounded-full bg-surge-500/90 px-3 py-1 text-xs font-medium text-white shadow-lg backdrop-blur">
-        {{ t('viewer.coach.modeHint') }}
-      </span>
-    </div>
-
-    <!-- Export error: dismissible banner -->
-    <div
-      v-if="exportError"
-      class="pointer-events-auto absolute inset-x-0 top-20 z-20 flex justify-center"
-    >
-      <button
-        type="button"
-        v-tooltip="exportError"
-        class="flex cursor-pointer items-center gap-2 rounded-full bg-loss/90 px-3 py-1 text-xs font-medium text-white shadow-lg backdrop-blur"
-        @click="exportError = null"
-      >
-        <UiIcon name="ban" class="h-3.5 w-3.5" />
-        {{ t('viewer.exportError') }}
-        <UiIcon name="x" class="h-3.5 w-3.5" />
-      </button>
-    </div>
+    <!-- Transient status pills: comment/coach hints, follow badge, export error -->
+    <StageBadges
+      :hud-hidden="hudHidden"
+      :comment-mode="commentMode"
+      :coach-mode="coachMode"
+      :follow-steam-id="followSteamId"
+      :follow-name="followName"
+      :export-error="exportError"
+      @unfollow="followSteamId = null"
+      @dismiss-error="exportError = null"
+    />
 
     <!-- Killfeed: round kills up to the current moment (top-right, below the top bar) -->
     <div v-if="!hudHidden" class="pointer-events-none absolute right-4 top-16 z-10">
@@ -809,112 +694,18 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
     </ContextMenuTrigger>
 
     <!-- Context menu (right click) of the replay -->
-    <ContextMenuContent class="w-60">
-      <!-- Comment actions, shown when the right-click landed on a comment -->
-      <template v-if="contextComment">
-        <ContextMenuItem @select="editContextComment">
-          <UiIcon name="pencil" class="h-4 w-4 text-ink-400" />
-          {{ t('viewer.comment.edit') }}
-        </ContextMenuItem>
-        <ContextMenuItem @select="deleteContextComment">
-          <UiIcon name="trash-2" class="h-4 w-4 text-ink-400" />
-          {{ t('viewer.comment.delete') }}
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-      </template>
-      <!-- Add a comment on the player under the right-click -->
-      <template v-else-if="contextTarget">
-        <ContextMenuItem v-if="contextPlayerId" @select="followContextPlayer">
-          <UiIcon name="target" class="h-4 w-4 text-ink-400" />
-          {{ followSteamId === contextPlayerId ? t('viewer.follow.stop') : t('viewer.follow.start') }}
-          <span class="ml-auto max-w-28 truncate pl-3 text-ink-400">
-            {{ anchorLabel(contextTarget.anchor) }}
-          </span>
-        </ContextMenuItem>
-        <ContextMenuItem @select="addContextComment">
-          <UiIcon name="message" class="h-4 w-4 text-ink-400" />
-          {{ t('viewer.comment.add') }}
-          <span class="ml-auto max-w-28 truncate pl-3 text-ink-400">
-            {{ anchorLabel(contextTarget.anchor) }}
-          </span>
-        </ContextMenuItem>
-        <ContextMenuItem @select="copyContextSetpos">
-          <UiIcon name="copy" class="h-4 w-4 text-ink-400" />
-          {{ t('viewer.copyPos') }}
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-      </template>
-      <ContextMenuItem @select="r.toggle">
-        <UiIcon :name="r.playing.value ? 'pause' : 'play'" class="h-4 w-4 text-ink-400" />
-        {{ r.playing.value ? t('viewer.pause') : t('viewer.play') }}
-        <ContextMenuShortcut>{{ t('viewer.space') }}</ContextMenuShortcut>
-      </ContextMenuItem>
-      <ContextMenuItem @select="r.seekBySeconds(-5)">
-        <UiIcon name="rotate-ccw" class="h-4 w-4 text-ink-400" />
-        {{ t('viewer.back5') }}
-        <ContextMenuShortcut>&larr;</ContextMenuShortcut>
-      </ContextMenuItem>
-      <ContextMenuItem @select="r.seekBySeconds(5)">
-        <UiIcon name="rotate-cw" class="h-4 w-4 text-ink-400" />
-        {{ t('viewer.fwd5') }}
-        <ContextMenuShortcut>&rarr;</ContextMenuShortcut>
-      </ContextMenuItem>
-
-      <ContextMenuSeparator />
-
-      <ContextMenuSub>
-        <ContextMenuSubTrigger>
-          <UiIcon name="signal" class="h-4 w-4 text-ink-400" />
-          {{ t('viewer.speed') }}
-          <span class="ml-auto pl-4 font-mono text-xs text-ink-400">{{ r.speed.value }}x</span>
-        </ContextMenuSubTrigger>
-        <ContextMenuSubContent>
-          <ContextMenuItem v-for="s in SPEEDS" :key="s" inset @select="r.speed.value = s">
-            <UiIcon
-              v-if="s === r.speed.value"
-              name="check"
-              class="absolute left-2 h-3.5 w-3.5 text-surge-400"
-            />
-            {{ s }}x
-          </ContextMenuItem>
-        </ContextMenuSubContent>
-      </ContextMenuSub>
-
-      <ContextMenuSeparator />
-
-      <ContextMenuSub>
-        <ContextMenuSubTrigger>
-          <UiIcon name="grid" class="h-4 w-4 text-ink-400" />
-          {{ t('viewer.rounds') }}
-          <span class="ml-auto pl-4 font-mono text-xs text-ink-400">
-            {{ r.currentRoundLabel.value }}/{{ r.totalRounds.value }}
-          </span>
-        </ContextMenuSubTrigger>
-        <ContextMenuSubContent class="max-h-80 overflow-y-auto">
-          <ContextMenuItem
-            v-for="(label, i) in r.roundLabels.value"
-            :key="i"
-            inset
-            @select="r.selectRound(i)"
-          >
-            <UiIcon
-              v-if="i === r.roundIndex.value"
-              name="check"
-              class="absolute left-2 h-3.5 w-3.5 text-surge-400"
-            />
-            <span
-              class="mr-2 inline-block h-2 w-2 shrink-0 rounded-full"
-              :style="{ backgroundColor: roundWinnerColor(i) }"
-            />
-            <span class="flex-1">{{ label === '0' ? t('viewer.knife') : `${t('viewer.round')} ${label}` }}</span>
-            <UiIcon
-              v-if="roundOutcomeFor(i)"
-              :name="roundOutcomeFor(i)!.icon"
-              class="ml-3 h-3.5 w-3.5 text-ink-400"
-            />
-          </ContextMenuItem>
-        </ContextMenuSubContent>
-      </ContextMenuSub>
-    </ContextMenuContent>
+    <StageContextMenu
+      :r="r"
+      :context-comment="contextComment"
+      :context-target="contextTarget"
+      :context-player-id="contextPlayerId"
+      :follow-steam-id="followSteamId"
+      :anchor-label="anchorLabel"
+      @edit-comment="editContextComment"
+      @delete-comment="deleteContextComment"
+      @follow-player="followContextPlayer"
+      @add-comment="addContextComment"
+      @copy-setpos="copyContextSetpos"
+    />
   </ContextMenu>
 </template>

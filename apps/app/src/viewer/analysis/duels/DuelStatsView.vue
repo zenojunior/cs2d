@@ -2,7 +2,7 @@
 import type { Replay } from '@/viewer/domain/schema'
 import DuelMatrixView from '@/viewer/analysis/duels/DuelMatrixView.vue'
 import OpeningDuelsView from '@/viewer/analysis/duels/OpeningDuelsView.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 const { t } = useI18n()
 

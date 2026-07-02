@@ -3,7 +3,7 @@ import type { PlayerMeta, Replay } from '@/viewer/domain/schema'
 import UtilityThrowsView from '@/viewer/analysis/utility/UtilityThrowsView.vue'
 import UtilityFlashesView from '@/viewer/analysis/utility/UtilityFlashesView.vue'
 import UtilityDamageView from '@/viewer/analysis/utility/UtilityDamageView.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 const { t } = useI18n()
 

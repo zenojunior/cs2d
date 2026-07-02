@@ -1,6 +1,6 @@
 import { watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 // Canonical production origin; used for <link rel=canonical> and og:url.
 const SITE_URL = 'https://cs2d.app'

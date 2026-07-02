@@ -6,7 +6,7 @@ import { roundOutcome } from '@/viewer/domain/roundOutcome'
 import { TEAM_COLOR } from '@/viewer/domain/colors'
 import RoundEquipBar from '@/viewer/analysis/economy/RoundEquipBar.vue'
 import RoundBuysSheet from '@/viewer/analysis/economy/RoundBuysSheet.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 /**
  * Economy tab, mirroring CS Demo Manager's Economy tab: round outcomes by buy

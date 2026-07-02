@@ -7,7 +7,7 @@ import { computeOpeningDuels, type OpeningDuel } from '@/viewer/analysis/duels/d
 import { SIDE_COLOR } from '@/viewer/domain/colors'
 import KillfeedRow from '@/viewer/player/KillfeedRow.vue'
 import UiSwitch from '@/ui/UiSwitch.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 /** Killfeed gray for a side that could not be resolved (matches ViewerKillfeed). */
 const NO_SIDE_COLOR = '#8a93a6'

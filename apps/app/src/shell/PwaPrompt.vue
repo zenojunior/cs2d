@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRegisterSW } from 'virtual:pwa-register/vue'
 import UiIcon from '@/ui/UiIcon.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 /**
  * Small toast for the service worker lifecycle. `offlineReady` shows once the

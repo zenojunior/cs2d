@@ -23,7 +23,7 @@ import LibraryPreviewDialog from '@/pages/LibraryPreviewDialog.vue'
 import { useRecentDemos, type RecentDemo } from '@/viewer/ingest/useRecentDemos'
 import { exportArchive, archiveFileName } from '@/viewer/ingest/demoArchive'
 import { prettyMap, mapImage, fmtSize, fmtDate, fmtDateFull } from '@/viewer/domain/demoMeta'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 // Library: the local history of analyzed demos, with the total footprint and a
 // per-map filter. Everything stays in the browser (see useRecentDemos); the raw

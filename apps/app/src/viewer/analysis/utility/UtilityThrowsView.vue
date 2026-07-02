@@ -15,7 +15,7 @@ import { KIND_ORDER, grenadeIconStyle as iconStyle } from '@/viewer/domain/grena
 import ViewerMap from '@/viewer/player/ViewerMap.vue'
 import ReplayClipPopover from '@/viewer/player/ReplayClipPopover.vue'
 import UiSelect from '@/ui/UiSelect.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 // `t` is the template loop variable; i18n is aliased as `tr`.
 const { t: tr } = useI18n()

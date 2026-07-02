@@ -19,7 +19,7 @@ import { importArchive } from '@/viewer/ingest/demoArchive'
 import { fetchReplay } from '@/viewer/ingest/replaySource'
 import { listenForExtensionDemo } from '@/viewer/ingest/extensionBridge'
 import { fmtSize } from '@/viewer/domain/demoMeta'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 const { t } = useI18n()
 

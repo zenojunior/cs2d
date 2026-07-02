@@ -3,7 +3,7 @@ import type { TeamRoundEconomy } from '@/viewer/analysis/economy/roundEconomy'
 import { BUY_COLOR } from '@/viewer/analysis/economy/roundEconomy'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
 import UiIcon from '@/ui/UiIcon.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 /**
  * One round's equipment-value row: the two teams' values as mirrored bars (left

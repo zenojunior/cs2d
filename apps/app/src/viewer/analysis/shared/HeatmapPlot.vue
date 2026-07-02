@@ -6,7 +6,7 @@ import { SIDE_COLOR } from '@/viewer/domain/colors'
 import type { KillInfo } from '@/viewer/analysis/shared/heatmapTypes'
 import ReplayClipPopover from '@/viewer/player/ReplayClipPopover.vue'
 import UiIcon from '@/ui/UiIcon.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 const { t } = useI18n()
 

@@ -3,7 +3,7 @@ import type { Replay } from '@/viewer/domain/schema'
 import DuelStatsView from '@/viewer/analysis/duels/DuelStatsView.vue'
 import OpeningDuelMapView from '@/viewer/analysis/duels/OpeningDuelMapView.vue'
 import HeatmapView from '@/viewer/analysis/heatmap/HeatmapView.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 const { t } = useI18n()
 

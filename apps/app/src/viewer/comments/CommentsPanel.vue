@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import type { CommentKind, PlayerMeta, ReplayComment } from '@/viewer/domain/schema'
 import UiIcon from '@/ui/UiIcon.vue'
 import UiSwitch from '@/ui/UiSwitch.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 import { commentDuration } from '@/viewer/comments/commentAnchor'
 import { COMMENT_KINDS } from '@/viewer/comments/commentKinds'
 
