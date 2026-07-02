@@ -11,7 +11,6 @@
     "github": "Voir sur GitHub",
     "language": "Langue",
     "about": "À propos",
-    "major": "Major",
     "upload": "Importer",
     "library": "Bibliothèque",
     "info": "Info",
@@ -19,24 +18,8 @@
     "back": "Retour",
     "project": "Projet",
     "privacy": "Confidentialité",
-    "extension": "Extension"
-  },
-  "major": {
-    "back": "Retour à l'analyseur",
-    "kicker": "Matchs à la une",
-    "intro": "Revivez les playoffs du Major en 2D, match par match. Les démos sont déjà parsées et hébergées dans le dépôt du projet : cliquez sur regarder et le replay est téléchargé sur le champ.",
-    "round": {
-      "quarterfinal": "Quarts de finale",
-      "semifinal": "Demi-finales",
-      "final": "Grande finale"
-    },
-    "bestOf": "Bo{n}",
-    "tbd": "À définir",
-    "winnerOf": "Vainqueur de {label}",
-    "notPlayed": "Disponible après le match",
-    "watch": "Regarder",
-    "pickMap": "Choisissez une map",
-    "soon": "Bientôt"
+    "extension": "Extension",
+    "tournaments": "Tournois"
   },
   "extension": {
     "title": "Téléchargez les démos Faceit",
@@ -419,5 +402,26 @@
       "round": "Round {n}",
       "desc": "Aperçu du round avant le premier kill."
     }
+  },
+  "tournaments": {
+    "intro": "Revivez les playoffs du Major en 2D, match par match. Les démos sont déjà parsées et hébergées dans le dépôt du projet : cliquez sur regarder et le replay est téléchargé sur le champ.",
+    "listIntro": "Revivez les playoffs des Majors CS2 en 2D, match par match. Choisissez un tournoi ci-dessous.",
+    "majorBadge": "Major",
+    "champion": "Champion",
+    "viewBracket": "Voir le tableau",
+    "back": "Retour à l'analyseur",
+    "kicker": "Matchs à la une",
+    "round": {
+      "quarterfinal": "Quarts de finale",
+      "semifinal": "Demi-finales",
+      "final": "Grande finale"
+    },
+    "bestOf": "Bo{n}",
+    "tbd": "À définir",
+    "winnerOf": "Vainqueur de {label}",
+    "notPlayed": "Disponible après le match",
+    "watch": "Regarder",
+    "pickMap": "Choisissez une map",
+    "soon": "Bientôt"
   }
 }

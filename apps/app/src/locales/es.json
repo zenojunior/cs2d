@@ -11,7 +11,6 @@
     "github": "Ver en GitHub",
     "language": "Idioma",
     "about": "Acerca de",
-    "major": "Major",
     "upload": "Subir",
     "library": "Biblioteca",
     "info": "Info",
@@ -19,24 +18,8 @@
     "back": "Volver",
     "project": "Proyecto",
     "privacy": "Privacidad",
-    "extension": "Extensión"
-  },
-  "major": {
-    "back": "Volver al analizador",
-    "kicker": "Partidas destacadas",
-    "intro": "Revive los playoffs del Major en 2D, partida a partida. Las demos ya están procesadas y viven en el repositorio del proyecto: pulsa ver y el replay se descarga al instante.",
-    "round": {
-      "quarterfinal": "Cuartos de final",
-      "semifinal": "Semifinales",
-      "final": "Gran final"
-    },
-    "bestOf": "Bo{n}",
-    "tbd": "Por definir",
-    "winnerOf": "Ganador de {label}",
-    "notPlayed": "Disponible tras la partida",
-    "watch": "Ver",
-    "pickMap": "Elige el mapa",
-    "soon": "Pronto"
+    "extension": "Extensión",
+    "tournaments": "Torneos"
   },
   "extension": {
     "title": "Descarga demos de Faceit",
@@ -419,5 +402,26 @@
       "round": "Ronda {n}",
       "desc": "Captura de la ronda antes de la primera baja."
     }
+  },
+  "tournaments": {
+    "intro": "Revive los playoffs del Major en 2D, partida a partida. Las demos ya están procesadas y viven en el repositorio del proyecto: pulsa ver y el replay se descarga al instante.",
+    "listIntro": "Revive los playoffs de los Majors de CS2 en 2D, partida a partida. Elige un torneo abajo.",
+    "majorBadge": "Major",
+    "champion": "Campeón",
+    "viewBracket": "Ver cuadro",
+    "back": "Volver al analizador",
+    "kicker": "Partidas destacadas",
+    "round": {
+      "quarterfinal": "Cuartos de final",
+      "semifinal": "Semifinales",
+      "final": "Gran final"
+    },
+    "bestOf": "Bo{n}",
+    "tbd": "Por definir",
+    "winnerOf": "Ganador de {label}",
+    "notPlayed": "Disponible tras la partida",
+    "watch": "Ver",
+    "pickMap": "Elige el mapa",
+    "soon": "Pronto"
   }
 }

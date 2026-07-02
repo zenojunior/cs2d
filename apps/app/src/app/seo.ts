@@ -15,7 +15,8 @@ const BRAND = 'CS2d.app'
 const ROUTE_SEO: Record<string, { titleKey?: string; descKey: string }> = {
   demoviewer: { descKey: 'seo.appDescription' },
   library: { titleKey: 'shell.library', descKey: 'seo.appDescription' },
-  major: { titleKey: 'shell.major', descKey: 'major.intro' },
+  tournaments: { titleKey: 'shell.tournaments', descKey: 'tournaments.listIntro' },
+  tournament: { titleKey: 'shell.tournaments', descKey: 'tournaments.intro' },
   about: { titleKey: 'shell.project', descKey: 'about.tagline' },
   privacy: { titleKey: 'shell.privacy', descKey: 'privacy.tagline' },
 }

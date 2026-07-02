@@ -11,7 +11,6 @@
     "github": "Zobacz na GitHub",
     "language": "Język",
     "about": "O projekcie",
-    "major": "Major",
     "upload": "Prześlij",
     "library": "Biblioteka",
     "info": "Info",
@@ -19,24 +18,8 @@
     "back": "Wstecz",
     "project": "Projekt",
     "privacy": "Prywatność",
-    "extension": "Rozszerzenie"
-  },
-  "major": {
-    "back": "Powrót do analizatora",
-    "kicker": "Wyróżnione mecze",
-    "intro": "Obejrzyj ponownie playoffy Majora w 2D, mecz po meczu. Dema są już sparsowane i znajdują się w repozytorium projektu: kliknij oglądaj, a powtórka zostanie pobrana od razu.",
-    "round": {
-      "quarterfinal": "Ćwierćfinały",
-      "semifinal": "Półfinały",
-      "final": "Wielki finał"
-    },
-    "bestOf": "Bo{n}",
-    "tbd": "Do ustalenia",
-    "winnerOf": "Zwycięzca {label}",
-    "notPlayed": "Dostępne po meczu",
-    "watch": "Oglądaj",
-    "pickMap": "Wybierz mapę",
-    "soon": "Wkrótce"
+    "extension": "Rozszerzenie",
+    "tournaments": "Turnieje"
   },
   "extension": {
     "title": "Pobieraj dema z Faceit",
@@ -419,5 +402,26 @@
       "round": "Runda {n}",
       "desc": "Migawka rundy przed pierwszym zabójstwem."
     }
+  },
+  "tournaments": {
+    "intro": "Obejrzyj ponownie playoffy Majora w 2D, mecz po meczu. Dema są już sparsowane i znajdują się w repozytorium projektu: kliknij oglądaj, a powtórka zostanie pobrana od razu.",
+    "listIntro": "Obejrzyj playoffy majorów CS2 w 2D, mecz po meczu. Wybierz turniej poniżej.",
+    "majorBadge": "Major",
+    "champion": "Mistrz",
+    "viewBracket": "Zobacz drabinkę",
+    "back": "Powrót do analizatora",
+    "kicker": "Wyróżnione mecze",
+    "round": {
+      "quarterfinal": "Ćwierćfinały",
+      "semifinal": "Półfinały",
+      "final": "Wielki finał"
+    },
+    "bestOf": "Bo{n}",
+    "tbd": "Do ustalenia",
+    "winnerOf": "Zwycięzca {label}",
+    "notPlayed": "Dostępne po meczu",
+    "watch": "Oglądaj",
+    "pickMap": "Wybierz mapę",
+    "soon": "Wkrótce"
   }
 }

@@ -11,7 +11,6 @@
     "github": "Auf GitHub ansehen",
     "language": "Sprache",
     "about": "Über",
-    "major": "Major",
     "upload": "Hochladen",
     "library": "Bibliothek",
     "info": "Info",
@@ -19,24 +18,8 @@
     "back": "Zurück",
     "project": "Projekt",
     "privacy": "Datenschutz",
-    "extension": "Erweiterung"
-  },
-  "major": {
-    "back": "Zurück zum Analyzer",
-    "kicker": "Ausgewählte Matches",
-    "intro": "Sieh dir die Major-Playoffs in 2D an, Match für Match. Die Demos sind bereits geparst und liegen im Projekt-Repository: Klicke auf Ansehen und der Replay wird sofort heruntergeladen.",
-    "round": {
-      "quarterfinal": "Viertelfinale",
-      "semifinal": "Halbfinale",
-      "final": "Grand Final"
-    },
-    "bestOf": "Bo{n}",
-    "tbd": "Noch offen",
-    "winnerOf": "Sieger von {label}",
-    "notPlayed": "Verfügbar nach dem Match",
-    "watch": "Ansehen",
-    "pickMap": "Map auswählen",
-    "soon": "Bald"
+    "extension": "Erweiterung",
+    "tournaments": "Turniere"
   },
   "extension": {
     "title": "Faceit-Demos herunterladen",
@@ -419,5 +402,26 @@
       "round": "Runde {n}",
       "desc": "Momentaufnahme der Runde vor dem ersten Kill."
     }
+  },
+  "tournaments": {
+    "intro": "Sieh dir die Major-Playoffs in 2D an, Match für Match. Die Demos sind bereits geparst und liegen im Projekt-Repository: Klicke auf Ansehen und der Replay wird sofort heruntergeladen.",
+    "listIntro": "Erlebe die Playoffs der CS2-Majors in 2D neu, Match für Match. Wähle unten ein Turnier.",
+    "majorBadge": "Major",
+    "champion": "Champion",
+    "viewBracket": "Bracket ansehen",
+    "back": "Zurück zum Analyzer",
+    "kicker": "Ausgewählte Matches",
+    "round": {
+      "quarterfinal": "Viertelfinale",
+      "semifinal": "Halbfinale",
+      "final": "Grand Final"
+    },
+    "bestOf": "Bo{n}",
+    "tbd": "Noch offen",
+    "winnerOf": "Sieger von {label}",
+    "notPlayed": "Verfügbar nach dem Match",
+    "watch": "Ansehen",
+    "pickMap": "Map auswählen",
+    "soon": "Bald"
   }
 }

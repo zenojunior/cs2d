@@ -4,22 +4,25 @@ import { onClickOutside } from '@vueuse/core'
 import UiIcon from '@/ui/UiIcon.vue'
 import { useI18n } from '@/app/i18n'
 import { prettyMap } from '@/viewer/domain/demoMeta'
-import { TEAMS, matchById, type MajorMapReplay, type MajorMatch, type MajorTeam } from './playoffs'
+import type { Tournament, TournamentMapReplay, TournamentMatch, TournamentTeam } from './registry'
 
-const props = defineProps<{ match: MajorMatch }>()
-const emit = defineEmits<{ play: [map: MajorMapReplay] }>()
+const props = defineProps<{ tournament: Tournament; match: TournamentMatch }>()
+const emit = defineEmits<{ play: [map: TournamentMapReplay] }>()
 
 const { t } = useI18n()
 
 // Resolves a slot to either a real team or a "winner of QFx" placeholder so a
 // TBD semifinal/final still reads clearly before its feeder match is decided.
-type Slot = { team: MajorTeam | null; placeholder: string; score: number | null; isWinner: boolean }
+type Slot = { team: TournamentTeam | null; placeholder: string; score: number | null; isWinner: boolean }
+
+function feederLabel(source: string | undefined): string {
+  const feeder = source ? props.tournament.matches.find((m) => m.id === source) : undefined
+  return feeder ? t('tournaments.winnerOf', { label: feeder.label }) : t('tournaments.tbd')
+}
 
 function buildSlot(teamId: string | null, source: string | undefined, score: number | null, isWinner: boolean): Slot {
-  const team = teamId ? (TEAMS[teamId] ?? null) : null
-  const feeder = source ? matchById(source) : undefined
-  const placeholder = feeder ? t('major.winnerOf', { label: feeder.label }) : t('major.tbd')
-  return { team, placeholder, score, isWinner }
+  const team = teamId ? (props.tournament.teams[teamId] ?? null) : null
+  return { team, placeholder: feederLabel(source), score, isWinner }
 }
 
 const decided = computed(() => props.match.scoreA != null && props.match.scoreB != null)
@@ -49,7 +52,7 @@ const open = ref(false)
 const menu = ref<HTMLElement | null>(null)
 onClickOutside(menu, () => (open.value = false))
 
-function play(map: MajorMapReplay) {
+function play(map: TournamentMapReplay) {
   if (!map.replay) return
   emit('play', map)
   open.value = false
@@ -63,7 +66,7 @@ function play(map: MajorMapReplay) {
       <span class="font-mono font-medium uppercase tracking-wide text-ink-400">{{ match.label }}</span>
       <span class="flex items-center gap-2">
         <span class="rounded bg-ink-800/80 px-1.5 py-0.5 font-mono text-ink-300">{{
-          t('major.bestOf', { n: match.bestOf })
+          t('tournaments.bestOf', { n: match.bestOf })
         }}</span>
         <span class="flex items-center gap-1">
           <UiIcon name="calendar" class="h-3 w-3" />
@@ -120,8 +123,8 @@ function play(map: MajorMapReplay) {
         type="button"
         :disabled="!hasMaps"
         :aria-expanded="open"
-        :aria-label="hasMaps ? t('major.watch') : t('major.notPlayed')"
-        :title="hasMaps ? t('major.watch') : t('major.notPlayed')"
+        :aria-label="hasMaps ? t('tournaments.watch') : t('tournaments.notPlayed')"
+        :title="hasMaps ? t('tournaments.watch') : t('tournaments.notPlayed')"
         class="flex w-20 shrink-0 items-center justify-center rounded-md border border-ink-700 bg-ink-900/60 text-ink-200 transition-colors enabled:hover:bg-ink-800 disabled:cursor-not-allowed disabled:opacity-60"
         @click="open = !open"
       >
@@ -135,7 +138,7 @@ function play(map: MajorMapReplay) {
         :class="match.maps.length >= 3 ? 'w-[22rem]' : 'w-60'"
       >
         <p class="mb-1.5 px-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-500">
-          {{ t('major.pickMap') }}
+          {{ t('tournaments.pickMap') }}
         </p>
         <div class="grid gap-2" :class="match.maps.length >= 3 ? 'grid-cols-3' : 'grid-cols-2'">
           <button
@@ -200,7 +203,7 @@ function play(map: MajorMapReplay) {
             <div v-else class="absolute inset-0 grid place-items-center">
               <span class="flex items-center gap-1 rounded bg-ink-950/70 px-1.5 py-0.5 text-[10px] text-ink-300">
                 <UiIcon name="clock" class="h-3 w-3" />
-                {{ t('major.soon') }}
+                {{ t('tournaments.soon') }}
               </span>
             </div>
           </button>

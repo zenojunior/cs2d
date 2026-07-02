@@ -11,7 +11,6 @@
     "github": "GitHub'da görüntüle",
     "language": "Dil",
     "about": "Hakkında",
-    "major": "Major",
     "upload": "Yükle",
     "library": "Kütüphane",
     "info": "Bilgi",
@@ -19,24 +18,8 @@
     "back": "Geri",
     "project": "Proje",
     "privacy": "Gizlilik",
-    "extension": "Uzantı"
-  },
-  "major": {
-    "back": "Analiz aracına dön",
-    "kicker": "Öne çıkan maçlar",
-    "intro": "Major playoff'larını 2D olarak, maç maç yeniden izleyin. Demo'lar zaten işlenmiş ve proje deposunda hazır: izle'ye basın, replay anında indirilsin.",
-    "round": {
-      "quarterfinal": "Çeyrek finaller",
-      "semifinal": "Yarı finaller",
-      "final": "Büyük final"
-    },
-    "bestOf": "Bo{n}",
-    "tbd": "Belirlenecek",
-    "winnerOf": "{label} galibi",
-    "notPlayed": "Maçtan sonra erişilebilir",
-    "watch": "İzle",
-    "pickMap": "Bir harita seçin",
-    "soon": "Yakında"
+    "extension": "Uzantı",
+    "tournaments": "Turnuvalar"
   },
   "extension": {
     "title": "Faceit demo'larını indir",
@@ -419,5 +402,26 @@
       "round": "Raund {n}",
       "desc": "İlk ölümden önceki raund anlık görüntüsü."
     }
+  },
+  "tournaments": {
+    "intro": "Major playoff'larını 2D olarak, maç maç yeniden izleyin. Demo'lar zaten işlenmiş ve proje deposunda hazır: izle'ye basın, replay anında indirilsin.",
+    "listIntro": "CS2 Major playofflarını 2D olarak, maç maç yeniden izleyin. Aşağıdan bir turnuva seçin.",
+    "majorBadge": "Major",
+    "champion": "Şampiyon",
+    "viewBracket": "Eşleşmeleri gör",
+    "back": "Analiz aracına dön",
+    "kicker": "Öne çıkan maçlar",
+    "round": {
+      "quarterfinal": "Çeyrek finaller",
+      "semifinal": "Yarı finaller",
+      "final": "Büyük final"
+    },
+    "bestOf": "Bo{n}",
+    "tbd": "Belirlenecek",
+    "winnerOf": "{label} galibi",
+    "notPlayed": "Maçtan sonra erişilebilir",
+    "watch": "İzle",
+    "pickMap": "Bir harita seçin",
+    "soon": "Yakında"
   }
 }

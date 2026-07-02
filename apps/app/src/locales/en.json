@@ -11,7 +11,6 @@
     "github": "View on GitHub",
     "language": "Language",
     "about": "About",
-    "major": "Major",
     "upload": "Upload",
     "library": "Library",
     "info": "Info",
@@ -19,24 +18,8 @@
     "back": "Back",
     "project": "Project",
     "privacy": "Privacy",
-    "extension": "Extension"
-  },
-  "major": {
-    "back": "Back to the analyzer",
-    "kicker": "Featured matches",
-    "intro": "Rewatch the Major playoffs in 2D, match by match. The demos are already parsed and live in the project repo: hit watch and the replay is downloaded on the spot.",
-    "round": {
-      "quarterfinal": "Quarterfinals",
-      "semifinal": "Semifinals",
-      "final": "Grand final"
-    },
-    "bestOf": "Bo{n}",
-    "tbd": "TBD",
-    "winnerOf": "Winner of {label}",
-    "notPlayed": "Available after the match",
-    "watch": "Watch",
-    "pickMap": "Pick a map",
-    "soon": "Soon"
+    "extension": "Extension",
+    "tournaments": "Tournaments"
   },
   "extension": {
     "title": "Download Faceit demos",
@@ -419,5 +402,26 @@
       "round": "Round {n}",
       "desc": "Round snapshot before the first kill."
     }
+  },
+  "tournaments": {
+    "intro": "Rewatch the Major playoffs in 2D, match by match. The demos are already parsed and live in the project repo: hit watch and the replay is downloaded on the spot.",
+    "listIntro": "Rewatch CS2 Major playoffs in 2D, match by match. Pick a tournament below.",
+    "majorBadge": "Major",
+    "champion": "Champion",
+    "viewBracket": "View bracket",
+    "back": "Back to the analyzer",
+    "kicker": "Featured matches",
+    "round": {
+      "quarterfinal": "Quarterfinals",
+      "semifinal": "Semifinals",
+      "final": "Grand final"
+    },
+    "bestOf": "Bo{n}",
+    "tbd": "TBD",
+    "winnerOf": "Winner of {label}",
+    "notPlayed": "Available after the match",
+    "watch": "Watch",
+    "pickMap": "Pick a map",
+    "soon": "Soon"
   }
 }

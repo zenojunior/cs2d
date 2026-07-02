@@ -17,10 +17,18 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/PrivacyPage.vue'),
   },
   {
-    path: '/cologne-major-2026',
-    name: 'major',
-    component: () => import('@/pages/MajorPage.vue'),
+    path: '/tournaments',
+    name: 'tournaments',
+    component: () => import('@/pages/tournaments/TournamentsPage.vue'),
   },
+  {
+    path: '/tournaments/:year/:slug',
+    name: 'tournament',
+    component: () => import('@/pages/tournaments/TournamentPage.vue'),
+  },
+  // Legacy slug for the Cologne major; keep it redirecting so old links/bookmarks
+  // still resolve to the tournament's new home.
+  { path: '/cologne-major-2026', redirect: '/tournaments/2026/major-cologne' },
   {
     path: '/library',
     name: 'library',

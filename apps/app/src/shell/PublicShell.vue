@@ -19,8 +19,8 @@ import { useSidebar } from '@/shell/useSidebar'
 import { useI18n, type LocaleCode } from '@/app/i18n'
 import { useSeoHead } from '@/app/seo'
 
-// App chrome: a compact collapsible sidebar for the primary nav (Upload / Major /
-// Library) plus a thin top bar with a desktop-app-style Menubar (Info, Language).
+// App chrome: a compact collapsible sidebar for the primary nav (Upload / Library /
+// Tournaments) plus a thin top bar with a desktop-app-style Menubar (Info, Language).
 // The whole frame hides in fullscreen so the player can fill the screen.
 const { t, locale, setLocale, LOCALES } = useI18n()
 
@@ -61,16 +61,18 @@ watch(isDesktop, (desktop) => {
 })
 
 // A demo is being viewed when the analyzer route carries an id (history demo) or a
-// `replay` query (external Major replay). In that case we drop the sidebar and swap
-// the toggle for a Back button, so the focused viewing layout is clearly distinct.
+// `replay` query (external tournament replay). In that case we drop the sidebar and
+// swap the toggle for a Back button, so the focused viewing layout is clearly distinct.
 const inDemo = computed(
   () => route.name === 'demoviewer' && Boolean(route.params.id || route.query.replay),
 )
 
-// Leaving a demo always lands on a non-demo hub: the Major bracket for external
-// replays, the Library for everything else.
+// Leaving a demo lands on a non-demo hub: the originating bracket when a tournament
+// replay carries a `from` path, the tournaments listing for any other external
+// replay, and the Library for everything else.
 function exitDemo() {
-  router.push(route.query.replay ? '/cologne-major-2026' : '/library')
+  if (route.query.from) router.push(String(route.query.from))
+  else router.push(route.query.replay ? '/tournaments' : '/library')
 }
 
 // Fullscreen the whole shell (so the top bar can hide and the player fills the

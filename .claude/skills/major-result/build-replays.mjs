@@ -1,7 +1,7 @@
 // Turns a folder of HLTV `.dem` files (one major match, one or more maps, some
 // maps split into p1/p2 halves) into the committed `.cs2dv` replays for a bracket
 // slot, then prints a JSON summary the skill uses to update the scoreboard in
-// `apps/app/src/pages/major/playoffs.ts`.
+// `apps/app/src/pages/tournaments/data/major-cologne-2026.ts`.
 //
 //   node .claude/skills/major-result/build-replays.mjs <slot> <demDir> [--dir=major-cologne-2026]
 //   e.g. node .claude/skills/major-result/build-replays.mjs qf4 ~/Downloads/falcons-vs-vitality
@@ -28,7 +28,7 @@ const flags = Object.fromEntries(
 const [slot, demDirArg] = argv.filter((a) => !a.startsWith('--'))
 if (!slot || !demDirArg) {
   console.error('usage: build-replays.mjs <slot> <demDir> [--dir=major-cologne-2026]')
-  console.error('  <slot>   bracket slot id from playoffs.ts (qf1, sf1, final, ...)')
+  console.error('  <slot>   bracket slot id from the tournament data file (qf1, sf1, final, ...)')
   console.error('  <demDir> folder with the extracted .dem files for this match')
   process.exit(1)
 }
@@ -113,8 +113,8 @@ for (const { mapNum, slug, parts } of [...maps.values()].sort((a, b) => a.mapNum
   })
 }
 
-// Machine-readable block for the skill to update playoffs.ts. Team names come
-// straight from the demo (GOTV clan names); the skill maps them to TEAMS ids and
-// counts map wins into scoreA/scoreB.
+// Machine-readable block for the skill to update the tournament data file. Team
+// names come straight from the demo (GOTV clan names); the skill maps them to
+// `teams` ids and counts map wins into scoreA/scoreB.
 console.error('\n----- SUMMARY (JSON) -----')
 console.log(JSON.stringify({ slot, replayDir, maps: summary }, null, 2))

@@ -20,11 +20,11 @@ const isDesktop = useMediaQuery('(min-width: 640px)')
 const iconOnly = computed(() => isDesktop.value && collapsed.value)
 
 // Top: the core tool navigation. The analyzer route ('demoviewer') backs both the
-// upload home and the open viewer; the showcase bracket sits alongside them.
+// upload home and the open viewer; the tournaments showcase sits alongside them.
 const NAV_TOP = [
   { name: 'demoviewer', to: '/', icon: 'upload', label: 'shell.upload' },
   { name: 'library', to: '/library', icon: 'library', label: 'shell.library' },
-  { name: 'major', to: '/cologne-major-2026', icon: 'trophy', label: 'shell.major' },
+  { name: 'tournaments', to: '/tournaments', icon: 'trophy', label: 'shell.tournaments' },
 ] as const
 
 // Minor links: low-key text links (project + privacy) sat side by side pinned to
@@ -34,10 +34,16 @@ const MINOR_LINKS = [
   { name: 'privacy', to: '/privacy', icon: 'shield', label: 'shell.privacy' },
 ] as const
 
+// The tournaments nav item stays active on the detail route ('tournament') too,
+// so drilling into a bracket keeps the sidebar entry highlighted.
+function isActive(name: string) {
+  return route.name === name || (name === 'tournaments' && route.name === 'tournament')
+}
+
 function itemClass(name: string) {
   return [
     iconOnly.value ? 'justify-center px-0' : 'px-3',
-    route.name === name
+    isActive(name)
       ? 'bg-ink-800 text-ink-50'
       : 'text-ink-300 hover:bg-ink-800 hover:text-ink-100',
   ]
