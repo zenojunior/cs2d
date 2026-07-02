@@ -1,9 +1,9 @@
 import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
-import router from './router'
-import { registerDirectives } from './directives'
-import { i18n, i18nReady } from './i18n'
+import router from './app/router'
+import { registerDirectives } from './app/directives'
+import { i18n, i18nReady } from './app/i18n'
 
 const app = createApp(App)
 app.use(router)

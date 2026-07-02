@@ -4,7 +4,7 @@ import type { Replay } from '@/viewer/domain/schema'
 import { computeDamageStats } from '@/viewer/analysis/utility/utilityStats'
 import { groupTeams } from '@/viewer/domain/teams'
 import UtilityTeamGrid from '@/viewer/analysis/utility/UtilityTeamGrid.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 /**
  * Damage sub-tab: per-player HE + molotov metrics grouped by team (thrown,

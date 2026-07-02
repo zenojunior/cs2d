@@ -8,7 +8,7 @@ import ViewerTimeline from '@/viewer/player/ViewerTimeline.vue'
 import { SPEEDS } from '@/viewer/player/useReplay'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
 import { buildTimelineMarkers } from '@/viewer/player/timelineMarkers'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 const { t } = useI18n()
 

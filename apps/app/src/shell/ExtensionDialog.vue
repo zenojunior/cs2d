@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from 'reka-ui'
 import UiIcon from '@/ui/UiIcon.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 // Top-bar entry point for the Chrome extension: a button next to GitHub that
 // opens a focused dialog pitching the extension (download Faceit demos straight

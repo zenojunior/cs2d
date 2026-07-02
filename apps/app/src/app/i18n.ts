@@ -1,5 +1,5 @@
 import { createI18n, useI18n as useVueI18n } from 'vue-i18n'
-import pt from './locales/pt.json'
+import pt from '../locales/pt.json'
 
 /**
  * i18n powered by vue-i18n. The fallback locale (pt) is bundled eagerly so a
@@ -31,7 +31,7 @@ type MessageSchema = typeof pt
 
 // Lazy loaders for every locale JSON. pt is also imported eagerly above so it
 // ships in the main chunk and can always serve as the fallback.
-const localeLoaders = import.meta.glob<{ default: MessageSchema }>('./locales/*.json')
+const localeLoaders = import.meta.glob<{ default: MessageSchema }>('../locales/*.json')
 
 function detect(): LocaleCode {
   const saved = localStorage.getItem(STORAGE_KEY) as LocaleCode | null
@@ -55,7 +55,7 @@ const loaded = new Set<LocaleCode>(['pt'])
 
 async function loadLocaleMessages(code: LocaleCode): Promise<void> {
   if (loaded.has(code)) return
-  const loader = localeLoaders[`./locales/${code}.json`]
+  const loader = localeLoaders[`../locales/${code}.json`]
   if (!loader) return
   const mod = await loader()
   i18n.global.setLocaleMessage(code, mod.default)

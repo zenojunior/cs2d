@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import UiIcon from '@/ui/UiIcon.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 // Static "about" page: motivation, author, tech stack and credits. Everything
 // translatable lives in i18n; the tech/credits lists are data (names + links).

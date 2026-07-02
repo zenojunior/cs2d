@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import UiIcon from '@/ui/UiIcon.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 import MajorMatchCard from '@/pages/major/MajorMatchCard.vue'
 import {
   MAJOR,

@@ -5,7 +5,7 @@ import { computeFlashStats, type CellDetail, type FlashPlay } from '@/viewer/ana
 import { groupTeams } from '@/viewer/domain/teams'
 import UtilityTeamGrid from '@/viewer/analysis/utility/UtilityTeamGrid.vue'
 import UiIcon from '@/ui/UiIcon.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 /**
  * Flashes sub-tab: per-player flash metrics grouped by team (thrown, enemies

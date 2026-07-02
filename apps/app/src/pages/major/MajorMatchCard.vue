@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import UiIcon from '@/ui/UiIcon.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 import { prettyMap } from '@/viewer/domain/demoMeta'
 import { TEAMS, matchById, type MajorMapReplay, type MajorMatch, type MajorTeam } from './playoffs'
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { killWeaponIcon } from '@/viewer/domain/weaponIcons'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 const { t } = useI18n()
 

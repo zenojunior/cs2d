@@ -21,7 +21,7 @@ import { useMapCamera } from '@/viewer/player/useMapCamera'
 import { useMapInteractions } from '@/viewer/player/useMapInteractions'
 import { clamp, drawKill, roundRect, wrapText } from '@/viewer/player/canvasUtils'
 import { useViewerAssets } from '@/viewer/player/useViewerAssets'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 // `t` is used internally for time; i18n is aliased as `tr`.
 const { t: tr } = useI18n()

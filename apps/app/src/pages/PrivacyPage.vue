@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 // Static privacy policy. The app runs entirely client-side, so the policy is
 // short and honest: nothing is uploaded, no analytics today. Everything visible

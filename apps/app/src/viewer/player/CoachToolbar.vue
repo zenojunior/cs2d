@@ -10,7 +10,7 @@ import {
   COACH_TOOL_ICON,
 } from '@/viewer/player/coachTools'
 import type { GrenadeKind } from '@/viewer/domain/schema'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 const { t } = useI18n()
 

@@ -4,7 +4,7 @@ import type { PlayerMeta, PlayerState, Round, Side } from '@/viewer/domain/schem
 import { SIDE_COLOR } from '@/viewer/domain/colors'
 import { roundOutcome } from '@/viewer/domain/roundOutcome'
 import UiIcon from '@/ui/UiIcon.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 const { t } = useI18n()
 

@@ -7,7 +7,7 @@ import { SIDE_COLOR, TEAM_COLOR } from '@/viewer/domain/colors'
 import RoundEquipBar from '@/viewer/analysis/economy/RoundEquipBar.vue'
 import UiBottomSheet from '@/ui/UiBottomSheet.vue'
 import UiIcon from '@/ui/UiIcon.vue'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 /**
  * A round's full buy breakdown in a bottom sheet (`UiBottomSheet`): a grid of

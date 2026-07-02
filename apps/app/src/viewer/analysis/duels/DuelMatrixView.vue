@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import type { Replay } from '@/viewer/domain/schema'
 import { groupTeams } from '@/viewer/domain/teams'
 import { computeDuelMatrix } from '@/viewer/analysis/duels/duelStats'
-import { useI18n } from '@/i18n'
+import { useI18n } from '@/app/i18n'
 
 /**
  * Duel matrix: every player of one team (rows) against every player of the other
