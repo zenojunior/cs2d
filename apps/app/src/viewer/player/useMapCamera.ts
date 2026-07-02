@@ -175,10 +175,11 @@ export function useMapCamera(opts: MapCameraOptions) {
   )
 
   /** Kick the auto-zoom loop when framing is set from the start (e.g. an embedded
-   *  clip): unlike the autoZoom toggle, it has no off->on edge for the watch to
-   *  catch. Call once the canvas has been laid out (after the first resize). */
+   *  clip or the home preview): unlike toggling it live, this has no off->on edge
+   *  for the watch to catch. Call once the canvas has been laid out (after the
+   *  first resize). */
   function kickIfFocused() {
-    if ((opts.focusSteamIds()?.length || opts.focusWorld()) && !autoRaf) {
+    if (autoActive() && !autoRaf) {
       autoRaf = requestAnimationFrame(autoStep)
     }
   }
