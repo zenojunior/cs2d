@@ -4,6 +4,7 @@ import { useLocalStorage } from '@vueuse/core'
 import { appFullscreenKey } from '@/shell/appFullscreen'
 import type { Replay, VoiceData } from '@/viewer/domain/schema'
 import ViewerMap from '@/viewer/player/ViewerMap.vue'
+import { webglSupported } from '@/viewer/player/webgl'
 // three.js is only fetched when the 3D view is first turned on.
 const ViewerMap3D = defineAsyncComponent(() => import('@/viewer/player/ViewerMap3D.vue'))
 import ViewerControls from '@/viewer/player/ViewerControls.vue'
@@ -228,9 +229,13 @@ const { exporting, exportError, exportReplay } = useReplayExport({
 const autoZoom = useLocalStorage('viewer.advanced.autoZoom', false)
 const lowQualityEffects = useLocalStorage('viewer.advanced.lowQualityEffects', false)
 // 2D / 3D view switch (3D = three.js, experimental). The preference persists, but 3D
-// is only offered for maps that have an exported mesh (the calibrated ones).
+// is only offered for maps that have an exported mesh (the calibrated ones) and
+// where WebGL works; without it the stage stays in 2D whatever the stored preference.
 const view3dPref = useLocalStorage('viewer.advanced.view3d', false)
-const has3d = computed(() => !!r.replay.value?.map && r.replay.value.map in MAP_CALIBRATION)
+const webglOk = ref(webglSupported())
+const has3d = computed(
+  () => webglOk.value && !!r.replay.value?.map && r.replay.value.map in MAP_CALIBRATION,
+)
 const view3d = computed(() => view3dPref.value && has3d.value)
 /** Comments and the coach board only exist in 2D, so entering 3D leaves them. */
 function setView3d(on: boolean) {
@@ -350,6 +355,7 @@ defineExpose({ pause: r.pause, jumpToThrow, roundIndex: r.roundIndex })
           :round="r.round.value"
           :current-t="r.currentT.value"
           :bomb-blink="r.bombBlink.value"
+          @unsupported="webglOk = false"
         />
         <ViewerMap
           v-else

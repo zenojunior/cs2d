@@ -51,6 +51,10 @@ const props = defineProps<{
   /** Blink phase of the planted C4. */
   bombBlink?: boolean
 }>()
+const emit = defineEmits<{
+  /** The WebGL context couldn't be created: the stage falls back to 2D. */
+  unsupported: []
+}>()
 
 const BODY_H = 64
 const BODY_R = 16
@@ -402,7 +406,13 @@ function resize() {
 onMounted(() => {
   const el = wrap.value
   if (!el) return
-  renderer = new WebGLRenderer({ antialias: true })
+  try {
+    renderer = new WebGLRenderer({ antialias: true })
+  } catch {
+    renderer = null
+    emit('unsupported')
+    return
+  }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
   el.appendChild(renderer.domElement)
   renderer.domElement.style.cssText = 'display:block;width:100%;height:100%'
