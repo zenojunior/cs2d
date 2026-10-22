@@ -76,7 +76,8 @@
     "grenades": "Гранати",
     "utilities": "Утиліті",
     "economy": "Економіка",
-    "duels": "Дуелі"
+    "duels": "Дуелі",
+    "report": "Звіт"
   },
   "duels": {
     "tabs": {
@@ -382,6 +383,61 @@
     "holdB": ", щоб побачити таблицю рахунку",
     "round": "раунд",
     "of": "з"
+  },
+  "report": {
+    "title": "Звіт гравця",
+    "selectPlayer": "Вибрати гравця",
+    "rounds": "раундів",
+    "ranking": "Рейтинг матчу",
+    "rankingBy": "Критерій",
+    "rankingCriteria": {
+      "impact": "Загальний вплив",
+      "kda": "KDA",
+      "adr": "ADR",
+      "kills": "Вбивства",
+      "headshotPct": "HS%",
+      "duelWinRate": "Перемоги в дуелях",
+      "utilityDamage": "Шкода утиліті",
+      "enemiesBlinded": "Засліплені вороги"
+    },
+    "groups": {
+      "combat": "Бій",
+      "duels": "Дуелі",
+      "utility": "Утиліті",
+      "impact": "Вплив"
+    },
+    "metrics": {
+      "kda": "KDA",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Перемоги в дуелях",
+      "kills": "Вбивства",
+      "assists": "Асисти",
+      "deaths": "Смерті",
+      "damage": "Шкода",
+      "roundWinRate": "Виграні раунди",
+      "duelWins": "Виграні дуелі",
+      "duelLosses": "Програні дуелі",
+      "openingWins": "Виграні перші дуелі",
+      "openingLosses": "Програні перші дуелі",
+      "openingWinRate": "Частка перших дуелей",
+      "openingConversion": "Конверсія відкриття",
+      "grenadesThrown": "Використано утиліті",
+      "utilityPerRound": "Утиліті/раунд",
+      "flashesThrown": "Кинуті флешки",
+      "enemiesBlinded": "Засліплені вороги",
+      "enemiesBlindedPerRound": "Засліплено/раунд",
+      "blindSecondsPerFlash": "Секунд засліплення/флеш",
+      "utilityDamage": "Шкода утиліті",
+      "utilityDamagePerRound": "Шкода утиліті/раунд",
+      "utilityDamagePerThrow": "Шкода утиліті/кидок",
+      "utilityKills": "Вбивства утиліті",
+      "killsFromBlinds": "Вбивства засліплених",
+      "flashAssists": "Флеш-асисти",
+      "plants": "Закладені бомби",
+      "defuses": "Знешкодження"
+    }
   },
   "outcome": {
     "bombExploded": "Бомба вибухнула",

@@ -76,7 +76,8 @@
     "grenades": "Гранаты",
     "utilities": "Утилити",
     "economy": "Экономика",
-    "duels": "Дуэли"
+    "duels": "Дуэли",
+    "report": "Отчёт"
   },
   "duels": {
     "tabs": {
@@ -382,6 +383,61 @@
     "holdB": ", чтобы увидеть таблицу счёта",
     "round": "раунд",
     "of": "из"
+  },
+  "report": {
+    "title": "Отчёт игрока",
+    "selectPlayer": "Выбрать игрока",
+    "rounds": "раундов",
+    "ranking": "Рейтинг матча",
+    "rankingBy": "Критерий",
+    "rankingCriteria": {
+      "impact": "Общее влияние",
+      "kda": "KDA",
+      "adr": "ADR",
+      "kills": "Убийства",
+      "headshotPct": "HS%",
+      "duelWinRate": "Победы в дуэлях",
+      "utilityDamage": "Урон утилити",
+      "enemiesBlinded": "Ослеплённые враги"
+    },
+    "groups": {
+      "combat": "Бой",
+      "duels": "Дуэли",
+      "utility": "Утилити",
+      "impact": "Влияние"
+    },
+    "metrics": {
+      "kda": "KDA",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Победы в дуэлях",
+      "kills": "Убийства",
+      "assists": "Ассисты",
+      "deaths": "Смерти",
+      "damage": "Урон",
+      "roundWinRate": "Выигранные раунды",
+      "duelWins": "Выигранные дуэли",
+      "duelLosses": "Проигранные дуэли",
+      "openingWins": "Выигранные первые дуэли",
+      "openingLosses": "Проигранные первые дуэли",
+      "openingWinRate": "Доля первых дуэлей",
+      "openingConversion": "Конверсия открытия",
+      "grenadesThrown": "Использовано утилити",
+      "utilityPerRound": "Утилити/раунд",
+      "flashesThrown": "Брошено флешек",
+      "enemiesBlinded": "Ослеплённые враги",
+      "enemiesBlindedPerRound": "Ослеплено/раунд",
+      "blindSecondsPerFlash": "Секунд ослепления/флеш",
+      "utilityDamage": "Урон утилити",
+      "utilityDamagePerRound": "Урон утилити/раунд",
+      "utilityDamagePerThrow": "Урон утилити/бросок",
+      "utilityKills": "Убийства утилити",
+      "killsFromBlinds": "Убийства ослеплённых",
+      "flashAssists": "Флеш-ассисты",
+      "plants": "Установки бомбы",
+      "defuses": "Разминирования"
+    }
   },
   "outcome": {
     "bombExploded": "Бомба взорвалась",

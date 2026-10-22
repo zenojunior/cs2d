@@ -76,7 +76,8 @@
     "grenades": "Granadas",
     "utilities": "Utilitárias",
     "economy": "Economia",
-    "duels": "Duelos"
+    "duels": "Duelos",
+    "report": "Relatório"
   },
   "duels": {
     "tabs": {
@@ -382,6 +383,61 @@
     "holdB": " para ver o placar",
     "round": "round",
     "of": "de"
+  },
+  "report": {
+    "title": "Relatório do jogador",
+    "selectPlayer": "Selecionar jogador",
+    "rounds": "rounds",
+    "ranking": "Ranking da partida",
+    "rankingBy": "Critério",
+    "rankingCriteria": {
+      "impact": "Impacto geral",
+      "kda": "KDA",
+      "adr": "ADR",
+      "kills": "Abates",
+      "headshotPct": "HS%",
+      "duelWinRate": "Vitória em duelos",
+      "utilityDamage": "Dano de utilitária",
+      "enemiesBlinded": "Inimigos cegados"
+    },
+    "groups": {
+      "combat": "Combate",
+      "duels": "Duelos",
+      "utility": "Utilitárias",
+      "impact": "Impacto"
+    },
+    "metrics": {
+      "kda": "KDA",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Vitória em duelos",
+      "kills": "Abates",
+      "assists": "Assistências",
+      "deaths": "Mortes",
+      "damage": "Dano",
+      "roundWinRate": "Rounds vencidos",
+      "duelWins": "Combates vencidos",
+      "duelLosses": "Combates perdidos",
+      "openingWins": "Primeiros duelos vencidos",
+      "openingLosses": "Primeiros duelos perdidos",
+      "openingWinRate": "Taxa em primeiros duelos",
+      "openingConversion": "Conversão de abertura",
+      "grenadesThrown": "Utilitárias usadas",
+      "utilityPerRound": "Utilitárias/round",
+      "flashesThrown": "Flashes usadas",
+      "enemiesBlinded": "Inimigos cegados",
+      "enemiesBlindedPerRound": "Cegados/round",
+      "blindSecondsPerFlash": "Segundos cegos/flash",
+      "utilityDamage": "Dano de utilitária",
+      "utilityDamagePerRound": "Dano util./round",
+      "utilityDamagePerThrow": "Dano util./lançamento",
+      "utilityKills": "Eliminações com util.",
+      "killsFromBlinds": "Cegos eliminados",
+      "flashAssists": "Assistências de flash",
+      "plants": "Bombas plantadas",
+      "defuses": "Defuses"
+    }
   },
   "outcome": {
     "bombExploded": "Bomba explodiu",

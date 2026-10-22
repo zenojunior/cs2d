@@ -12,6 +12,7 @@ const HeatmapView = defineAsyncComponent(() => import('@/viewer/analysis/heatmap
 const UtilitiesView = defineAsyncComponent(() => import('@/viewer/analysis/utility/UtilitiesView.vue'))
 const EconomyView = defineAsyncComponent(() => import('@/viewer/analysis/economy/EconomyView.vue'))
 const DuelsView = defineAsyncComponent(() => import('@/viewer/analysis/duels/DuelsView.vue'))
+const PlayerReportView = defineAsyncComponent(() => import('@/viewer/analysis/report/PlayerReportView.vue'))
 const DemoPreviewLoop = defineAsyncComponent(() => import('@/viewer/player/DemoPreviewLoop.vue'))
 import { useDemoParser } from '@/viewer/ingest/useDemoParser'
 import { useRecentDemos } from '@/viewer/ingest/useRecentDemos'
@@ -74,7 +75,7 @@ const autoplay = computed(() => {
   if (q === undefined) return true
   return q === '1' || q === 'true'
 })
-type Tab = 'viewer' | 'heatmap' | 'utilities' | 'economy' | 'duels'
+type Tab = 'viewer' | 'heatmap' | 'utilities' | 'economy' | 'duels' | 'report'
 // The active tab is driven by the URL: `/:id` is the 2D stage, `/:id/heatmaps`
 // the heatmap, `/:id/utilities` the utilities page, `/:id/economy` the economy
 // page, `/:id/duels` the duels page.
@@ -88,6 +89,7 @@ const activeTab = computed<Tab>(() => {
   if (tab === 'utilities' || tab === 'grenades') return 'utilities'
   if (tab === 'economy') return 'economy'
   if (tab === 'duels') return 'duels'
+  if (tab === 'report') return 'report'
   return 'viewer'
 })
 const TAB_SEGMENT: Record<Tab, string> = {
@@ -96,6 +98,7 @@ const TAB_SEGMENT: Record<Tab, string> = {
   utilities: '/utilities',
   economy: '/economy',
   duels: '/duels',
+  report: '/report',
 }
 // Tab name used in the ?tab= query for external replays ('viewer' = no param).
 const TAB_QUERY: Record<Tab, string | undefined> = {
@@ -104,6 +107,7 @@ const TAB_QUERY: Record<Tab, string | undefined> = {
   utilities: 'utilities',
   economy: 'economy',
   duels: 'duels',
+  report: 'report',
 }
 function goTab(tab: Tab) {
   // External replay: keep ?replay=/?name= and switch the tab via ?tab=.
@@ -492,8 +496,13 @@ function onImportInput(e: Event) {
         @update:sub="goDuelSub"
         @jump="onGrenadeJump"
       />
+      <PlayerReportView
+        v-if="activeTab === 'report'"
+        :replay="parser.replay.value"
+        :source-label="parser.fileName.value"
+      />
 
-      <!-- Tabs (2D / Duels / Heatmaps / Utilities / Economy) in the center of the appbar -->
+      <!-- Tabs (2D / Duels / Heatmaps / Utilities / Economy / Report) in the center of the appbar -->
       <Teleport to="#publicbar-center">
         <div class="flex items-center gap-0.5 rounded-lg border border-ink-700 bg-ink-900/60 p-0.5">
           <button
@@ -535,6 +544,14 @@ function onImportInput(e: Event) {
             @click="goTab('economy')"
           >
             {{ t('tabs.economy') }}
+          </button>
+          <button
+            type="button"
+            class="shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors"
+            :class="activeTab === 'report' ? 'bg-ink-700 text-ink-50' : 'text-ink-300 hover:text-ink-100'"
+            @click="goTab('report')"
+          >
+            {{ t('tabs.report') }}
           </button>
         </div>
       </Teleport>

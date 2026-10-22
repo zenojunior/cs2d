@@ -76,7 +76,8 @@
     "grenades": "Granaten",
     "utilities": "Utilities",
     "economy": "Economy",
-    "duels": "Duelle"
+    "duels": "Duelle",
+    "report": "Bericht"
   },
   "duels": {
     "tabs": {
@@ -382,6 +383,61 @@
     "holdB": " gedrückt, um die Anzeigetafel zu sehen",
     "round": "Runde",
     "of": "von"
+  },
+  "report": {
+    "title": "Spielerbericht",
+    "selectPlayer": "Spieler auswählen",
+    "rounds": "Runden",
+    "ranking": "Match-Rangliste",
+    "rankingBy": "Kriterium",
+    "rankingCriteria": {
+      "impact": "Gesamteinfluss",
+      "kda": "KDA",
+      "adr": "ADR",
+      "kills": "Kills",
+      "headshotPct": "HS%",
+      "duelWinRate": "Duell-Siegrate",
+      "utilityDamage": "Utility-Schaden",
+      "enemiesBlinded": "Geblendete Gegner"
+    },
+    "groups": {
+      "combat": "Kampf",
+      "duels": "Duelle",
+      "utility": "Utility",
+      "impact": "Einfluss"
+    },
+    "metrics": {
+      "kda": "KDA",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Duell-Siegrate",
+      "kills": "Kills",
+      "assists": "Assists",
+      "deaths": "Tode",
+      "damage": "Schaden",
+      "roundWinRate": "Gewonnene Runden",
+      "duelWins": "Gewonnene Duelle",
+      "duelLosses": "Verlorene Duelle",
+      "openingWins": "Gewonnene Eröffnungsduelle",
+      "openingLosses": "Verlorene Eröffnungsduelle",
+      "openingWinRate": "Eröffnungsduell-Rate",
+      "openingConversion": "Eröffnungs-Conversion",
+      "grenadesThrown": "Genutzte Utility",
+      "utilityPerRound": "Utility/Runde",
+      "flashesThrown": "Geworfene Flashes",
+      "enemiesBlinded": "Geblendete Gegner",
+      "enemiesBlindedPerRound": "Geblendete/Runde",
+      "blindSecondsPerFlash": "Blendsekunden/Flash",
+      "utilityDamage": "Utility-Schaden",
+      "utilityDamagePerRound": "Utility-Schaden/Runde",
+      "utilityDamagePerThrow": "Utility-Schaden/Wurf",
+      "utilityKills": "Utility-Kills",
+      "killsFromBlinds": "Kills gegen Geblendete",
+      "flashAssists": "Flash-Assists",
+      "plants": "Bomben gelegt",
+      "defuses": "Entschärfungen"
+    }
   },
   "outcome": {
     "bombExploded": "Bombe explodiert",

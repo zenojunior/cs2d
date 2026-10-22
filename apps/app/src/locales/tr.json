@@ -76,7 +76,8 @@
     "grenades": "Granatlar",
     "utilities": "Utility",
     "economy": "Ekonomi",
-    "duels": "Düellolar"
+    "duels": "Düellolar",
+    "report": "Rapor"
   },
   "duels": {
     "tabs": {
@@ -382,6 +383,61 @@
     "holdB": " basılı tutun",
     "round": "raunt",
     "of": "/"
+  },
+  "report": {
+    "title": "Oyuncu raporu",
+    "selectPlayer": "Oyuncu seç",
+    "rounds": "raunt",
+    "ranking": "Maç sıralaması",
+    "rankingBy": "Kriter",
+    "rankingCriteria": {
+      "impact": "Genel etki",
+      "kda": "KDA",
+      "adr": "ADR",
+      "kills": "Öldürmeler",
+      "headshotPct": "HS%",
+      "duelWinRate": "Düello kazanma oranı",
+      "utilityDamage": "Utility hasarı",
+      "enemiesBlinded": "Kör edilen rakipler"
+    },
+    "groups": {
+      "combat": "Çatışma",
+      "duels": "Düellolar",
+      "utility": "Utility",
+      "impact": "Etki"
+    },
+    "metrics": {
+      "kda": "KDA",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Düello kazanma oranı",
+      "kills": "Öldürmeler",
+      "assists": "Asistler",
+      "deaths": "Ölümler",
+      "damage": "Hasar",
+      "roundWinRate": "Kazanılan rauntlar",
+      "duelWins": "Kazanılan düellolar",
+      "duelLosses": "Kaybedilen düellolar",
+      "openingWins": "Kazanılan ilk düellolar",
+      "openingLosses": "Kaybedilen ilk düellolar",
+      "openingWinRate": "İlk düello oranı",
+      "openingConversion": "Açılış dönüşümü",
+      "grenadesThrown": "Kullanılan utility",
+      "utilityPerRound": "Utility/raunt",
+      "flashesThrown": "Atılan flashlar",
+      "enemiesBlinded": "Kör edilen rakipler",
+      "enemiesBlindedPerRound": "Kör edilen/raunt",
+      "blindSecondsPerFlash": "Kör saniye/flash",
+      "utilityDamage": "Utility hasarı",
+      "utilityDamagePerRound": "Utility hasarı/raunt",
+      "utilityDamagePerThrow": "Utility hasarı/atış",
+      "utilityKills": "Utility öldürmeleri",
+      "killsFromBlinds": "Kör rakip öldürmeleri",
+      "flashAssists": "Flash asistleri",
+      "plants": "Kurulan bombalar",
+      "defuses": "İmhalar"
+    }
   },
   "outcome": {
     "bombExploded": "Bomba patladı",

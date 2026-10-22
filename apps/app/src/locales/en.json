@@ -76,7 +76,8 @@
     "grenades": "Grenades",
     "utilities": "Utilities",
     "economy": "Economy",
-    "duels": "Duels"
+    "duels": "Duels",
+    "report": "Report"
   },
   "duels": {
     "tabs": {
@@ -382,6 +383,61 @@
     "holdB": " to see the scoreboard",
     "round": "round",
     "of": "of"
+  },
+  "report": {
+    "title": "Player report",
+    "selectPlayer": "Select player",
+    "rounds": "rounds",
+    "ranking": "Match ranking",
+    "rankingBy": "Criterion",
+    "rankingCriteria": {
+      "impact": "Overall impact",
+      "kda": "KDA",
+      "adr": "ADR",
+      "kills": "Kills",
+      "headshotPct": "HS%",
+      "duelWinRate": "Duel win rate",
+      "utilityDamage": "Utility damage",
+      "enemiesBlinded": "Enemies blinded"
+    },
+    "groups": {
+      "combat": "Combat",
+      "duels": "Duels",
+      "utility": "Utility",
+      "impact": "Impact"
+    },
+    "metrics": {
+      "kda": "KDA",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Duel win rate",
+      "kills": "Kills",
+      "assists": "Assists",
+      "deaths": "Deaths",
+      "damage": "Damage",
+      "roundWinRate": "Rounds won",
+      "duelWins": "Duels won",
+      "duelLosses": "Duels lost",
+      "openingWins": "Opening duels won",
+      "openingLosses": "Opening duels lost",
+      "openingWinRate": "Opening duel rate",
+      "openingConversion": "Opening conversion",
+      "grenadesThrown": "Utility used",
+      "utilityPerRound": "Utility/round",
+      "flashesThrown": "Flashes thrown",
+      "enemiesBlinded": "Enemies blinded",
+      "enemiesBlindedPerRound": "Blinded/round",
+      "blindSecondsPerFlash": "Blind seconds/flash",
+      "utilityDamage": "Utility damage",
+      "utilityDamagePerRound": "Utility damage/round",
+      "utilityDamagePerThrow": "Utility damage/throw",
+      "utilityKills": "Utility kills",
+      "killsFromBlinds": "Blind kills",
+      "flashAssists": "Flash assists",
+      "plants": "Bombs planted",
+      "defuses": "Defuses"
+    }
   },
   "outcome": {
     "bombExploded": "Bomb exploded",
