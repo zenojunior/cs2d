@@ -76,7 +76,8 @@
     "grenades": "Granaty",
     "utilities": "Utility",
     "economy": "Ekonomia",
-    "duels": "Pojedynki"
+    "duels": "Pojedynki",
+    "report": "Raport"
   },
   "duels": {
     "tabs": {
@@ -386,6 +387,65 @@
     "holdB": ", aby zobaczyć tabelę wyników",
     "round": "runda",
     "of": "z"
+  },
+  "report": {
+    "open": "Raport","title": "Raport","subtitle": "Dane meczu uporządkowane według kontekstu.","close": "Zamknij raport","export": "Eksportuj",
+    "context": { "combat": { "title": "Raport walki", "subtitle": "Zabójstwa, obrażenia i wyniki rund." }, "duels": { "title": "Raport pojedynków", "subtitle": "Pojedynki indywidualne i otwierające." }, "utility": { "title": "Raport utility", "subtitle": "Użycie utility, oślepienia i wpływ." }, "objectives": { "title": "Raport celów", "subtitle": "Podłożenia i rozbrojenia bomb." }, "economy": { "title": "Raport ekonomii", "subtitle": "Podsumowanie ekonomii według strony." } },
+    "selectPlayer": "Wybierz gracza",
+    "rounds": "rundy",
+    "ranking": "Ranking meczu",
+    "rankingBy": "Kryterium",
+    "rankingCriteria": {
+      "impact": "Ogólny wpływ",
+      "kda": "KDA",
+      "adr": "ADR",
+      "kills": "Zabójstwa",
+      "headshotPct": "HS%",
+      "duelWinRate": "Wygrane pojedynki",
+      "utilityDamage": "Obrażenia utility",
+      "enemiesBlinded": "Oślepieni przeciwnicy"
+    },
+    "groups": {
+      "combat": "Walka",
+      "duels": "Pojedynki",
+      "utility": "Utility",
+      "impact": "Wpływ",
+      "economy": "Ekonomia",
+      "objectives": "Cele"
+    },
+    "metrics": {
+      "kda": "KDA",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Wygrane pojedynki",
+      "kills": "Zabójstwa",
+      "assists": "Asysty",
+      "deaths": "Śmierci",
+      "damage": "Obrażenia",
+      "roundWinRate": "Wygrane rundy",
+      "duelWins": "Wygrane pojedynki",
+      "duelLosses": "Przegrane pojedynki",
+      "openingWins": "Wygrane pierwsze pojedynki",
+      "openingLosses": "Przegrane pierwsze pojedynki",
+      "openingWinRate": "Skuteczność pierwszych pojedynków",
+      "openingConversion": "Konwersja otwarcia",
+      "grenadesThrown": "Użyte utility",
+      "utilityPerRound": "Utility/runda",
+      "flashesThrown": "Rzucone flashe",
+      "enemiesBlinded": "Oślepieni przeciwnicy",
+      "enemiesBlindedPerRound": "Oślepieni/runda",
+      "blindSecondsPerFlash": "Sekundy oślepienia/flash",
+      "utilityDamage": "Obrażenia utility",
+      "utilityDamagePerRound": "Obrażenia utility/runda",
+      "utilityDamagePerThrow": "Obrażenia utility/rzut",
+      "utilityKills": "Zabójstwa utility",
+      "killsFromBlinds": "Zabójstwa oślepionych",
+      "flashAssists": "Asysty flash",
+      "plants": "Podłożone bomby",
+      "defuses": "Rozbrojenia"
+      ,"rounds": "Rundy","roundsWon": "Wygrane rundy","roundsLost": "Przegrane rundy","startMoney": "Średnie pieniądze początkowe","equipValue": "Średnia wartość wyposażenia"
+    }
   },
   "outcome": {
     "bombExploded": "Bomba wybuchła",

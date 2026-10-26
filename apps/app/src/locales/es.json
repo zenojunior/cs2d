@@ -76,7 +76,8 @@
     "grenades": "Granadas",
     "utilities": "Utilidad",
     "economy": "Economía",
-    "duels": "Duelos"
+    "duels": "Duelos",
+    "report": "Informe"
   },
   "duels": {
     "tabs": {
@@ -386,6 +387,65 @@
     "holdB": " para ver el marcador",
     "round": "ronda",
     "of": "de"
+  },
+  "report": {
+    "open": "Informe","title": "Informe","subtitle": "Datos organizados por contexto de la partida.","close": "Cerrar informe","export": "Exportar",
+    "context": { "combat": { "title": "Informe de combate", "subtitle": "Bajas, daño y rendimiento por ronda." }, "duels": { "title": "Informe de duelos", "subtitle": "Duelos individuales y de apertura." }, "utility": { "title": "Informe de utilidad", "subtitle": "Uso, cegueras e impacto de utilidad." }, "objectives": { "title": "Informe de objetivos", "subtitle": "Plantas y desactivaciones registradas." }, "economy": { "title": "Informe de economía", "subtitle": "Resumen económico por lado." } },
+    "selectPlayer": "Seleccionar jugador",
+    "rounds": "rondas",
+    "ranking": "Ranking de la partida",
+    "rankingBy": "Criterio",
+    "rankingCriteria": {
+      "impact": "Impacto general",
+      "kda": "KDA",
+      "adr": "ADR",
+      "kills": "Bajas",
+      "headshotPct": "HS%",
+      "duelWinRate": "Victorias en duelos",
+      "utilityDamage": "Daño de utilidad",
+      "enemiesBlinded": "Enemigos cegados"
+    },
+    "groups": {
+      "combat": "Combate",
+      "duels": "Duelos",
+      "utility": "Utilidad",
+      "impact": "Impacto",
+      "economy": "Economía",
+      "objectives": "Objetivos"
+    },
+    "metrics": {
+      "kda": "KDA",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Victorias en duelos",
+      "kills": "Bajas",
+      "assists": "Asistencias",
+      "deaths": "Muertes",
+      "damage": "Daño",
+      "roundWinRate": "Rondas ganadas",
+      "duelWins": "Duelos ganados",
+      "duelLosses": "Duelos perdidos",
+      "openingWins": "Primeros duelos ganados",
+      "openingLosses": "Primeros duelos perdidos",
+      "openingWinRate": "Tasa de primeros duelos",
+      "openingConversion": "Conversión de apertura",
+      "grenadesThrown": "Utilidad usada",
+      "utilityPerRound": "Utilidad/ronda",
+      "flashesThrown": "Flashes lanzadas",
+      "enemiesBlinded": "Enemigos cegados",
+      "enemiesBlindedPerRound": "Cegados/ronda",
+      "blindSecondsPerFlash": "Segundos cegados/flash",
+      "utilityDamage": "Daño de utilidad",
+      "utilityDamagePerRound": "Daño util./ronda",
+      "utilityDamagePerThrow": "Daño util./lanzamiento",
+      "utilityKills": "Bajas con utilidad",
+      "killsFromBlinds": "Bajas a cegados",
+      "flashAssists": "Asistencias de flash",
+      "plants": "Bombas plantadas",
+      "defuses": "Desactivaciones"
+      ,"rounds": "Rondas","roundsWon": "Rondas ganadas","roundsLost": "Rondas perdidas","startMoney": "Dinero inicial medio","equipValue": "Valor medio del equipo"
+    }
   },
   "outcome": {
     "bombExploded": "La bomba explotó",

@@ -1,5 +1,9 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { PlayerMeta, Replay } from '@/viewer/domain/schema'
+import type { ReplayAnalysis } from '@/viewer/analysis/report/playerReportStats'
+import PlayerReportPanel from '@/viewer/analysis/report/PlayerReportPanel.vue'
+import UiIcon from '@/ui/UiIcon.vue'
 import UtilityThrowsView from '@/viewer/analysis/utility/UtilityThrowsView.vue'
 import UtilityFlashesView from '@/viewer/analysis/utility/UtilityFlashesView.vue'
 import UtilityDamageView from '@/viewer/analysis/utility/UtilityDamageView.vue'
@@ -19,6 +23,7 @@ type Sub = 'throws' | 'flashes' | 'damage'
 const props = defineProps<{
   replay: Replay
   playersById: Map<string, PlayerMeta>
+  analysis: ReplayAnalysis
   /** Active utilities page (throws/flashes/damage), driven by the URL. */
   sub: Sub
 }>()
@@ -31,6 +36,7 @@ const emit = defineEmits<{
 }>()
 
 const SUBS: Sub[] = ['throws', 'flashes', 'damage']
+const reportOpen = ref(false)
 </script>
 
 <template>
@@ -47,6 +53,13 @@ const SUBS: Sub[] = ['throws', 'flashes', 'damage']
         @click="emit('update:sub', s)"
       >
         {{ t(`utilities.tabs.${s}`) }}
+      </button>
+      <button
+        type="button"
+        class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium text-ink-300 transition-colors hover:border-ink-500 hover:text-ink-50"
+        @click="reportOpen = true"
+      >
+        {{ t('report.open') }}
       </button>
     </div>
 
@@ -66,4 +79,5 @@ const SUBS: Sub[] = ['throws', 'flashes', 'damage']
       <UtilityDamageView v-else :replay="props.replay" />
     </div>
   </div>
+  <PlayerReportPanel v-model:open="reportOpen" domain="utility" :replay="props.replay" :analysis="props.analysis" />
 </template>

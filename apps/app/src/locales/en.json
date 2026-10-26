@@ -76,7 +76,8 @@
     "grenades": "Grenades",
     "utilities": "Utilities",
     "economy": "Economy",
-    "duels": "Duels"
+    "duels": "Duels",
+    "report": "Report"
   },
   "duels": {
     "tabs": {
@@ -386,6 +387,69 @@
     "holdB": " to see the scoreboard",
     "round": "round",
     "of": "of"
+  },
+  "report": {
+    "open": "Report",
+    "title": "Report",
+    "subtitle": "Match data organized by context.",
+    "close": "Close report",
+    "export": "Export",
+    "context": { "combat": { "title": "Combat report", "subtitle": "Kills, damage and round performance." }, "duels": { "title": "Duel report", "subtitle": "Individual and opening duels." }, "utility": { "title": "Utility report", "subtitle": "Utility usage, blinds and impact." }, "objectives": { "title": "Objective report", "subtitle": "Plants and defuses recorded in the match." }, "economy": { "title": "Economy report", "subtitle": "Economic summary by side." } },
+    "selectPlayer": "Select player",
+    "rounds": "rounds",
+    "ranking": "Match ranking",
+    "rankingBy": "Criterion",
+    "rankingCriteria": {
+      "impact": "Overall impact",
+      "kda": "KDA",
+      "adr": "ADR",
+      "kills": "Kills",
+      "headshotPct": "HS%",
+      "duelWinRate": "Duel win rate",
+      "utilityDamage": "Utility damage",
+      "enemiesBlinded": "Enemies blinded"
+    },
+    "groups": {
+      "combat": "Combat",
+      "duels": "Duels",
+      "utility": "Utility",
+      "impact": "Impact",
+      "economy": "Economy",
+      "objectives": "Objectives"
+    },
+    "metrics": {
+      "kda": "KDA",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Duel win rate",
+      "kills": "Kills",
+      "assists": "Assists",
+      "deaths": "Deaths",
+      "damage": "Damage",
+      "roundWinRate": "Rounds won",
+      "duelWins": "Duels won",
+      "duelLosses": "Duels lost",
+      "openingWins": "Opening duels won",
+      "openingLosses": "Opening duels lost",
+      "openingWinRate": "Opening duel rate",
+      "openingConversion": "Opening conversion",
+      "grenadesThrown": "Utility used",
+      "utilityPerRound": "Utility/round",
+      "flashesThrown": "Flashes thrown",
+      "enemiesBlinded": "Enemies blinded",
+      "enemiesBlindedPerRound": "Blinded/round",
+      "blindSecondsPerFlash": "Blind seconds/flash",
+      "utilityDamage": "Utility damage",
+      "utilityDamagePerRound": "Utility damage/round",
+      "utilityDamagePerThrow": "Utility damage/throw",
+      "utilityKills": "Utility kills",
+      "killsFromBlinds": "Blind kills",
+      "flashAssists": "Flash assists",
+      "plants": "Bombs planted",
+      "defuses": "Defuses"
+      ,"rounds": "Rounds","roundsWon": "Rounds won","roundsLost": "Rounds lost","startMoney": "Average starting money","equipValue": "Average equipment value"
+    }
   },
   "outcome": {
     "bombExploded": "Bomb exploded",

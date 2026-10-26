@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { Replay, Side } from '@/viewer/domain/schema'
+import type { ReplayAnalysis } from '@/viewer/analysis/report/playerReportStats'
+import PlayerReportPanel from '@/viewer/analysis/report/PlayerReportPanel.vue'
+import UiIcon from '@/ui/UiIcon.vue'
 import { buildMatchEconomy, buyStats, BUY_COLOR, type BuyType } from '@/viewer/analysis/economy/roundEconomy'
 import { roundOutcome } from '@/viewer/domain/roundOutcome'
 import { TEAM_COLOR } from '@/viewer/domain/colors'
@@ -15,10 +18,11 @@ import { useI18n } from '@/app/i18n'
  * each team's equipment value. Clicking an equipment-value bar opens a bottom
  * sheet with that round's full buy breakdown. Built from `buildMatchEconomy`.
  */
-const props = defineProps<{ replay: Replay }>()
+const props = defineProps<{ replay: Replay; analysis: ReplayAnalysis }>()
 const emit = defineEmits<{ jump: [{ roundIndex: number; t: number }] }>()
 
 const { t } = useI18n()
+const reportDomain = ref<'economy' | 'objectives' | null>(null)
 
 const economy = computed(() => buildMatchEconomy(props.replay.rounds, props.replay.demoTickRate))
 
@@ -191,6 +195,11 @@ const sheetRow = computed(() => (sheetRound.value === null ? null : breakdown.va
 
 <template>
   <div class="h-full w-full overflow-y-auto [scrollbar-gutter:stable]">
+    <div class="mx-auto flex max-w-5xl justify-end px-6 pt-4">
+      <button type="button" class="inline-flex items-center gap-1.5 rounded-md border border-ink-700 px-3 py-1.5 text-sm text-ink-300 hover:border-ink-500 hover:text-ink-50" @click="reportDomain = 'economy'">
+        {{ t('report.open') }}
+      </button>
+    </div>
     <div class="mx-auto max-w-6xl space-y-10 px-6 py-6">
       <!-- Section 1: round outcomes by buy type -->
       <section>
@@ -383,4 +392,5 @@ const sheetRow = computed(() => (sheetRound.value === null ? null : breakdown.va
       @jump="emit('jump', $event)"
     />
   </div>
+  <PlayerReportPanel v-if="reportDomain" :open="true" :domain="['economy', 'objectives']" :replay="props.replay" :analysis="props.analysis" @update:open="reportDomain = null" />
 </template>
