@@ -7,7 +7,7 @@ import { SIDE_COLOR, TEAM_COLOR } from '@/viewer/domain/colors'
 import RoundEquipBar from '@/viewer/analysis/economy/RoundEquipBar.vue'
 import UiBottomSheet from '@/ui/UiBottomSheet.vue'
 import UiIcon from '@/ui/UiIcon.vue'
-import { useI18n } from '@/app/i18n'
+import { i18n, useI18n } from '@/app/i18n'
 
 /**
  * A round's full buy breakdown in a bottom sheet (`UiBottomSheet`): a grid of
@@ -57,7 +57,7 @@ function watchRound() {
 }
 
 function fmtMoney(v: number): string {
-  return `$${v.toLocaleString('pt-BR')}`
+  return `$${v.toLocaleString(i18n.global.locale.value)}`
 }
 function sideColor(side: Side): string {
   return SIDE_COLOR[side]
