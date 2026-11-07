@@ -3,7 +3,7 @@ import type { TeamRoundEconomy } from '@/viewer/analysis/economy/roundEconomy'
 import { BUY_COLOR } from '@/viewer/analysis/economy/roundEconomy'
 import { SIDE_COLOR } from '@/viewer/domain/colors'
 import UiIcon from '@/ui/UiIcon.vue'
-import { useI18n } from '@/app/i18n'
+import { i18n, useI18n } from '@/app/i18n'
 
 /**
  * One round's equipment-value row: the two teams' values as mirrored bars (left
@@ -27,7 +27,7 @@ defineProps<{
 const { t } = useI18n()
 
 function fmtMoney(v: number): string {
-  return `$${v.toLocaleString('pt-BR')}`
+  return `$${v.toLocaleString(i18n.global.locale.value)}`
 }
 function barWidth(v: number, max: number): string {
   return `${Math.max(4, (v / max) * 100)}%`
