@@ -127,6 +127,7 @@
     "importHint": "Eine aus dieser App exportierte .cs2dv-Datei",
     "importing": "Replay wird importiert...",
     "importError": "Diese Datei konnte nicht importiert werden.",
+    "saveError": "Diese Demo konnte nicht in der Bibliothek gespeichert werden (siehe Browser-Konsole). Sie läuft jetzt, ist aber weg, sobald du die Seite verlässt.",
     "extConnecting": "Verbindung zur Erweiterung...",
     "extDownloading": "Demo wird heruntergeladen...",
     "extDownloadError": "Demo konnte nicht heruntergeladen werden.",

@@ -1,24 +1,14 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch, type ComponentPublicInstance } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { Check, Download, ExternalLink, Github, Globe, HardDrive, Library, Loader2, Minus, MoreVertical, Play, Settings, Trash2, Upload, X } from 'lucide-vue-next'
 import Button from '@/components/ui/button/Button.vue'
 import Progress from '@/components/ui/progress/Progress.vue'
 import Select from '@/components/ui/select/Select.vue'
 import type { ActiveJob, ArchiveMetaRow, StateReply } from '@/utils/protocol'
+import { prettyMap, radarUrl, thumbUrl, topLine } from './mapAssets'
 import { LOCALES, currentLocale, initLocale, setLocale, t, type LocaleCode } from './i18n'
 
 const WEB_APP = 'https://cs2d.app'
-
-// Maps whose top-down 2D radar ships in the extension (public/maps/radars).
-const KNOWN_RADARS = new Set([
-  'de_ancient', 'de_anubis', 'de_cache', 'de_dust2',
-  'de_inferno', 'de_mirage', 'de_nuke', 'de_overpass', 'de_vertigo',
-])
-// Maps with an in-game photo thumb (public/maps/thumbs), used on library cards.
-const KNOWN_THUMBS = new Set([
-  'de_ancient', 'de_anubis', 'de_cache', 'de_dust2',
-  'de_inferno', 'de_mirage', 'de_nuke', 'de_overpass',
-])
 
 type Tab = 'library' | 'settings'
 const tab = ref<Tab>('library')
@@ -152,19 +142,6 @@ watch([search, mapFilter, sourceFilter], () => {
 })
 
 // --- presentation helpers ---------------------------------------------------
-function radarUrl(map?: string) {
-  return map && KNOWN_RADARS.has(map) ? chrome.runtime.getURL(`maps/radars/${map}_radar.png` as never) : null
-}
-function thumbUrl(map?: string) {
-  return map && KNOWN_THUMBS.has(map) ? chrome.runtime.getURL(`maps/thumbs/${map}.webp` as never) : null
-}
-function topLine(parts: (string | undefined)[]) {
-  return parts.filter(Boolean).join(' · ')
-}
-function prettyMap(map: string) {
-  const base = map.replace(/^(de|cs|ar|dz)_/, '')
-  return base.charAt(0).toUpperCase() + base.slice(1)
-}
 function fmtMB(bytes: number) {
   if (!bytes) return '0 MB'
   const mb = bytes / (1024 * 1024)
@@ -190,6 +167,40 @@ function chooseLocale(code: LocaleCode) {
   setLocale(code)
 }
 
+// --- diagnostics ------------------------------------------------------------
+// The persisted pipeline log (survives a crash of the offscreen document), so a
+// failed download can be inspected without opening any extension console.
+const logsText = ref('')
+const logsNote = ref('')
+async function loadLogs() {
+  try {
+    logsText.value = ((await chrome.runtime.sendMessage({ target: 'background', type: 'GET_LOGS' })) as string) || ''
+  } catch {
+    logsText.value = ''
+  }
+}
+async function copyLogs() {
+  await loadLogs()
+  try {
+    await navigator.clipboard.writeText(logsText.value)
+    logsNote.value = t('settings.logsCopied')
+    setTimeout(() => (logsNote.value = ''), 1500)
+  } catch {
+    /* clipboard blocked: the text stays visible below to copy by hand */
+  }
+}
+async function clearLogsNow() {
+  try {
+    await chrome.runtime.sendMessage({ target: 'background', type: 'CLEAR_LOGS' })
+  } catch {
+    /* background asleep: harmless */
+  }
+  logsText.value = ''
+}
+watch(tab, (v) => {
+  if (v === 'settings') void loadLogs()
+})
+
 // --- footer links -----------------------------------------------------------
 const GITHUB = 'https://github.com/zenojunior/cs2d'
 const version = chrome.runtime.getManifest?.().version ?? ''
@@ -201,43 +212,37 @@ const version = chrome.runtime.getManifest?.().version ?? ''
 const MARGIN = 10 // minimum gap kept from every screen edge
 const PANEL_W = 500
 const BUBBLE_W = 44
+const PANEL_H = 450
 const corner = reactive({ x: 0, y: 0 }) // top-right corner, viewport px
 const minimized = ref(false)
-let drag: { ox: number; oy: number; sx: number; sy: number; moved: boolean } | null = null
-
-// The currently-rendered root (panel or bubble), measured so the whole thing is
-// kept on-screen. A ResizeObserver re-clamps on size changes (tab switch,
-// download progress); the window `resize` listener handles a shrinking viewport.
-let panelEl: HTMLElement | null = null
-const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => clampCorner()) : null
-function setPanelEl(el: Element | ComponentPublicInstance | null) {
-  // Ignore unmount nulls (during the minimize/restore transition both roots
-  // exist briefly); the entering element's ref keeps panelEl pointing at it.
-  const node = el instanceof HTMLElement ? el : null
-  if (!node) return
-  if (panelEl && ro) ro.unobserve(panelEl)
-  panelEl = node
-  ro?.observe(node)
-}
+let drag: { ox: number; oy: number; sx: number; sy: number; moved: boolean; tap: boolean } | null = null
 
 function clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v))
 }
+// `corner` is the top-right of the icon, which never moves on toggle. The box
+// grows from it towards whichever side has room (left/right, down/up).
+const boxH = () => Math.min(PANEL_H, Math.round(window.innerHeight * 0.88))
 function clampCorner() {
-  const w = panelEl?.offsetWidth ?? (minimized.value ? BUBBLE_W : PANEL_W)
-  const h = panelEl?.offsetHeight ?? 0
-  corner.x = clamp(corner.x, w + MARGIN, Math.max(w + MARGIN, window.innerWidth - MARGIN))
-  corner.y = clamp(corner.y, MARGIN, Math.max(MARGIN, window.innerHeight - h - MARGIN))
+  corner.x = clamp(corner.x, BUBBLE_W + MARGIN, Math.max(BUBBLE_W + MARGIN, window.innerWidth - MARGIN))
+  corner.y = clamp(corner.y, MARGIN, Math.max(MARGIN, window.innerHeight - BUBBLE_W - MARGIN))
 }
-const panelStyle = computed(() => ({
-  left: corner.x - PANEL_W + 'px',
-  top: corner.y + 'px',
-  // Subtle brand-amber glow from the top-right corner (where the icon sits),
-  // fading into the base surface. Tune the alpha / spread to taste.
-  background: 'radial-gradient(130% 90% at 100% 0%, rgba(253, 172, 26, 0.12), transparent 55%), #15151a',
+const growLeft = computed(() => corner.x - PANEL_W >= MARGIN || corner.x > window.innerWidth / 2)
+const growUp = computed(() => corner.y + boxH() > window.innerHeight - MARGIN && corner.y > window.innerHeight / 2)
+// The box is pinned by the corner next to the icon via translate, so the icon
+// stays put while width/height animate.
+const rootStyle = computed(() => ({
+  left: (growLeft.value ? corner.x : corner.x - BUBBLE_W) + 'px',
+  top: (growUp.value ? corner.y + BUBBLE_W : corner.y) + 'px',
+  transform: `translate(${growLeft.value ? '-100%' : '0'}, ${growUp.value ? '-100%' : '0'})`,
+  width: (minimized.value ? BUBBLE_W : PANEL_W) + 'px',
+  height: minimized.value ? BUBBLE_W + 'px' : boxH() + 'px',
+  // Subtle brand-amber glow from the icon's corner, fading into the base surface.
+  background: minimized.value
+    ? '#0a0c12'
+    : `radial-gradient(130% 90% at ${growLeft.value ? '100%' : '0%'} ${growUp.value ? '100%' : '0%'}, rgba(253, 172, 26, 0.12), transparent 55%), #15151a`,
 }))
-const bubbleStyle = computed(() => ({ left: corner.x - BUBBLE_W + 'px', top: corner.y + 'px' }))
-// Flip the bubble's tooltip to whichever side has room (recomputes as it moves).
+// Flip the tooltip to whichever side has room (recomputes as it moves).
 const tooltipOnLeft = computed(() => corner.x > window.innerWidth / 2)
 
 function persist() {
@@ -251,8 +256,9 @@ function setMinimized(v: boolean) {
   })
 }
 
-function onDragStart(e: PointerEvent) {
-  drag = { ox: corner.x - e.clientX, oy: corner.y - e.clientY, sx: e.clientX, sy: e.clientY, moved: false }
+// `tap`: a press on the icon that never moves toggles minimized.
+function onDragStart(e: PointerEvent, tap = false) {
+  drag = { ox: corner.x - e.clientX, oy: corner.y - e.clientY, sx: e.clientX, sy: e.clientY, moved: false, tap }
   window.addEventListener('pointermove', onDragMove)
   window.addEventListener('pointerup', onDragEnd)
 }
@@ -264,12 +270,11 @@ function onDragMove(e: PointerEvent) {
   clampCorner()
 }
 function onDragEnd() {
-  // A press on the bubble that never moved is a click: restore the panel.
-  const clickedBubble = minimized.value && !!drag && !drag.moved
+  const clickedIcon = !!drag && drag.tap && !drag.moved
   drag = null
   window.removeEventListener('pointermove', onDragMove)
   window.removeEventListener('pointerup', onDragEnd)
-  if (clickedBubble) setMinimized(false)
+  if (clickedIcon) setMinimized(!minimized.value)
   else persist()
 }
 
@@ -296,19 +301,23 @@ onMounted(async () => {
 })
 onUnmounted(() => {
   window.removeEventListener('resize', clampCorner)
-  ro?.disconnect()
   if (timer) clearInterval(timer)
 })
 </script>
 
 <template>
-  <!-- Minimized: a draggable bubble showing the extension icon (click restores). -->
-  <Transition name="pop">
-  <div v-if="minimized" :ref="setPanelEl" class="fixed z-[999999] origin-top-right" :style="bubbleStyle">
-    <div class="group relative">
+  <!-- One floating box anchored by its top-right corner. The CS2d icon stays put in
+       that corner; expanding grows the box around it to the left/down, and the icon
+       (now carrying a minimize badge) collapses it back. -->
+  <div
+    class="fixed z-[999999] box-border border border-border text-foreground shadow-2xl transition-[width,height,border-radius,background-color] duration-200 ease-out"
+    :class="minimized ? 'rounded-2xl' : 'rounded-xl'"
+    :style="rootStyle"
+  >
+    <div class="group absolute z-10" :class="[growLeft ? 'right-0' : 'left-0', growUp ? 'bottom-0' : 'top-0']">
       <button
-        class="flex size-[44px] cursor-grab touch-none items-center justify-center rounded-2xl border border-border bg-[#0a0c12] shadow-2xl active:cursor-grabbing"
-        @pointerdown.prevent="onDragStart"
+        class="relative flex size-[42px] cursor-grab touch-none items-center justify-center active:cursor-grabbing"
+        @pointerdown.prevent.stop="onDragStart($event, true)"
       >
         <svg viewBox="0 0 403 404" class="size-6 fill-primary" xmlns="http://www.w3.org/2000/svg">
           <path fill-rule="evenodd" clip-rule="evenodd" d="M57.7397 12.9922C57.7417 12.9902 75.5147 30.7642 97.2347 52.4892L135.029 90.292L126.581 91.9892H0.0117188L0.71072 88.2632C6.05272 59.7872 25.5907 32.3772 51.8157 16.5632L57.7397 12.9922Z" />
@@ -316,57 +325,39 @@ onUnmounted(() => {
           <path fill-rule="evenodd" clip-rule="evenodd" d="M189.984 91.9895H255.984L165 0.989502H99L189.984 91.9895Z" />
           <path fill-rule="evenodd" clip-rule="evenodd" d="M266.492 45.5C284.258 63.2689 311.984 91 311.984 91H402.715L402.016 87.274C395.142 50.634 366.033 17.902 329.38 5.598C314.77 0.693997 306.512 0.00800162 261.996 0.00400162L221 0C221 0 248.726 27.7311 266.492 45.5Z" />
         </svg>
+        <span
+          v-if="!minimized"
+          class="absolute bottom-1 right-1 flex size-3.5 items-center justify-center rounded-full bg-muted text-muted-foreground group-hover:text-foreground"
+        >
+          <Minus class="size-2.5" />
+        </span>
       </button>
       <span
         class="pointer-events-none absolute top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-foreground opacity-0 shadow-md transition-opacity group-hover:opacity-100"
         :class="tooltipOnLeft ? 'right-full mr-2' : 'left-full ml-2'"
       >
-        CS2d.app
+        {{ minimized ? 'CS2d.app' : t('header.minimize') }}
       </span>
     </div>
-  </div>
-  </Transition>
 
-  <Transition name="pop">
-  <div
-    v-if="!minimized"
-    :ref="setPanelEl"
-    class="fixed z-[999999] flex h-[450px] max-h-[88vh] w-[500px] origin-top-right flex-col overflow-hidden rounded-xl border border-border bg-background text-foreground shadow-2xl"
-    :style="panelStyle"
-  >
-    <!-- Header / drag handle -->
-    <div
-      class="flex cursor-grab touch-none items-center justify-between border-b border-border bg-[#0a0c12] px-3 py-2.5 active:cursor-grabbing"
-      @pointerdown.prevent="onDragStart"
-    >
-      <div class="flex items-center gap-1.5 font-semibold">
-        <svg viewBox="0 0 403 404" class="size-4 fill-primary" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M57.7397 12.9922C57.7417 12.9902 75.5147 30.7642 97.2347 52.4892L135.029 90.292L126.581 91.9892H0.0117188L0.71072 88.2632C6.05272 59.7872 25.5907 32.3772 51.8157 16.5632L57.7397 12.9922Z" />
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M0.00396729 215.24C0.00796729 308.513 0.125914 310.931 5.46191 327.277C18.2509 366.454 52.2201 395.265 93.0001 401.522C106.968 403.665 294.901 403.678 309 401.536C356.2 394.369 393.378 357.19 400.545 309.99C401.717 302.276 401.989 284.369 401.994 214.74L402 128.99H0L0.00396729 215.24ZM156.316 171.876C153.735 173.083 151.054 175.463 149.316 178.088L146.5 182.342L146.197 236.415C145.996 272.207 146.25 291.712 146.946 294.105C150.134 305.05 162.757 310.201 173.29 304.853C184.803 299.008 266.747 253.57 268.356 252.139C276.109 245.248 275.519 230.019 267.273 224.203C265.748 223.127 243.375 210.632 217.556 196.435C165.671 167.906 165.209 167.72 156.316 171.876Z" />
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M189.984 91.9895H255.984L165 0.989502H99L189.984 91.9895Z" />
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M266.492 45.5C284.258 63.2689 311.984 91 311.984 91H402.715L402.016 87.274C395.142 50.634 366.033 17.902 329.38 5.598C314.77 0.693997 306.512 0.00800162 261.996 0.00400162L221 0C221 0 248.726 27.7311 266.492 45.5Z" />
-        </svg>
-        CS2d.app
-      </div>
-      <div class="flex items-center gap-2">
-        <div class="text-xs font-medium">
-          <span v-if="state.active.length" class="text-primary">{{ t('header.downloading', { n: state.active.length }) }} · </span>
-          <span class="text-muted-foreground">{{ fmtMB(state.totalBytes) }}</span>
-        </div>
-        <div class="group relative">
-          <button
-            class="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            @pointerdown.stop
-            @click="setMinimized(true)"
+    <Transition name="fade">
+      <div v-if="!minimized" class="absolute inset-0 overflow-hidden rounded-[inherit]">
+        <div
+          class="absolute flex h-full w-[500px]"
+          :class="[growLeft ? 'right-0' : 'left-0', growUp ? 'top-0 flex-col-reverse' : 'top-0 flex-col']"
+        >
+          <!-- Header / drag handle (the icon above occupies its right end) -->
+          <div
+            class="flex h-[42px] shrink-0 cursor-grab touch-none items-center justify-between border-border bg-[#0a0c12] active:cursor-grabbing"
+            :class="[growUp ? 'border-t' : 'border-b', growLeft ? 'pl-3 pr-[44px]' : 'pl-[44px] pr-3 flex-row-reverse']"
+            @pointerdown.prevent="onDragStart"
           >
-            <Minus class="size-4" />
-          </button>
-          <span class="pointer-events-none absolute right-0 top-full z-30 mt-1.5 whitespace-nowrap rounded border border-border bg-background px-1.5 py-0.5 text-[10px] text-foreground opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-            {{ t('header.minimize') }}
-          </span>
-        </div>
-      </div>
-    </div>
+            <span class="font-semibold">CS2d.app</span>
+            <div class="text-xs font-medium">
+              <span v-if="state.active.length" class="text-primary">{{ t('header.downloading', { n: state.active.length }) }} · </span>
+              <span class="text-muted-foreground">{{ fmtMB(state.totalBytes) }}</span>
+            </div>
+          </div>
 
     <!-- Body: sidebar nav + content -->
     <div class="flex min-h-0 flex-1">
@@ -575,12 +566,21 @@ onUnmounted(() => {
             <Download class="size-4" /> {{ t('settings.openApp') }}
           </Button>
         </a>
+        <div class="mt-1 flex items-center gap-1.5 px-1">
+          <span class="text-xs font-medium text-muted-foreground">{{ t('settings.logs') }}</span>
+          <span v-if="logsNote" class="text-[11px] text-emerald-500">{{ logsNote }}</span>
+          <Button variant="outline" size="sm" class="ml-auto" @click="copyLogs">{{ t('settings.copyLogs') }}</Button>
+          <Button variant="outline" size="sm" @click="clearLogsNow">{{ t('settings.clearLogs') }}</Button>
+        </div>
+        <pre class="max-h-40 min-h-12 overflow-auto whitespace-pre-wrap break-all rounded-md border border-border bg-card p-2 text-[10px] leading-snug text-muted-foreground">{{ logsText || t('settings.logsEmpty') }}</pre>
         <div class="px-1 pt-1 text-center text-[11px] text-muted-foreground">{{ t('settings.about') }}</div>
       </template>
       </div>
     </div>
+        </div>
+      </div>
+    </Transition>
   </div>
-  </Transition>
 
   <!-- Hidden picker for importing an exported .cs2dv -->
   <input ref="importInput" type="file" accept=".cs2dv" class="hidden" @change="onImportFile" />
@@ -617,15 +617,12 @@ onUnmounted(() => {
 </template>
 
 <style>
-/* Minimize/restore: collapse into / grow out of the top-right corner (where the
-   minimize button and the bubble sit), so the panel expands leftward. */
-.pop-enter-active,
-.pop-leave-active {
-  transition: transform 0.17s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.17s ease;
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
 }
-.pop-enter-from,
-.pop-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
-  transform: scale(0.1);
 }
 </style>
