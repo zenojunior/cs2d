@@ -55,6 +55,9 @@ const parseTickDetail = computed(() => {
 const recent = useRecentDemos()
 const importing = ref(false)
 const importError = ref<string | null>(null)
+// Set when a parsed demo couldn't be stored: it plays, but isn't in the library
+// (and the tabs, which need its id, can't open).
+const saveFailed = ref(false)
 const dragging = ref(false)
 const input = ref<HTMLInputElement | null>(null)
 // Dedicated picker for the import button, scoped to .cs2dv so its label stays
@@ -285,6 +288,7 @@ async function handleFile(file: File) {
       replay: parser.replay.value,
       voice: parser.voice.value,
     })
+    saveFailed.value = !id
     if (id) {
       currentId.value = id // already loaded: keeps the watcher from reloading
       router.push(demoPath(id))
@@ -304,7 +308,7 @@ async function onImportArchive(file: File) {
       replay: archive.replay,
       voice: archive.voice,
     })
-    if (!id) return
+    if (!id) throw new Error(t('analyzer.saveError'))
     // Persist the comments before navigating, so the stage loads them on open.
     await recent.saveComments(id, archive.comments)
     // Hydrate now so the URL change doesn't reload it from IndexedDB.
@@ -456,6 +460,13 @@ function onImportInput(e: Event) {
   <div class="relative h-full w-full bg-ink-950">
     <!-- Content when the replay is ready: 2D stage or heatmap, per tab -->
     <template v-if="parser.status.value === 'done' && parser.replay.value">
+      <div
+        v-if="saveFailed && !currentId"
+        class="absolute inset-x-0 top-3 z-30 mx-auto flex w-fit max-w-[90%] items-start gap-2 rounded-lg border border-loss/40 bg-ink-950/95 px-3 py-2 text-sm text-loss shadow-lg"
+      >
+        <UiIcon name="ban" class="mt-0.5 h-4 w-4 shrink-0" />
+        <span>{{ t('analyzer.saveError') }}</span>
+      </div>
       <!-- v-show keeps the stage mounted (preserves playback position across tab switches) -->
       <div v-show="activeTab === 'viewer'" class="h-full w-full">
         <ViewerStage

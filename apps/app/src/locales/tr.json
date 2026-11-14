@@ -102,6 +102,18 @@
       "lostConversionHint": "Kaybedilen ilk düellolardan tarafın raundu da kaybettiği oran",
       "ignoreTraded": "Takasları hariç tut",
       "ignoreTradedHint": "İlk düelloyu kazananın 5 sn içinde takaslandığı düelloları yok say"
+    },
+    "performance": {
+      "title": "Performans",
+      "kills": "Öldürmeler",
+      "assists": "Asistler",
+      "deaths": "Ölümler",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Düello kazanma oranı",
+      "plants": "Kurulan bombalar",
+      "defuses": "İmhalar"
     }
   },
   "analyzer": {
@@ -127,6 +139,7 @@
     "importHint": "Bu uygulamadan dışa aktarılmış bir .cs2dv dosyası",
     "importing": "Replay içe aktarılıyor...",
     "importError": "Bu dosya içe aktarılamadı.",
+    "saveError": "Bu demo kütüphaneye kaydedilemedi (tarayıcı konsoluna bakın). Şimdi oynatılıyor ama ayrıldığınızda kaybolacak.",
     "extConnecting": "Uzantıya bağlanılıyor...",
     "extDownloading": "Demo indiriliyor...",
     "extDownloadError": "Demo indirilemedi.",
@@ -378,6 +391,12 @@
       "equip": "Teçhizat",
       "carried": "Zaten vardı",
       "droppedTip": "Satın alındı, sonra düşürüldü (veya ölünce kaybedildi)"
+    },
+    "players": {
+      "title": "Oyuncu bazında ekonomi",
+      "hint": "Tur başına ortalama; freeze time bittikten birkaç saniye sonra, alımlar yapıldıktan sonra ölçülür.",
+      "equipValue": "Ortalama ekipman değeri",
+      "cashAfterBuy": "Satın alma sonrası ortalama para"
     }
   },
   "scoreboard": {

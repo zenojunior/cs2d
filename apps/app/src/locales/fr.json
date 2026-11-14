@@ -102,6 +102,18 @@
       "lostConversionHint": "Part des premiers duels perdus où le camp a aussi perdu le round",
       "ignoreTraded": "Exclure les trades",
       "ignoreTradedHint": "Ignorer les premiers duels où le vainqueur a été tradé en moins de 5s"
+    },
+    "performance": {
+      "title": "Performance",
+      "kills": "Kills",
+      "assists": "Assists",
+      "deaths": "Morts",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Taux de duels gagnés",
+      "plants": "Bombes posées",
+      "defuses": "Désamorçages"
     }
   },
   "analyzer": {
@@ -127,6 +139,7 @@
     "importHint": "Un fichier .cs2dv exporté depuis cette application",
     "importing": "Importation du replay...",
     "importError": "Impossible d'importer ce fichier.",
+    "saveError": "Impossible d'enregistrer cette démo dans la bibliothèque (voir la console du navigateur). Elle se lit maintenant, mais disparaîtra quand vous partirez.",
     "extConnecting": "Connexion à l’extension...",
     "extDownloading": "Téléchargement de la demo...",
     "extDownloadError": "Impossible de télécharger la demo.",
@@ -378,6 +391,12 @@
       "equip": "Équipement",
       "carried": "Déjà en main",
       "droppedTip": "Achetée puis lâchée (ou perdue à la mort)"
+    },
+    "players": {
+      "title": "Économie par joueur",
+      "hint": "Moyenne par round, mesurée quelques secondes après la fin du freeze time, une fois les achats faits.",
+      "equipValue": "Valeur moyenne de l'équipement",
+      "cashAfterBuy": "Argent moyen après achat"
     }
   },
   "scoreboard": {

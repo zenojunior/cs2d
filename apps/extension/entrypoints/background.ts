@@ -10,7 +10,7 @@ import {
 } from '../utils/protocol'
 import { deleteArchive, getArchiveBlob, listArchives, putArchive, totalBytes } from '../utils/db'
 import { importArchive } from '@cs2/replay-core/demoArchive'
-import { exportLogs, makeLog } from '../utils/log'
+import { clearLogs, exportLogs, makeLog, persist as persistLog } from '../utils/log'
 
 // Where stored replays open for playback (the public 2D viewer).
 const WEB_APP = 'https://cs2d.app'
@@ -55,8 +55,17 @@ export default defineBackground(() => {
         }
         case 'OPEN_VIEWER':
           // The app reads `#cs2dv=<id>` and asks us back for the bytes (GET_BLOB).
-          void chrome.tabs.create({ url: `${WEB_APP}/?fromExtension=1#cs2dv=${msg.matchId}` })
+          void chrome.tabs.create({ url: `${WEB_APP}/app/upload?fromExtension=1#cs2dv=${msg.matchId}` })
           return false
+        case 'LOG':
+          void persistLog(msg.entry)
+          return false
+        case 'GET_LOGS':
+          void exportLogs().then(sendResponse)
+          return true // async response
+        case 'CLEAR_LOGS':
+          void clearLogs().then(() => sendResponse(true))
+          return true
         case 'GET_BLOB':
           void getBlobReply(msg.matchId).then(sendResponse)
           return true // async response

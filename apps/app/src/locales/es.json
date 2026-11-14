@@ -102,6 +102,18 @@
       "lostConversionHint": "Porcentaje de primeros duelos perdidos en los que el bando también perdió la ronda",
       "ignoreTraded": "Excluir intercambiados",
       "ignoreTradedHint": "Ignorar primeros duelos donde el ganador fue intercambiado en 5s"
+    },
+    "performance": {
+      "title": "Rendimiento",
+      "kills": "Bajas",
+      "assists": "Asistencias",
+      "deaths": "Muertes",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Victorias en duelos",
+      "plants": "Bombas plantadas",
+      "defuses": "Desactivaciones"
     }
   },
   "analyzer": {
@@ -127,6 +139,7 @@
     "importHint": "Archivo .cs2dv exportado de esta app",
     "importing": "Importando replay...",
     "importError": "No se pudo importar este archivo.",
+    "saveError": "No se pudo guardar esta demo en la biblioteca (mira la consola del navegador). Se reproduce ahora, pero desaparecerá al salir.",
     "extConnecting": "Conectando con la extensión...",
     "extDownloading": "Descargando la demo...",
     "extDownloadError": "No se pudo descargar la demo.",
@@ -378,6 +391,12 @@
       "equip": "Equipamiento",
       "carried": "Ya tenía",
       "droppedTip": "Comprada y soltada (o perdida al morir)"
+    },
+    "players": {
+      "title": "Economía por jugador",
+      "hint": "Promedio por ronda, medido unos segundos después del freeze time, con las compras ya hechas.",
+      "equipValue": "Valor medio del equipo",
+      "cashAfterBuy": "Dinero medio tras la compra"
     }
   },
   "scoreboard": {

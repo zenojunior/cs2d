@@ -102,6 +102,18 @@
       "lostConversionHint": "Odsetek przegranych pierwszych pojedynków, w których strona także przegrała rundę",
       "ignoreTraded": "Pomiń wymienione",
       "ignoreTradedHint": "Ignoruj pierwsze pojedynki, w których zwycięzca został odbity w ciągu 5s"
+    },
+    "performance": {
+      "title": "Wyniki",
+      "kills": "Zabójstwa",
+      "assists": "Asysty",
+      "deaths": "Śmierci",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Wygrane pojedynki",
+      "plants": "Podłożone bomby",
+      "defuses": "Rozbrojenia"
     }
   },
   "analyzer": {
@@ -127,6 +139,7 @@
     "importHint": "Plik .cs2dv wyeksportowany z tej aplikacji",
     "importing": "Importowanie powtórki...",
     "importError": "Nie udało się zaimportować tego pliku.",
+    "saveError": "Nie udało się zapisać tego dema w bibliotece (zobacz konsolę przeglądarki). Odtwarza się teraz, ale zniknie po wyjściu.",
     "extConnecting": "Łączenie z rozszerzeniem...",
     "extDownloading": "Pobieranie dema...",
     "extDownloadError": "Nie udało się pobrać dema.",
@@ -378,6 +391,12 @@
       "equip": "Wyposażenie",
       "carried": "Już miał",
       "droppedTip": "Kupiona i upuszczona (lub utracona po śmierci)"
+    },
+    "players": {
+      "title": "Ekonomia graczy",
+      "hint": "Średnia na rundę, mierzona kilka sekund po freeze time, po zakupach.",
+      "equipValue": "Średnia wartość wyposażenia",
+      "cashAfterBuy": "Średnia gotówka po zakupie"
     }
   },
   "scoreboard": {
