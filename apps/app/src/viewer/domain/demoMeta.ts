@@ -2,6 +2,7 @@
 // shared by the upload home, the Major bracket and the Library page so the
 // formatting stays consistent in one place.
 import { MAP_CALIBRATION } from '@/viewer/domain/calibration'
+import { i18n } from '@/app/i18n'
 
 // Maps with preview art (16:9) in /maps/thumbs.
 const MAP_THUMBS = new Set([
@@ -40,12 +41,12 @@ export function fmtSize(bytes: number): string {
 
 // Compact date (day + short month) for tight rows.
 export function fmtDate(ms: number): string {
-  return new Date(ms).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+  return new Date(ms).toLocaleDateString(i18n.global.locale.value, { day: '2-digit', month: 'short' })
 }
 
 // Full date + time for places with room for the detail (e.g. context menus).
 export function fmtDateFull(ms: number): string {
-  return new Date(ms).toLocaleString('pt-BR', {
+  return new Date(ms).toLocaleString(i18n.global.locale.value, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

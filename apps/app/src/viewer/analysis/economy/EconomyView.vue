@@ -8,7 +8,7 @@ import RoundEquipBar from '@/viewer/analysis/economy/RoundEquipBar.vue'
 import RoundBuysSheet from '@/viewer/analysis/economy/RoundBuysSheet.vue'
 import UtilityTeamGrid from '@/viewer/analysis/utility/UtilityTeamGrid.vue'
 import { groupTeams } from '@/viewer/domain/teams'
-import { useI18n } from '@/app/i18n'
+import { i18n, useI18n } from '@/app/i18n'
 
 /**
  * Economy tab, mirroring CS Demo Manager's Economy tab: round outcomes by buy
@@ -200,7 +200,7 @@ const breakdown = computed(() => {
 })
 
 function fmtMoney(v: number): string {
-  return `$${v.toLocaleString('pt-BR')}`
+  return `$${v.toLocaleString(i18n.global.locale.value)}`
 }
 
 /** Richest team-round equipment value, so every bar shares one scale. */
