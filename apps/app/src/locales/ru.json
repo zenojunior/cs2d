@@ -76,8 +76,7 @@
     "grenades": "Гранаты",
     "utilities": "Утилити",
     "economy": "Экономика",
-    "duels": "Дуэли",
-    "report": "Отчёт"
+    "duels": "Дуэли"
   },
   "duels": {
     "tabs": {
@@ -103,6 +102,18 @@
       "lostConversionHint": "Доля проигранных первых дуэлей, в которых сторона также проиграла раунд",
       "ignoreTraded": "Исключить размены",
       "ignoreTradedHint": "Игнорировать первые дуэли, где победителя разменяли в течение 5с"
+    },
+    "performance": {
+      "title": "Результативность",
+      "kills": "Убийства",
+      "assists": "Ассисты",
+      "deaths": "Смерти",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Победы в дуэлях",
+      "plants": "Установки бомбы",
+      "defuses": "Разминирования"
     }
   },
   "analyzer": {
@@ -380,6 +391,12 @@
       "equip": "Снаряжение",
       "carried": "Уже было",
       "droppedTip": "Куплено и брошено (или потеряно при смерти)"
+    },
+    "players": {
+      "title": "Экономика по игрокам",
+      "hint": "Среднее за раунд, через несколько секунд после фризтайма, когда закупка завершена.",
+      "equipValue": "Средняя стоимость снаряжения",
+      "cashAfterBuy": "Средние деньги после закупки"
     }
   },
   "scoreboard": {
@@ -388,65 +405,6 @@
     "holdB": ", чтобы увидеть таблицу счёта",
     "round": "раунд",
     "of": "из"
-  },
-  "report": {
-    "open": "Отчёт","title": "Отчёт","subtitle": "Данные матча, организованные по контексту.","close": "Закрыть отчёт","export": "Экспорт",
-    "context": { "combat": { "title": "Отчёт о боевых действиях", "subtitle": "Убийства, урон и результативность по раундам." }, "duels": { "title": "Отчёт о дуэлях", "subtitle": "Индивидуальные и первые дуэли." }, "utility": { "title": "Отчёт об утилити", "subtitle": "Использование, ослепления и влияние." }, "objectives": { "title": "Отчёт об объектах", "subtitle": "Установки и обезвреживания бомбы." }, "economy": { "title": "Экономический отчёт", "subtitle": "Экономика по сторонам." } },
-    "selectPlayer": "Выбрать игрока",
-    "rounds": "раундов",
-    "ranking": "Рейтинг матча",
-    "rankingBy": "Критерий",
-    "rankingCriteria": {
-      "impact": "Общее влияние",
-      "kda": "KDA",
-      "adr": "ADR",
-      "kills": "Убийства",
-      "headshotPct": "HS%",
-      "duelWinRate": "Победы в дуэлях",
-      "utilityDamage": "Урон утилити",
-      "enemiesBlinded": "Ослеплённые враги"
-    },
-    "groups": {
-      "combat": "Бой",
-      "duels": "Дуэли",
-      "utility": "Утилити",
-      "impact": "Влияние",
-      "economy": "Экономика",
-      "objectives": "Цели"
-    },
-    "metrics": {
-      "kda": "KDA",
-      "kdr": "K/D",
-      "adr": "ADR",
-      "headshotPct": "HS%",
-      "duelWinRate": "Победы в дуэлях",
-      "kills": "Убийства",
-      "assists": "Ассисты",
-      "deaths": "Смерти",
-      "damage": "Урон",
-      "roundWinRate": "Выигранные раунды",
-      "duelWins": "Выигранные дуэли",
-      "duelLosses": "Проигранные дуэли",
-      "openingWins": "Выигранные первые дуэли",
-      "openingLosses": "Проигранные первые дуэли",
-      "openingWinRate": "Доля первых дуэлей",
-      "openingConversion": "Конверсия открытия",
-      "grenadesThrown": "Использовано утилити",
-      "utilityPerRound": "Утилити/раунд",
-      "flashesThrown": "Брошено флешек",
-      "enemiesBlinded": "Ослеплённые враги",
-      "enemiesBlindedPerRound": "Ослеплено/раунд",
-      "blindSecondsPerFlash": "Секунд ослепления/флеш",
-      "utilityDamage": "Урон утилити",
-      "utilityDamagePerRound": "Урон утилити/раунд",
-      "utilityDamagePerThrow": "Урон утилити/бросок",
-      "utilityKills": "Убийства утилити",
-      "killsFromBlinds": "Убийства ослеплённых",
-      "flashAssists": "Флеш-ассисты",
-      "plants": "Установки бомбы",
-      "defuses": "Разминирования"
-      ,"rounds": "Раунды","roundsWon": "Выигранные раунды","roundsLost": "Проигранные раунды","startMoney": "Средние стартовые деньги","equipValue": "Средняя стоимость снаряжения"
-    }
   },
   "outcome": {
     "bombExploded": "Бомба взорвалась",

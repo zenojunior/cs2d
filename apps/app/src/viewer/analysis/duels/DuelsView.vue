@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import type { Replay } from '@/viewer/domain/schema'
-import type { ReplayAnalysis } from '@/viewer/analysis/report/playerReportStats'
-import PlayerReportPanel from '@/viewer/analysis/report/PlayerReportPanel.vue'
-import UiIcon from '@/ui/UiIcon.vue'
 import DuelStatsView from '@/viewer/analysis/duels/DuelStatsView.vue'
 import OpeningDuelMapView from '@/viewer/analysis/duels/OpeningDuelMapView.vue'
 import HeatmapView from '@/viewer/analysis/heatmap/HeatmapView.vue'
@@ -21,7 +17,6 @@ type Sub = 'kills' | 'deaths' | 'stats' | 'opening-map'
 
 const props = defineProps<{
   replay: Replay
-  analysis: ReplayAnalysis
   /** Active duels page, driven by the URL. */
   sub: Sub
 }>()
@@ -34,7 +29,6 @@ const emit = defineEmits<{
 }>()
 
 const SUBS: Sub[] = ['kills', 'deaths', 'opening-map', 'stats']
-const reportOpen = ref(false)
 </script>
 
 <template>
@@ -52,13 +46,6 @@ const reportOpen = ref(false)
       >
         {{ t(`duels.tabs.${s}`) }}
       </button>
-      <button
-        type="button"
-        class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium text-ink-300 transition-colors hover:border-ink-500 hover:text-ink-50"
-        @click="reportOpen = true"
-      >
-        {{ t('report.open') }}
-      </button>
     </div>
 
     <!-- Active sub-view -->
@@ -75,5 +62,4 @@ const reportOpen = ref(false)
       />
     </div>
   </div>
-  <PlayerReportPanel v-if="reportOpen" :open="true" :domain="['combat', 'duels']" :replay="props.replay" :analysis="props.analysis" @update:open="reportOpen = $event" />
 </template>

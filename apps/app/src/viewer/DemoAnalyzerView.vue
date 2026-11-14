@@ -21,7 +21,6 @@ import { fetchReplay } from '@/viewer/ingest/replaySource'
 import { listenForExtensionDemo } from '@/viewer/ingest/extensionBridge'
 import { fmtSize } from '@/viewer/domain/demoMeta'
 import { useI18n } from '@/app/i18n'
-import { buildReplayAnalysis } from '@/viewer/analysis/report/playerReportStats'
 
 const { t } = useI18n()
 
@@ -80,7 +79,7 @@ const autoplay = computed(() => {
   return q === '1' || q === 'true'
 })
 type Tab = 'viewer' | 'heatmap' | 'utilities' | 'economy' | 'duels'
-// The active tab is driven by the URL: `/:id` is the 2D stage, `/:id/heatmaps`
+// The active tab is driven by the URL: `/app/:id` is the 2D stage, `/app/:id/heatmaps`
 // the heatmap, `/:id/utilities` the utilities page, `/:id/economy` the economy
 // page, `/:id/duels` the duels page.
 const activeTab = computed<Tab>(() => {
@@ -246,7 +245,6 @@ watch(activeTab, (tab) => {
 const playersById = computed(
   () => new Map((parser.replay.value?.players ?? []).map((p) => [p.steamId, p] as const)),
 )
-const replayAnalysis = computed(() => (parser.replay.value ? buildReplayAnalysis(parser.replay.value) : null))
 
 // A grenade picked on its tab seeks the replay to the throw and switches back.
 function onGrenadeJump(payload: { roundIndex: number; t: number }) {
@@ -494,16 +492,14 @@ function onImportInput(e: Event) {
         v-if="activeTab === 'utilities'"
         :replay="parser.replay.value"
         :players-by-id="playersById"
-        :analysis="replayAnalysis!"
         :sub="utilitySub"
         @update:sub="goUtilitySub"
         @jump="onGrenadeJump"
       />
-      <EconomyView v-if="activeTab === 'economy'" :replay="parser.replay.value" :analysis="replayAnalysis!" @jump="onGrenadeJump" />
+      <EconomyView v-if="activeTab === 'economy'" :replay="parser.replay.value" @jump="onGrenadeJump" />
       <DuelsView
         v-if="activeTab === 'duels'"
         :replay="parser.replay.value"
-        :analysis="replayAnalysis!"
         :sub="duelSub"
         @update:sub="goDuelSub"
         @jump="onGrenadeJump"
