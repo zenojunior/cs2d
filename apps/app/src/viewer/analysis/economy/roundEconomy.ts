@@ -294,3 +294,29 @@ export function buyStats(team: TeamEconomy, side?: Side): BuyStat[] {
     return { buyType, total, won, lost: total - won, winRate: total ? won / total : null }
   })
 }
+
+/** Per-player economy sums over the counted rounds (pre-game rounds excluded),
+ *  sampled at `econFrame`, the same moment as the team charts. */
+export interface PlayerEconomy {
+  rounds: number
+  /** Sum of the equipment value carried once the buys are done. */
+  equipValue: number
+  /** Sum of the money left after buying. */
+  cashAfterBuy: number
+}
+
+export function buildPlayerEconomy(rounds: Round[], demoTickRate = 64): Map<string, PlayerEconomy> {
+  const out = new Map<string, PlayerEconomy>()
+  const preGame = preGameRoundCount(rounds)
+  rounds.forEach((r, i) => {
+    if (i < preGame) return
+    for (const p of econFrame(r, demoTickRate)?.players ?? []) {
+      let s = out.get(p.steamId)
+      if (!s) out.set(p.steamId, (s = { rounds: 0, equipValue: 0, cashAfterBuy: 0 }))
+      s.rounds += 1
+      s.equipValue += p.equipValue
+      s.cashAfterBuy += p.money
+    }
+  })
+  return out
+}

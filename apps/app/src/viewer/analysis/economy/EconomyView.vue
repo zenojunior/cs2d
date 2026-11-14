@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { Replay, Side } from '@/viewer/domain/schema'
-import { buildMatchEconomy, buyStats, BUY_COLOR, type BuyType } from '@/viewer/analysis/economy/roundEconomy'
+import { buildMatchEconomy, buildPlayerEconomy, buyStats, BUY_COLOR, type BuyType } from '@/viewer/analysis/economy/roundEconomy'
 import { roundOutcome } from '@/viewer/domain/roundOutcome'
 import { TEAM_COLOR } from '@/viewer/domain/colors'
 import RoundEquipBar from '@/viewer/analysis/economy/RoundEquipBar.vue'
 import RoundBuysSheet from '@/viewer/analysis/economy/RoundBuysSheet.vue'
+import UtilityTeamGrid from '@/viewer/analysis/utility/UtilityTeamGrid.vue'
+import { groupTeams } from '@/viewer/domain/teams'
 import { useI18n } from '@/app/i18n'
 
 /**
  * Economy tab, mirroring CS Demo Manager's Economy tab: round outcomes by buy
  * type (win/loss bars per team, filterable by side), the team start money per
- * round (the chart CSDM labels "Equipment value") and a per-round breakdown of
- * each team's equipment value. Clicking an equipment-value bar opens a bottom
+ * round (the chart CSDM labels "Equipment value"), each player's average
+ * equipment value and cash after buying, and a per-round breakdown of each
+ * team's equipment value. Clicking an equipment-value bar opens a bottom
  * sheet with that round's full buy breakdown. Built from `buildMatchEconomy`.
  */
 const props = defineProps<{ replay: Replay }>()
@@ -131,7 +134,27 @@ const hover = computed(() => {
   }
 })
 
-// --- Section 3: per-round breakdown ------------------------------------------
+// --- Section 3: per-player averages (two-team grid) ---------------------------
+const playerTeams = computed(() => {
+  const ts = groupTeams(props.replay)
+  ts[0].name ||= t('economy.team1')
+  ts[1].name ||= t('economy.team2')
+  return ts
+})
+const playerEconomy = computed(() => buildPlayerEconomy(props.replay.rounds, props.replay.demoTickRate))
+const playerRows = computed(() => {
+  const avg = (id: string, field: 'equipValue' | 'cashAfterBuy') => {
+    const s = playerEconomy.value.get(id)
+    return s && s.rounds ? Math.round(s[field] / s.rounds) : 0
+  }
+  return (['equipValue', 'cashAfterBuy'] as const).map((field) => ({
+    key: field,
+    label: t(`economy.players.${field}`),
+    value: (id: string) => fmtMoney(avg(id, field)),
+  }))
+})
+
+// --- Section 4: per-round breakdown ------------------------------------------
 
 function roundReason(roundIndex: number): string | null {
   return props.replay.rounds[roundIndex]?.reason ?? null
@@ -343,7 +366,16 @@ const sheetRow = computed(() => (sheetRound.value === null ? null : breakdown.va
         </div>
       </section>
 
-      <!-- Section 3: per-round equipment value -->
+      <!-- Section 3: per-player averages -->
+      <section>
+        <div class="mb-3">
+          <h2 class="font-display text-sm text-ink-50">{{ t('economy.players.title') }}</h2>
+          <p class="text-xs text-ink-500">{{ t('economy.players.hint') }}</p>
+        </div>
+        <UtilityTeamGrid :teams="playerTeams" :rows="playerRows" />
+      </section>
+
+      <!-- Section 4: per-round equipment value -->
       <section>
         <div class="mb-3">
           <h2 class="font-display text-sm text-ink-50">{{ t('economy.equipValueTitle') }}</h2>

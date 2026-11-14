@@ -102,6 +102,18 @@
       "lostConversionHint": "Anteil der verlorenen Eröffnungsduelle, bei denen die Seite auch die Runde verlor",
       "ignoreTraded": "Getauschte ausschließen",
       "ignoreTradedHint": "Eröffnungsduelle ignorieren, bei denen der Sieger innerhalb von 5 s zurückgetauscht wurde"
+    },
+    "performance": {
+      "title": "Leistung",
+      "kills": "Kills",
+      "assists": "Assists",
+      "deaths": "Tode",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Duell-Siegrate",
+      "plants": "Bomben gelegt",
+      "defuses": "Entschärfungen"
     }
   },
   "analyzer": {
@@ -379,6 +391,12 @@
       "equip": "Ausrüstung",
       "carried": "Bereits dabei",
       "droppedTip": "Gekauft, dann fallen gelassen (oder beim Tod verloren)"
+    },
+    "players": {
+      "title": "Wirtschaft pro Spieler",
+      "hint": "Durchschnitt pro Runde, gemessen einige Sekunden nach der Freeze-Time, wenn die Käufe erledigt sind.",
+      "equipValue": "Durchschnittlicher Ausrüstungswert",
+      "cashAfterBuy": "Ø Geld nach dem Kauf"
     }
   },
   "scoreboard": {

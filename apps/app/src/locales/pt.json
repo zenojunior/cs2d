@@ -102,6 +102,18 @@
       "lostConversionHint": "Fração dos primeiros duelos perdidos em que o lado também perdeu o round",
       "ignoreTraded": "Desconsiderar trades",
       "ignoreTradedHint": "Ignora primeiros duelos em que o vencedor da entrada foi trocado em até 5s"
+    },
+    "performance": {
+      "title": "Desempenho",
+      "kills": "Abates",
+      "assists": "Assistências",
+      "deaths": "Mortes",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Vitória em duelos",
+      "plants": "Bombas plantadas",
+      "defuses": "Defuses"
     }
   },
   "analyzer": {
@@ -379,6 +391,12 @@
       "equip": "Equipamento",
       "carried": "Já tinha",
       "droppedTip": "Comprada e dropada (ou perdida ao morrer)"
+    },
+    "players": {
+      "title": "Economia por jogador",
+      "hint": "Média por round, medida alguns segundos após o fim do freeze time, com as compras já feitas.",
+      "equipValue": "Equipamento médio",
+      "cashAfterBuy": "Dinheiro médio após a compra"
     }
   },
   "scoreboard": {

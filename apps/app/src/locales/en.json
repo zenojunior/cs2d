@@ -102,6 +102,18 @@
       "lostConversionHint": "Share of lost opening duels where the side also lost the round",
       "ignoreTraded": "Exclude traded",
       "ignoreTradedHint": "Ignore opening duels where the entry winner was traded back within 5s"
+    },
+    "performance": {
+      "title": "Performance",
+      "kills": "Kills",
+      "assists": "Assists",
+      "deaths": "Deaths",
+      "kdr": "K/D",
+      "adr": "ADR",
+      "headshotPct": "HS%",
+      "duelWinRate": "Duel win rate",
+      "plants": "Bombs planted",
+      "defuses": "Defuses"
     }
   },
   "analyzer": {
@@ -379,6 +391,12 @@
       "equip": "Equipment",
       "carried": "Already had",
       "droppedTip": "Bought, then dropped (or lost on death)"
+    },
+    "players": {
+      "title": "Economy by player",
+      "hint": "Per-round average, sampled a few seconds after freeze time ends, once the buys are done.",
+      "equipValue": "Average equipment value",
+      "cashAfterBuy": "Average cash after buy"
     }
   },
   "scoreboard": {
