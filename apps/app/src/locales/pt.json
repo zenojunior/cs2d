@@ -128,6 +128,7 @@
     "importHint": "Arquivo .cs2dv exportado deste app",
     "importing": "Importando replay...",
     "importError": "Não foi possível importar este arquivo.",
+    "saveError": "Não foi possível salvar esta demo na biblioteca (veja o console do navegador). Ela toca agora, mas some quando você sair.",
     "extConnecting": "Conectando à extensão...",
     "extDownloading": "Baixando a demo...",
     "extDownloadError": "Não foi possível baixar a demo.",

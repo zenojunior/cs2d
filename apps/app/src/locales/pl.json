@@ -128,6 +128,7 @@
     "importHint": "Plik .cs2dv wyeksportowany z tej aplikacji",
     "importing": "Importowanie powtórki...",
     "importError": "Nie udało się zaimportować tego pliku.",
+    "saveError": "Nie udało się zapisać tego dema w bibliotece (zobacz konsolę przeglądarki). Odtwarza się teraz, ale zniknie po wyjściu.",
     "extConnecting": "Łączenie z rozszerzeniem...",
     "extDownloading": "Pobieranie dema...",
     "extDownloadError": "Nie udało się pobrać dema.",

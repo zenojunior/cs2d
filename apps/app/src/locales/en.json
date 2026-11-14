@@ -128,6 +128,7 @@
     "importHint": "A .cs2dv file exported from this app",
     "importing": "Importing replay...",
     "importError": "Could not import this file.",
+    "saveError": "Couldn't save this demo to the library (see the browser console). It plays now, but will be gone when you leave.",
     "extConnecting": "Connecting to the extension…",
     "extDownloading": "Downloading the demo…",
     "extDownloadError": "Couldn’t download the demo.",

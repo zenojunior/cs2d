@@ -5,21 +5,14 @@
 // then discard the raw bytes. Only small JSON progress crosses chrome.runtime.
 
 // Reuse the app's framework-free pipeline, vendored under lib/ (see wxt.config).
-import { init as zstdInitRaw, decompress as zstdDecompress } from '@bokuweb/zstd-wasm'
 import ParserWorker from '../../lib/demoParser.worker?worker'
+import DecompressWorker from '../../lib/decompress.worker?worker'
+import type { DecompressResponse } from '../../lib/decompress.worker'
 import type { ParseResponse } from '../../lib/demoParser.worker'
 import wasmUrl from '../../lib/parser/demo_parser_bg.wasm?url'
 import { exportArchive } from '@cs2/replay-core/demoArchive'
 import type { Replay, VoiceData } from '@cs2/replay-core/schema'
 
-// The bundled types resolve to the Node build's `init()` (no args); the web
-// build accepts an explicit wasm path. We load it from the extension root
-// (synced to public/zstd.wasm) since the offscreen runs in the extension origin.
-const zstdInit = zstdInitRaw as (path?: string) => Promise<void>
-let zstdReady: Promise<void> | undefined
-function ensureZstd(): Promise<void> {
-  return (zstdReady ??= zstdInit(chrome.runtime.getURL('zstd.wasm' as never)))
-}
 import { fileNameFromUrl, type ArchiveMetaRow, type Job, type ToOffscreen } from '../../utils/protocol'
 import { putArchive } from '../../utils/db'
 import { exportLogs, makeLog } from '../../utils/log'
@@ -27,6 +20,12 @@ import { exportLogs, makeLog } from '../../utils/log'
 const log = makeLog('offscreen')
 // Grab the full log from the offscreen.html console with `await cs2dvLogs()`.
 ;(globalThis as { cs2dvLogs?: () => Promise<string> }).cs2dvLogs = exportLogs
+
+/** Used JS heap in MB (Chromium-only `performance.memory`), for crash breadcrumbs. */
+function jsHeapMB(): number | undefined {
+  const mem = (performance as unknown as { memory?: { usedJSHeapSize: number } }).memory
+  return mem ? Math.round(mem.usedJSHeapSize / 1024 / 1024) : undefined
+}
 
 /** Best-effort host of a URL, for logging (never throws). */
 function hostOf(url: string): string {
@@ -96,29 +95,49 @@ async function process(job: Job) {
       throw new Error(`HTTP ${res.status} downloading demo`)
     }
     const total = Number(res.headers.get('content-length')) || 0
+    log.info('download response', { matchId, host, contentLength: total })
     const reader = res.body!.getReader()
-    const parts: Uint8Array[] = []
+    // Accumulate into a Blob, not a JS array: Blob data lives in the browser's
+    // blob store (can spill to disk), so a multi-hundred-MB demo doesn't sit in
+    // this renderer's memory while it downloads. Chunks are folded in every ~8 MB.
+    let downloaded = new Blob([])
+    let pending: Uint8Array[] = []
+    let pendingBytes = 0
+    const fold = () => {
+      if (!pending.length) return
+      downloaded = new Blob([downloaded, ...(pending as BlobPart[])])
+      pending = []
+      pendingBytes = 0
+    }
     let loaded = 0
     let lastReport = 0
+    let lastDecile = 0
     for (;;) {
       const { done, value } = await reader.read()
       if (done) break
-      parts.push(value)
+      pending.push(value)
+      pendingBytes += value.byteLength
       loaded += value.byteLength
+      if (pendingBytes >= 8 * 1024 * 1024) fold()
       // Throttle progress messages to ~10/s.
       const now = performance.now()
       if (now - lastReport > 100) {
         lastReport = now
+        // Breadcrumb every 10%: if the process dies, the persisted log shows how far it got.
+        if (total && Math.floor((loaded / total) * 10) > lastDecile) {
+          lastDecile = Math.floor((loaded / total) * 10)
+          log.info('download progress', { matchId, loaded, total, jsHeapMB: jsHeapMB() })
+        }
         report({ type: 'JOB_PROGRESS', matchId, patch: { phase: 'downloading', loaded, total } })
       }
     }
+    fold()
     ensureLive()
-    const compressed = concat(parts, loaded)
     log.info('downloaded', { matchId, bytes: loaded })
 
     // --- decompress to raw .dem ---
     report({ type: 'JOB_PROGRESS', matchId, patch: { phase: 'decompressing' } })
-    const raw = await toRawDemo(compressed)
+    const raw = await toRawDemo(downloaded)
     log.info('decompressed', { matchId, rawBytes: raw.byteLength })
 
     // --- parse (in the reused app worker) ---
@@ -173,29 +192,23 @@ async function process(job: Job) {
   }
 }
 
-/** Concatenate the streamed chunks into one buffer. */
-function concat(parts: Uint8Array[], total: number): Uint8Array {
-  const out = new Uint8Array(total)
-  let o = 0
-  for (const p of parts) {
-    out.set(p, o)
-    o += p.byteLength
-  }
-  return out
-}
-
-/** Decompresses the demo to raw `.dem`: gzip (native) or zstandard (libzstd
- *  WASM, same decoder as the app); a raw demo passes through. */
-async function toRawDemo(input: Uint8Array): Promise<Uint8Array> {
-  if (input[0] === 0x1f && input[1] === 0x8b) {
-    const stream = new Blob([input as BlobPart]).stream().pipeThrough(new DecompressionStream('gzip'))
-    return new Uint8Array(await new Response(stream).arrayBuffer())
-  }
-  if (input[0] === 0x28 && input[1] === 0xb5 && input[2] === 0x2f && input[3] === 0xfd) {
-    await ensureZstd()
-    return zstdDecompress(input)
-  }
-  return input // assume raw PBDEMS2
+/** Decompresses the demo to raw `.dem` (gzip / zstd; raw passes through) in a
+ *  throwaway worker that is terminated right after, so the zstd WASM heap is
+ *  reclaimed before the parser runs. The input is a Blob (a reference, not a copy). */
+function toRawDemo(input: Blob): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    const worker = new DecompressWorker()
+    worker.onmessage = (e: MessageEvent<DecompressResponse>) => {
+      worker.terminate()
+      if (e.data.ok) resolve(new Uint8Array(e.data.buffer))
+      else reject(new Error(e.data.error))
+    }
+    worker.onerror = (e) => {
+      worker.terminate()
+      reject(new Error(e.message || 'decompress worker crashed'))
+    }
+    worker.postMessage({ blob: input, zstdUrl: chrome.runtime.getURL('zstd.wasm' as never) })
+  })
 }
 
 /** Runs the WASM parser worker once and resolves the replay + voice. */
@@ -220,7 +233,11 @@ function parse(
       worker.terminate()
       reject(new Error(e.message || 'parser worker crashed'))
     }
-    const buffer = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength)
+    // Transfer without copying when `raw` owns its whole buffer (the usual case
+    // after the decompress worker); slice only for a partial view.
+    const buffer = (
+      raw.byteOffset === 0 && raw.byteLength === raw.buffer.byteLength ? raw.buffer : raw.slice().buffer
+    ) as ArrayBuffer
     worker.postMessage({ buffer, frameRate: 8, wasmUrl }, [buffer])
   })
 }

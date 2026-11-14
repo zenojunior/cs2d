@@ -8,6 +8,8 @@
 // `target` namespaces who should handle a message, since runtime.sendMessage
 // fans out to every extension context.
 
+import type { LogEntry } from './log'
+
 export type Phase = 'queued' | 'downloading' | 'decompressing' | 'parsing' | 'building' | 'storing'
 
 /** Rich match info scraped from Faceit's API, shown on the card before/while the
@@ -87,6 +89,11 @@ export type ToBackground =
   | { target: 'background'; type: 'GET_BLOB'; matchId: string }
   // Import an exported .cs2dv into the library (base64, parsed for its metadata).
   | { target: 'background'; type: 'IMPORT'; fileName: string; base64: string }
+  // Log line from a context without chrome.storage (the offscreen document).
+  | { target: 'background'; type: 'LOG'; entry: LogEntry }
+  // Diagnostics: the persisted log as text (for the overlay's copy button), or wipe it.
+  | { target: 'background'; type: 'GET_LOGS' }
+  | { target: 'background'; type: 'CLEAR_LOGS' }
 
 export interface StateReply {
   active: ActiveJob[]

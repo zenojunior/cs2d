@@ -41,7 +41,7 @@ const messages: Record<LocaleCode, Dict> = {
     },
     library: { empty: 'No replays saved yet.', remove: 'Remove', ready: 'Ready', deleteConfirm: 'Remove this replay from your library?', openRoom: 'Open on Faceit', search: 'Search', allMaps: 'All maps', import: 'Import', export: 'Export', more: 'More', noResults: 'No matches.', allSources: 'All sources', imported: 'Imported', loadMore: 'Load more ({n})' },
     room: { watch: 'Watch 2D demo', autoOpen: 'Open the replay as soon as the download finishes' },
-    settings: { language: 'Language', about: 'Parsed locally · 100% offline', openApp: 'Open the web app' },
+    settings: { language: 'Language', about: 'Parsed locally · 100% offline', openApp: 'Open the web app', logs: 'Diagnostics', copyLogs: 'Copy logs', clearLogs: 'Clear', logsCopied: 'Copied!', logsEmpty: 'No log entries yet.' },
   },
   pt: {
     tabs: { library: 'Biblioteca', settings: 'Ajustes' },
@@ -61,7 +61,7 @@ const messages: Record<LocaleCode, Dict> = {
     },
     library: { empty: 'Nenhum replay salvo ainda.', remove: 'Remover', ready: 'Pronto', deleteConfirm: 'Remover este replay da biblioteca?', openRoom: 'Abrir no Faceit', search: 'Buscar', allMaps: 'Todos os mapas', import: 'Importar', export: 'Exportar', more: 'Mais', noResults: 'Nada encontrado.', allSources: 'Todas as fontes', imported: 'Importado', loadMore: 'Carregar mais ({n})' },
     room: { watch: 'Assistir demo 2D', autoOpen: 'Abrir replay assim que terminar o download' },
-    settings: { language: 'Idioma', about: 'Processado localmente · 100% offline', openApp: 'Abrir o app web' },
+    settings: { language: 'Idioma', about: 'Processado localmente · 100% offline', openApp: 'Abrir o app web', logs: 'Diagnóstico', copyLogs: 'Copiar logs', clearLogs: 'Limpar', logsCopied: 'Copiado!', logsEmpty: 'Nenhum registro ainda.' },
   },
   es: {
     tabs: { library: 'Biblioteca', settings: 'Ajustes' },
