@@ -19,7 +19,7 @@ const routes: RouteRecordRaw[] = [
       // `/?landing` is the explicit way back (the sidebar logo), for anyone.
       if ('landing' in to.query) return true
       // Old links put the analyzer's params on `/` (`/?replay=…`, `/?tab=…`).
-      if (Object.keys(to.query).length) return { path: UPLOAD_PATH, query: to.query }
+      if (Object.keys(to.query).length) return { path: UPLOAD_PATH, query: to.query, hash: to.hash }
       if (isStandalone() || hasUsedApp()) return APP_HOME
       return true
     },

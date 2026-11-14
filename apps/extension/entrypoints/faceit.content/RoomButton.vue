@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { ChevronDown, Loader2, Play } from 'lucide-vue-next'
+import { Check, ChevronDown, Loader2, Play } from 'lucide-vue-next'
 import { initLocale, t } from './i18n'
+import { prettyMap, radarUrl, thumbUrl, topLine } from './mapAssets'
 import {
   demoUrlFromPayload,
   enqueueJob,
@@ -42,6 +43,8 @@ const currentJob = computed<ActiveJob | null>(
 const currentStored = computed(
   () => state.value.stored.find((s) => s.matchId === matchId.value) ?? null,
 )
+// Preview card: shown once the demo is already in the library.
+const preview = computed(() => (currentJob.value ? null : currentStored.value))
 const busy = computed(() => !!currentJob.value && !currentJob.value.error)
 
 const pct = computed(() => {
@@ -140,7 +143,9 @@ const onCapture = (e: MessageEvent) => {
   if (d?.source === 'cs2dv-extension' && d?.kind === 'capturedDemoUrl' && d?.url) capturedUrl = d.url
 }
 const onDocClick = (e: MouseEvent) => {
-  if (menuOpen.value && rootEl.value && !rootEl.value.contains(e.target as Node)) menuOpen.value = false
+  // Inside the shadow root, document listeners see the host as `target`, so
+  // test the composed path instead (else any click in the menu closes it).
+  if (menuOpen.value && rootEl.value && !e.composedPath().includes(rootEl.value)) menuOpen.value = false
 }
 
 let timer: number | undefined
@@ -166,6 +171,46 @@ onUnmounted(() => {
 
 <template>
   <div ref="rootEl" class="mb-2 w-full" style="font-family: 'Play', sans-serif">
+    <!-- Preview of an already-downloaded replay: click anywhere to watch. -->
+    <div
+      v-if="preview && matchId"
+      class="group relative mb-1.5 h-[104px] cursor-pointer overflow-hidden rounded border border-border bg-card text-foreground"
+      :title="t('hero.watch')"
+      @click="openViewer(matchId)"
+    >
+      <div
+        v-if="thumbUrl(preview.map)"
+        class="absolute inset-0 bg-cover bg-center opacity-60 transition-all duration-200 group-hover:scale-105 group-hover:opacity-75"
+        :style="{ backgroundImage: `url(${thumbUrl(preview.map)})` }"
+      />
+      <div
+        v-else-if="radarUrl(preview.map)"
+        class="absolute inset-0 bg-contain bg-center bg-no-repeat opacity-30"
+        :style="{ backgroundImage: `url(${radarUrl(preview.map)})` }"
+      />
+      <div class="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black/80" />
+      <div class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition-opacity group-hover:opacity-100">
+        <Play class="size-9 fill-primary text-primary drop-shadow" />
+      </div>
+      <div class="relative flex h-full flex-col justify-between p-2.5">
+        <div class="truncate text-[11px] font-medium uppercase tracking-wide text-white/80">
+          {{ topLine([preview.competition, prettyMap(preview.map)]) || preview.label }}
+        </div>
+        <div v-if="preview.teamA || preview.teamB" class="flex items-center justify-center gap-2.5 text-sm font-semibold text-white">
+          <span class="flex-1 truncate text-right">{{ preview.teamA }}</span>
+          <span class="text-lg font-bold">{{ preview.scoreCt }}<span class="text-white/60"> : </span>{{ preview.scoreT }}</span>
+          <span class="flex-1 truncate">{{ preview.teamB }}</span>
+        </div>
+        <div v-else class="text-center text-lg font-bold text-white">
+          {{ preview.scoreCt }}<span class="text-white/60"> : </span>{{ preview.scoreT }}
+        </div>
+        <div class="flex justify-between text-xs text-white/80">
+          <span class="inline-flex items-center gap-1"><Check class="size-3 text-emerald-400" /> {{ t('library.ready') }}</span>
+          <span>{{ fmtMB(preview.sizeBytes) }}</span>
+        </div>
+      </div>
+    </div>
+
     <div class="flex gap-px">
       <button
         type="button"

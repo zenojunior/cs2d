@@ -127,6 +127,7 @@
     "importHint": "Bu uygulamadan dışa aktarılmış bir .cs2dv dosyası",
     "importing": "Replay içe aktarılıyor...",
     "importError": "Bu dosya içe aktarılamadı.",
+    "saveError": "Bu demo kütüphaneye kaydedilemedi (tarayıcı konsoluna bakın). Şimdi oynatılıyor ama ayrıldığınızda kaybolacak.",
     "extConnecting": "Uzantıya bağlanılıyor...",
     "extDownloading": "Demo indiriliyor...",
     "extDownloadError": "Demo indirilemedi.",

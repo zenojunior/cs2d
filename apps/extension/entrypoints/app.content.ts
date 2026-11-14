@@ -11,6 +11,9 @@ const APP = 'cs2dv-app'
 
 export default defineContentScript({
   matches: ['*://cs2d.app/*', 'http://localhost/*'],
+  // Read `#cs2dv=` before the app's router can rewrite the URL (a redirect or
+  // replace drops the hash; at document_idle that is a race).
+  runAt: 'document_start',
   main() {
     const matchId = new URLSearchParams(location.hash.slice(1)).get('cs2dv')
     if (!matchId) return

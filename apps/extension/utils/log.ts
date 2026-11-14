@@ -26,18 +26,32 @@ function consoleFn(level: LogLevel): (...args: unknown[]) => void {
   return level === 'error' ? console.error : level === 'warn' ? console.warn : console.log
 }
 
-// Persist to the ring buffer. Wrapped in try/catch because chrome.storage is
-// unavailable in MAIN-world scripts; the console output still goes through.
-async function persist(entry: LogEntry): Promise<void> {
-  try {
-    const cur = (await chrome.storage.local.get(STORAGE_KEY))[STORAGE_KEY] as LogEntry[] | undefined
-    const next = cur ?? []
-    next.push(entry)
-    if (next.length > MAX_ENTRIES) next.splice(0, next.length - MAX_ENTRIES)
-    await chrome.storage.local.set({ [STORAGE_KEY]: next })
-  } catch {
-    /* no chrome.storage here (e.g. MAIN world): console output is enough */
+// Persist to a per-scope ring buffer. Each context (background, offscreen, ...)
+// owns its own key and serializes its writes: a single shared array updated with
+// read-modify-write from several contexts lost entries to concurrent overwrites.
+const writeChains = new Map<string, Promise<void>>()
+export function persist(entry: LogEntry): Promise<void> {
+  // Offscreen documents only get chrome.runtime (no chrome.storage): hand the
+  // entry to the background, which owns persistence for them.
+  if (typeof chrome === 'undefined' || !chrome.storage?.local) {
+    return Promise.resolve(chrome?.runtime?.sendMessage?.({ target: 'background', type: 'LOG', entry })).then(
+      () => {},
+      () => {},
+    )
   }
+  const key = `${STORAGE_KEY}:${entry.scope}`
+  const next = (writeChains.get(key) ?? Promise.resolve()).then(async () => {
+    try {
+      const cur = ((await chrome.storage.local.get(key))[key] as LogEntry[] | undefined) ?? []
+      cur.push(entry)
+      if (cur.length > MAX_ENTRIES) cur.splice(0, cur.length - MAX_ENTRIES)
+      await chrome.storage.local.set({ [key]: cur })
+    } catch {
+      /* no chrome.storage here (e.g. MAIN world): console output is enough */
+    }
+  })
+  writeChains.set(key, next)
+  return next
 }
 
 function emit(level: LogLevel, scope: string, msg: string, data?: unknown): void {
@@ -56,7 +70,11 @@ export function makeLog(scope: string) {
 
 export async function getLogs(): Promise<LogEntry[]> {
   try {
-    return ((await chrome.storage.local.get(STORAGE_KEY))[STORAGE_KEY] as LogEntry[]) ?? []
+    const all = await chrome.storage.local.get(null)
+    return Object.entries(all)
+      .filter(([k]) => k.startsWith(`${STORAGE_KEY}:`))
+      .flatMap(([, v]) => v as LogEntry[])
+      .sort((x, y) => x.t - y.t)
   } catch {
     return []
   }
@@ -75,7 +93,8 @@ export async function exportLogs(): Promise<string> {
 
 export async function clearLogs(): Promise<void> {
   try {
-    await chrome.storage.local.remove(STORAGE_KEY)
+    const all = await chrome.storage.local.get(null)
+    await chrome.storage.local.remove(Object.keys(all).filter((k) => k.startsWith(`${STORAGE_KEY}:`)))
   } catch {
     /* noop */
   }
